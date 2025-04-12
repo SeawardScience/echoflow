@@ -1,0 +1,3 @@
+minimal_publisher:
+    ros__parameters:
+        message:  "Message set through parameter! "
