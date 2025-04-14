@@ -1,0 +1,214 @@
+
+port: /dev/ttyACM0
+aux_port    : /dev/ttyS0
+baudrate    : 115200
+set_baud : False
+
+use_device_timestamp : True
+imu_data_rate : 100
+use_enu_frame : True
+filter_child_frame_id : "ins"
+
+
+# Antenna #1 lever arm offset vector
+#     For GQ7 - in the vehicle frame wrt IMU origin (meters)
+#     For all other models - in the IMU frame wrt IMU origin (meters)
+#     Note: Make this as accurate as possible for good performance
+gnss1_antenna_offset : [0.2032, 0.2921, -1.3716]
+
+gnss2_antenna_offset : [0.2032, -1.4986, -1.3716]
+
+filter_data_rate: 100
+
+# (GQ7 Only) Reference point lever arm offset control.
+#   Note: This offset will affect the position and velocity measurements in the following topics: nav/odom, nav/relative_pos/odom
+#   Note: This offset is in the vehicle reference frame.
+filter_lever_arm_offset: [0.0, 0.0, 0.0]
+
+
+# (GQ7 only) Filter Initialization control
+
+#   Init Condition source =
+#   0 - auto pos, vel, attitude (default)
+#   1 - auto pos, vel, roll, pitch, manual heading
+#   2 - auto pos, vel, manual attitude
+#   3 - manual pos, vel, attitude
+#
+#   Auto-Heading alignment selector (note this is a bitfield, you can use more than 1 source) =
+#   Bit 0 - Dual-antenna GNSS
+#   Bit 1 - GNSS kinematic (requires motion, e.g. a GNSS velocity)
+#   Bit 2 - Magnetometer
+#
+#   Reference frame =
+#   1 - WGS84 Earth-fixed, earth centered (ECEF) position, velocity, attitude
+#   2 - WGS84 Latitude, Longitude, height above ellipsoid position, NED velocity and attitude
+
+filter_init_condition_src              : 0
+filter_auto_heading_alignment_selector : 1
+filter_init_reference_frame            : 1
+filter_init_position : [0.0, 0.0, 0.0]
+filter_init_velocity : [0.0, 0.0, 0.0]
+filter_init_attitude : [0.0, 0.0, 0.0]
+
+# (GQ7 only) Relative Position Configuration
+#   Reference frame =
+#   1 - Relative ECEF position
+#   2 - Relative LLH position
+#
+#   Source =
+#   0 - Position will be reported relative to the base station. filter_relative_position_ref will be ignored
+#   1 - Position will be reported relative to filter_relative_position_ref
+#
+#   Reference position - Units provided by reference frame (ECEF - meters, LLH - deg, deg, meters)
+#   Note: prior to firmware version 1.0.06 this command will fail for non-positive heights.  1.0.06 fixes this)
+filter_relative_position_config : True
+filter_relative_position_frame  : 2
+filter_relative_position_source : 1
+filter_relative_position_ref    : [27.759818, -82.631295, 0]
+
+
+# (GQ7 Only) Enable RTK dongle interface
+# Note: Enabling this will cause the node to publish on one of two topics depending
+#       on the version of the RTK dongle connected to the GQ7
+# Note: This is also required to be True in order to publish NMEA from the aux port
+rtk_dongle_enable : True
+
+# (GQ7 Only) Allow the user to send RTCM messages to this node, and stream those messages to the GQ7
+subscribe_rtcm : True
+rtcm_topic     : "/ntrip_client/rtcm"
+
+publish_nmea   : True
+
+# (GQ7 only) NMEA message format. If set to false, all NMEA message configuration will not have any affect
+nmea_message_config: True
+
+# Allow NMEA messages with the same talker IDs on different data sources (descriptor sets)
+# In most cases, this should be set to False, as multiple messages of the same type with the same talker ID from a different descriptor set could cause confusion when parsing.
+nmea_message_allow_duplicate_talker_ids: False
+
+# NMEA messages in the sensor (IMU) descriptor set
+# In order to enable a message, set nmea_message_config to true, and then change the 'data_rate' of the sentences you want to the desired rate in hertz
+# Note: In order to publish, 'publish_nmea' must also be set to True
+imu_nmea_prkr_data_rate: 0
+
+# NMEA messages in the GNSS1 descriptor set
+# In order to enable a message, set nmea_message_config to true, and then change the 'data_rate' of the sentences you want to the desired rate in hertz
+#
+# Note: In order to publish, 'publish_nmea' must also be set to True
+#
+# Note: gnss1_nmea_talker_id can be any of the follwing numeric values:
+#         1 - Sentences will start with GN
+#         2 - Sentences will start with GP
+#         3 - Sentences will start with GA
+#         4 - Sentences will start with GL
+#       The purpose of the talker ID is to differentiate when the same message_id comes from different data sources (descriptor sets)
+#       The gnss1_nmea_talker_id will be applied to all NMEA messages from the GNSS1 descriptor set
+gnss1_nmea_talker_id: 1
+gnss1_nmea_gga_data_rate: 0
+gnss1_nmea_gll_data_rate: 0
+gnss1_nmea_gsv_data_rate: 0  # Note that this message_id will not use the gnss1_talker_id since the talker ID will come from the actual constellation the message originates from
+gnss1_nmea_rmc_data_rate: 0
+gnss1_nmea_vtg_data_rate: 0
+gnss1_nmea_hdt_data_rate: 0
+gnss1_nmea_zda_data_rate: 1
+
+# NMEA messages in the GNSS2 descriptor set
+# In order to enable a message, set nmea_message_config to true, and then change the 'data_rate' of the sentences you want to the desired rate in hertz
+#
+# Note: In order to publish, 'publish_nmea' must also be set to True
+#
+# Note: gnss2_nmea_talker_id can be any of the follwing numeric values:
+#         1 - Sentences will start with GN
+#         2 - Sentences will start with GP
+#         3 - Sentences will start with GA
+#         4 - Sentences will start with GL
+#       The purpose of the talker ID is to differentiate when the same message_id comes from different data sources (descriptor sets)
+#       The gnss2_nmea_talker_id will be applied to all NMEA messages from the GNSS2 descriptor set
+gnss2_nmea_talker_id: 2
+gnss2_nmea_gga_data_rate: 0
+gnss2_nmea_gll_data_rate: 0
+gnss2_nmea_gsv_data_rate: 0  # Note that this message_id will not use the gnss1_talker_id since the talker ID will come from the actual constellation the message originates from
+gnss2_nmea_rmc_data_rate: 0
+gnss2_nmea_vtg_data_rate: 0
+gnss2_nmea_hdt_data_rate: 0
+gnss2_nmea_zda_data_rate: 0
+
+# NMEA messages in the filter descriptor set
+# In order to enable a message, set nmea_message_config to true, and then change the 'data_rate' of the sentences you want to the desired rate in hertz
+#
+# Note: In order to publish, 'publish_nmea' must also be set to True
+#
+# Note: filter_nmea_talker_id can be any of the follwing numeric values:
+#         1 - Sentences will start with GN
+#         2 - Sentences will start with GP
+#         3 - Sentences will start with GA
+#         4 - Sentences will start with GL
+#       The purpose of the talker ID is to differentiate when the same message_id comes from different data sources (descriptor sets)
+#       The filter_nmea_talker_id will be applied to all NMEA messages from the filter descriptor set
+filter_nmea_talker_id: 3
+filter_nmea_gga_data_rate: 9
+filter_nmea_gll_data_rate: 0
+filter_nmea_rmc_data_rate: 0
+filter_nmea_hdt_data_rate: 0
+filter_nmea_prka_data_rate: 0  # Note that this message_id will not have any talker ID on it since it is proprietary and can only come from the filter descriptor set
+
+
+#  (GQ7/CV7 only) GPIO Configuration
+#    Notes:    For information on possible configurations and specific pin options
+#              refer to the MSCL MipNodeFeatures command, supportedGpioConfigurations.
+#
+#    GQ7 GPIO Pins =
+#    1 - GPIO1 (primary port pin 7) - Features = 0 - Unused, 1 - GPIO, 2 - PPS, 3 - Encoder
+#    2 - GPIO2 (primary port pin 9) - Features = 0 - Unused, 1 - GPIO, 2 - PPS, 3 - Encoder
+#    3 - GPIO3 (aux port pin 7)     - Features = 0 - Unused, 1 - GPIO, 2 - PPS, 3 - Encoder
+#    4 - GPIO4 (aux port pin 9)     - Features = 0 - Unused, 1 - GPIO, 2 - PPS, 3 - Encoder
+#
+#    CV7 GPIO Pins =
+#    1 - GPIO1 (pin 7)  - Features = 0 - Unused, 1 - GPIO, 2 - PPS
+#    2 - GPIO2 (pin 9)  - Features = 0 - Unused, 1 - GPIO, 2 - PPS
+#    3 - GPIO3 (pin 6)  - Features = 0 - Unused, 1 - GPIO, 2 - PPS
+#    4 - GPIO4 (pin 10) - Features = 0 - Unused, 1 - GPIO, 2 - PPS
+#
+#    Feature:
+#    0 - Unused   - Behaviors = 0 - unused
+#    1 - GPIO     - Behaviors = 0 - unused, 1 - input, 2 - output low, 3 - output high
+#    2 - PPS      - Behaviors = 0 - unused, 1 - input, 2 - output
+#    3 - Encoder  - Behaviors = 0 - unused, 1 - enc A, 2 - enc B
+#
+#    GPIO Behavior:
+#    0 - Unused
+#    1 - Input
+#    2 - Output Low
+#    3 - Output High
+#
+#    PPS Behavior:
+#    0 - Unused
+#    1 - Input
+#    2 - Output
+#
+#    Encoder Behavior:
+#    0 - Unused
+#    1 - Encoder A
+#    2 - Encoder B
+#
+#    Pin Mode Bitfield:
+#    1 - open drain
+#    2 - pulldown
+#    4 - pullup
+gpio_config    : True
+
+gpio1_feature  : 0
+gpio1_behavior : 0
+gpio1_pin_mode : 0
+
+gpio2_feature  : 0
+gpio2_behavior : 0
+gpio2_pin_mode : 0
+
+gpio3_feature  : 2  # 2 for pps
+gpio3_behavior : 2  # 2 for output
+gpio3_pin_mode : 0  # 0 not needed for PPS
+
+gpio4_feature  : 0
+gpio4_behavior : 0
+gpio4_pin_mode : 0
