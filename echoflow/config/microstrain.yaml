@@ -5,7 +5,7 @@ baudrate    : 115200
 set_baud : False
 
 use_device_timestamp : True
-imu_data_rate : 100
+#imu_data_rate : 100
 use_enu_frame : True
 filter_child_frame_id : "ins"
 
@@ -153,6 +153,9 @@ filter_nmea_hdt_data_rate: 0
 filter_nmea_prka_data_rate: 0  # Note that this message_id will not have any talker ID on it since it is proprietary and can only come from the filter descriptor set
 
 
+
+
+
 #  (GQ7/CV7 only) GPIO Configuration
 #    Notes:    For information on possible configurations and specific pin options
 #              refer to the MSCL MipNodeFeatures command, supportedGpioConfigurations.
@@ -212,3 +215,80 @@ gpio3_pin_mode : 0  # 0 not needed for PPS
 gpio4_feature  : 0
 gpio4_behavior : 0
 gpio4_pin_mode : 0
+
+
+
+# ******************************************************************
+# Publisher Settings
+# ******************************************************************
+#
+#  Note: If set to 0, the data will not be stremaed from the device, and the publisher will not be created
+
+# The speed at which the individual IMU publishers will publish at.
+imu_data_raw_rate         : 1    # Rate of imu/data_raw topic
+imu_data_rate             : 10   # Rate of imu/data topic
+imu_mag_data_rate         : 10    # Rate of imu/mag topic
+imu_pressure_data_rate    : 2    # Rate of imu/pressure topic
+imu_wheel_speed_data_rate : 0    # Rate of imu/wheel_Speed topic
+
+# The speed at which the individual GNSS1 publishers will publish at.
+gnss1_llh_position_data_rate   : 2  # Rate of gnss_1/llh_position topic
+gnss1_velocity_data_rate       : 2  # Rate of gnss_1/velocity topic
+gnss1_velocity_ecef_data_rate  : 0  # Rate of gnss_1/velocity_ecef topic
+                                    # Note: gnss1_odometry_earth_data_rate depends on the contents of this message.
+                                    #       If it is set to a higher value, this message will be published at that rate.
+gnss1_odometry_earth_data_rate : 0  # Rate of gnss_1/odometry_earth topic
+gnss1_time_data_rate           : 0  # Rate of gnss_1/time topic
+
+# The speed at which the individual GNSS2 publishers will publish at.
+gnss2_llh_position_data_rate   : 2  # Rate of gnss_2/llh_position topic
+gnss2_velocity_data_rate       : 2  # Rate of gnss_2/velocity topic
+gnss2_velocity_ecef_data_rate  : 0  # Rate of gnss_2/velocity_ecef topic
+                                    # Note: gnss2_odometry_earth_data_rate depends on the contents of this message.
+                                    #       If it is set to a higher value, this message will be published at that rate.
+gnss2_odometry_earth_data_rate : 0  # Rate of gnss_2/odometry_earth topic
+gnss2_time_data_rate           : 0  # Rate of gnss_2/time topic
+
+# The speed at which the individual Filter publishers will publish at.
+filter_human_readable_status_data_rate : 1  # Rate of ekf/status
+filter_imu_data_rate                   : 25  # Rate of ekf/imu/data topic
+                                            # Note: Both filter_odometry_earth_data_rate and filter_odometry_map_data_rate depend on the contents of this message.
+                                            #       If either are set to a higher value, this message will be published at that rate.
+filter_llh_position_data_rate          : 25  # Rate of ekf/llh_position topic
+filter_velocity_data_rate              : 25  # Rate of ekf/velocity topic
+                                            # Note: filter_odometry_map_data_rate depends on the contents of this message.
+                                            #       If either are set to a higher value, this message will be published at that rate.
+filter_velocity_ecef_data_rate         : 0  # Rate of ekf/velocity_ecef topic
+                                            # Note: filter_odometry_earth_data_rate depends on the contents of this message.
+                                            #       If either are set to a higher value, this message will be published at that rate.
+filter_odometry_earth_data_rate        : 25 # Rate of ekf/odometry_earth topic
+filter_odometry_map_data_rate          : 0  # Rate of ekf/odometry_map topic
+filter_dual_antenna_heading_data_rate  : 0  # Rate of ekf/dual_antenna_heading topic
+                                            # Note: mip_filter_gnss_position_aiding_status_data_rate depends on the contents of this message.
+                                            #       If either are set to a higher value, this message will be published at that rate.
+
+# The speed at which the individual MIP publishers will publish at.
+mip_sensor_overrange_status_data_rate       : 0  # Rate of mip/sensor/overrange_status topic
+mip_sensor_temperature_statistics_data_rate : 0  # Rate of mip/sensor/temperature_statistics topic
+
+mip_gnss1_fix_info_data_rate           : 0  # Rate of mip/gnss_1/fix_info topic
+mip_gnss1_sbas_info_data_rate          : 0  # Rate of mip/gnss_1/sbas_info topic
+mip_gnss1_rf_error_detection_data_rate : 0  # Rate of mip/gnss_1/rf_error_detection
+
+mip_gnss2_fix_info_data_rate           : 0  # Rate of mip/gnss_1/fix_info topic
+mip_gnss2_sbas_info_data_rate          : 0  # Rate of mip/gnss_2/sbas_info topic
+mip_gnss2_rf_error_detection_data_rate : 0  # Rate of mip/gnss_2/rf_error_detection
+
+mip_filter_status_data_rate                          : 0  # Rate of mip/filter/status topic
+mip_filter_gnss_position_aiding_status_data_rate     : 0  # Rate of mip/filter/gnss_aiding_status
+                                                          # Note: filter_llh_position_data_rate depends on the contents of this message.
+                                                          #       If it is set to a higher value, this message will be published at that rate.
+mip_filter_multi_antenna_offset_correction_data_rate : 0  # Rate of mip/filter/multi_antenna_offset_correction
+                                                          # Note: This message will also affect the frequency that the transform between frame_id and gnss_1/2_frame_id are published
+mip_filter_gnss_dual_antenna_status_data_rate        : 0  # Rate of mip/filter/gnss_dual_antenna_status
+                                                          # Note: filter_dual_antenna_heading_data_rate depends on the contents of this message.
+                                                          #       If either are set to a higher value, this message will be published at that rate.
+mip_filter_aiding_measurement_summary_data_rate      : 0  # Rate of mip/filter/aiding_measurement_summary topic
+
+mip_system_built_in_test_data_rate    : 0  # Rate of mip/system/built_in_test topic
+mip_system_time_sync_status_data_rate : 0  # Rate of mip/system/time_sync_status topic

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<launch>
+  <!-- Base arguments -->
+  <arg name="vessel_ns" default="aura"/>
+
+  <!-- Static transform broadcaster arguments -->
+  <arg name="radar_x" default="1.7272" description="X translation from base_link to radar"/>
+  <arg name="radar_y" default="0.6604" description="Y translation from base_link to radar"/>
+  <arg name="radar_z" default="1.397" description="Z translation from base_link to radar"/>
+  <arg name="radar_roll" default="0.0" description="Roll rotation from base_link to radar (radians)"/>
+  <arg name="radar_pitch" default="0.0" description="Pitch rotation from base_link to radar (radians)"/>
+  <arg name="radar_yaw" default="0.0" description="Yaw rotation from base_link to radar (radians)"/>
+
+  <!-- Include the microstrain launch file -->
+  <include file="$(find-pkg-share echoflow)/launch/microstrain.launch.py">
+    <arg name="vessel_ns" value="$(var vessel_ns)"/>
+  </include>
+
+  <!-- MRU transform node -->
+  <node pkg="mru_transform" exec="mru_transform_node" name="mru_transform" output="screen" namespace="$(var vessel_ns)/nav">
+    <param from="$(find-pkg-share echoflow)/config/mru_transform.yaml"/>
+    <param name="base_frame" value="$(var vessel_ns)/base_link"/>
+  </node>
+
+  <!-- Static transform broadcaster for radar -->
+  <node pkg="tf2_ros" exec="static_transform_publisher" name="radar_broadcaster" args="$(var radar_x) $(var radar_y) $(var radar_z) $(var radar_yaw) $(var radar_pitch) $(var radar_roll) $(var vessel_ns)/base_link $(var vessel_ns)/radar" output="screen"/>
+</launch>
