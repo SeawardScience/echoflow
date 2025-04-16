@@ -98,7 +98,7 @@ frame_id: "imu_link"
 
 # Frame IDs determining the transforms published by this node to aid in navigation. See https://www.ros.org/reps/rep-0105.html
 # Note: If use_enu_frame is false, these frames (with the exception of earth_frame_id) will automatically have "_ned" appended to them.
-mount_frame_id     : "aura/base_link"  # Frame ID that the device is mounted on.
+mount_frame_id     : "base_link"  # Frame ID that the device is mounted on.
 map_frame_id       : "map"
 earth_frame_id     : "earth"
 gnss1_frame_id     : "gnss_1_antenna_link"
@@ -250,7 +250,7 @@ filter_enable_vertical_gyro_constraint : False
 # (GQ7 only) GNSS Antenna Calibration Control
 # When enabled, the filter will enable lever arm error tracking, up to the maximum offset specified in meters.
 # This allows the filter to compensate for antenna offsets when they are incorrect.
-filter_enable_gnss_antenna_cal     : True
+filter_enable_gnss_antennaf_cal     : True
 filter_gnss_antenna_cal_max_offset : 0.1
 
 # (GQ7/CV7 only) PPS Source

@@ -16,6 +16,12 @@
     <arg name="vessel_ns" value="$(var vessel_ns)"/>
   </include>
 
+  <!-- Include the ntrip launch file -->
+  <include file="$(find-pkg-share echoflow)/launch/ntrip.launch.py">
+    <arg name="namespace" value="$(var vessel_ns)/nav/sensors/mru"/>
+    <arg name="fix_topic_in" value="$(var vessel_ns)/nav/sensors/mru/gnss_1/llh_position"/>
+  </include>
+
   <!-- MRU transform node -->
   <node pkg="mru_transform" exec="mru_transform_node" name="mru_transform" output="screen" namespace="$(var vessel_ns)/nav">
     <param from="$(find-pkg-share echoflow)/config/mru_transform.yaml"/>

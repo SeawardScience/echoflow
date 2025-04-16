@@ -67,15 +67,22 @@ filter_relative_position_source : 1
 filter_relative_position_ref    : [27.759818, -82.631295, 0]
 
 
-# (GQ7 Only) Enable RTK dongle interface
-# Note: Enabling this will cause the node to publish on one of two topics depending
-#       on the version of the RTK dongle connected to the GQ7
-# Note: This is also required to be True in order to publish NMEA from the aux port
-rtk_dongle_enable : True
+# ******************************************************************
+# RTK Settings (only applicable for devices with RTK support (e.g. GQ7) )
+# ******************************************************************
 
-# (GQ7 Only) Allow the user to send RTCM messages to this node, and stream those messages to the GQ7
-subscribe_rtcm : True
-rtcm_topic     : "/ntrip_client/rtcm"
+# (GQ7 Only) Enable RTK dongle interface. This is required when using a 3DM-RTK
+# Note: Enabling this will cause the node to publish mip/gnss_corrections/rtk_corrections_status
+rtk_dongle_enable : False
+
+# (GQ7 Only) Allow the node to receive RTCM messages on the /rtcm topic and publish NMEA sentences from the aux port on /nmea.
+#            It is suggested to use https://github.com/LORD-MicroStrain/ntrip_client with this interface
+# Note: This will require the aux_port configuration to be valid and pointing to a valid aux port
+ntrip_interface_enable : True
+
+
+
+
 
 publish_nmea   : True
 
