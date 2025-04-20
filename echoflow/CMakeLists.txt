@@ -5,18 +5,20 @@ cmake_minimum_required(VERSION 3.8)
 ################################
 
 set(ROS_DEPENDS
-    ament_cmake
-    rclcpp
-    std_msgs
-  )
+  ament_cmake
+  grid_map_core
+  grid_map_ros
+  grid_map_msgs
+  rclcpp
+  std_msgs
+)
 
 set(EXTERNAL_DEPENDS
-
-  )
+  Eigen3
+)
 
 set(EXTERNAL_DEPENDS_LIB
-
-  )
+)
 
 
 get_filename_component(PACKAGE_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME)
