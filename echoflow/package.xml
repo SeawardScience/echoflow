@@ -12,7 +12,9 @@
   <depend>grid_map_core</depend>
   <depend>grid_map_ros</depend>
   <depend>grid_map_msgs</depend>
+  <depend>marine_sensor_msgs</depend>
   <depend>rclcpp</depend>
+  <depend>sensor_msgs</depend>
   <depend>std_msgs</depend>
 
   <depend> template_pkg_interfaces </depend>
