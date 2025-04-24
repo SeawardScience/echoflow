@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<launch>
+
+  <include file="$(find-pkg-share marine_radar_tracker)/launch/marine_radar_to_pointcloud.launch.xml" />
+
+  <node pkg="echoflow" exec="echoflow_node" name="echoflow">
+    <param from="$(find-pkg-share echoflow)/config/radar_grid_map.yaml" />
+  </node>
+
+  <node pkg="grid_map_visualization" exec="grid_map_visualization" name="grid_map_visualization" output="screen" />
+
+  <node pkg="rviz2" exec="rviz2" name="rviz2" output="screen" />
+
+</launch>

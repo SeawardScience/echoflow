@@ -1,6 +1,9 @@
 /**:
   ros__parameters:
     map_parameters:
-      length: 10.0
-      resolution: 2.0
-      width: 10.0
+      initial_position_x: 0.0
+      initial_position_y: 0.0
+      length: 100.0
+      resolution: 1.0
+      width: 100.0
+
