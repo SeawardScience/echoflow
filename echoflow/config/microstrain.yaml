@@ -245,7 +245,7 @@ gnss1_velocity_ecef_data_rate  : 0  # Rate of gnss_1/velocity_ecef topic
                                     # Note: gnss1_odometry_earth_data_rate depends on the contents of this message.
                                     #       If it is set to a higher value, this message will be published at that rate.
 gnss1_odometry_earth_data_rate : 0  # Rate of gnss_1/odometry_earth topic
-gnss1_time_data_rate           : 0  # Rate of gnss_1/time topic
+gnss1_time_data_rate           : 2  # Rate of gnss_1/time topic
 
 # The speed at which the individual GNSS2 publishers will publish at.
 gnss2_llh_position_data_rate   : 2  # Rate of gnss_2/llh_position topic
@@ -254,7 +254,7 @@ gnss2_velocity_ecef_data_rate  : 0  # Rate of gnss_2/velocity_ecef topic
                                     # Note: gnss2_odometry_earth_data_rate depends on the contents of this message.
                                     #       If it is set to a higher value, this message will be published at that rate.
 gnss2_odometry_earth_data_rate : 0  # Rate of gnss_2/odometry_earth topic
-gnss2_time_data_rate           : 0  # Rate of gnss_2/time topic
+gnss2_time_data_rate           : 2  # Rate of gnss_2/time topic
 
 # The speed at which the individual Filter publishers will publish at.
 filter_human_readable_status_data_rate : 1  # Rate of ekf/status
