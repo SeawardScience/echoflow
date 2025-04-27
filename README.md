@@ -1,4 +1,46 @@
-# ROS2 Template C++ Package
+# echoflow Package
+
+TODO
+
+
+## Nodes 
+
+### radar_grid_map Node 
+
+TODO
+
+#### Publishers:
+
+| Published Topic              | Data Type                                         |
+|------------------------------|---------------------------------------------------|
+| `radar_grid_map`             | `grid_map_msgs::msg::GridMap`                     |
+
+
+#### Subscriptions:
+
+| Subscribed Topic                    | Data Type                                           | 
+|-------------------------------------|-----------------------------------------------------|
+| `pose`                              | `sensor_msgs::msg::NavSatFix`                       |
+| `data`                              | `marine_sensor_msgs::msg::RadarSector`              |
+
+
+#### Parameters:
+
+| Parameter                                      | Data Type                  | Default Value |
+|------------------------------------------------|----------------------------|---------------|
+| `map_parameters.frameId`                       | `std::string`              | `"map"`       |
+| `map_parameters.length`                        | `float`                    |               |
+| `map_parameters.width`                         | `float`                    |               |
+| `map_parameters.resolution`                    | `float`                    |               |
+| `publisher_parameters.timeInterval`            | `float`                    |               |
+
+
+
+
+
+
+
+
 ![alt text](docs/media/template_package.png)
 This package is was designed as a starting point for building a ROS2 C++ package with:
 - automatically configuring cmake file
