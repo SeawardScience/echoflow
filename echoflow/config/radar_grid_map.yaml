@@ -1,9 +1,11 @@
 /**:
   ros__parameters:
     map_parameters:
-      initial_position_x: 2500.0
-      initial_position_y: 2500.0
+      frameId: "map"
       length: 5000.0
       resolution: 1.0
       width: 5000.0
+    publisher_parameters:
+      timeInterval: 1.0
+
 
