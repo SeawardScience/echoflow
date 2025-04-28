@@ -34,6 +34,8 @@ RadarGridMapNode::RadarGridMapNode()
     grid_map_publisher_ = this->create_publisher<grid_map_msgs::msg::GridMap>(
                           "radar_grid_map", rclcpp::QoS(1).transient_local());
 
+    costmap_publisher_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>("costmap", 10);
+
     radar_sector_subscriber_ = this->create_subscription<marine_sensor_msgs::msg::RadarSector>(
                                "data", 50, std::bind(&RadarGridMapNode::radarSectorCallback, this, _1));
 
@@ -52,7 +54,7 @@ RadarGridMapNode::RadarGridMapNode()
         map_ptr_->getSize()(0), map_ptr_->getSize()(1));
 
 
-    scan_timer_ = this->create_wall_timer(std::chrono::seconds(10),
+    scan_timer_ = this->create_wall_timer(std::chrono::milliseconds(50),
                     std::bind(&RadarGridMapNode::scanTimerCallback, this));
                       
 
@@ -64,14 +66,29 @@ void RadarGridMapNode::waitForTopics() {
 
 void RadarGridMapNode::scanTimerCallback()
 {
-  grid_map_publisher_->publish(grid_map::GridMapRosConverter::toMessage(*map_ptr_));
+  //grid_map_publisher_->publish(grid_map::GridMapRosConverter::toMessage(*map_ptr_));
+  publishCostmap();
 }
+
+void RadarGridMapNode::publishCostmap()
+{
+  if (!map_ptr_)
+    return;
+
+  nav_msgs::msg::OccupancyGrid occupancyGrid;
+  grid_map::GridMapRosConverter::toOccupancyGrid(*map_ptr_, "elevation", 0.0, 1.0, occupancyGrid);
+  costmap_publisher_->publish(occupancyGrid);
+
+}
+
 
 void RadarGridMapNode::radarSectorCallback(const marine_sensor_msgs::msg::RadarSector::SharedPtr msg)
 {
   addToQueue(msg);
   procesQueue();
 }
+
+
 
 void RadarGridMapNode::addToQueue(const marine_sensor_msgs::msg::RadarSector::SharedPtr msg)
 {

@@ -9,6 +9,7 @@ set(ROS_DEPENDS
   grid_map_core
   grid_map_ros
   grid_map_msgs
+  grid_map_costmap_2d
   marine_sensor_msgs
   rclcpp
   sensor_msgs

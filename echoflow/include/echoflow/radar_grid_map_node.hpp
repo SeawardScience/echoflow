@@ -11,6 +11,8 @@
 #include <tf2_ros/buffer.h>
 #include <geometry_msgs/msg/transform_stamped.hpp>
 #include <deque>
+#include <grid_map_ros/GridMapRosConverter.hpp>
+#include <nav_msgs/msg/occupancy_grid.hpp>
 
 
 
@@ -74,6 +76,8 @@ protected:
      */
     void scanTimerCallback();
 
+    void publishCostmap();
+
     /**
      * @brief TODO
      * 
@@ -90,6 +94,7 @@ protected:
     void recenterMap(const grid_map::Position& new_center);
 
     rclcpp::Publisher<grid_map_msgs::msg::GridMap>::SharedPtr grid_map_publisher_;
+    rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr costmap_publisher_;
     rclcpp::Subscription<marine_sensor_msgs::msg::RadarSector>::SharedPtr radar_sector_subscriber_;
     rclcpp::TimerBase::SharedPtr scan_timer_;
 
