@@ -1,5 +1,7 @@
 #include "radar_grid_map_node.hpp"
 
+#include <radar_grid_map_node.hpp>
+
 NS_HEAD
 
 template<typename T>
@@ -50,8 +52,8 @@ RadarGridMapNode::RadarGridMapNode()
         map_ptr_->getSize()(0), map_ptr_->getSize()(1));
 
 
-    // scan_timer_ = this->create_wall_timer(std::chrono::seconds(scan_time_),
-    //                 std::bind(&RadarGridMapNode::scanTimerCallback, this));
+    scan_timer_ = this->create_wall_timer(std::chrono::seconds(10),
+                    std::bind(&RadarGridMapNode::scanTimerCallback, this));
                       
 
 }
@@ -62,7 +64,7 @@ void RadarGridMapNode::waitForTopics() {
 
 void RadarGridMapNode::scanTimerCallback()
 {
-
+  grid_map_publisher_->publish(grid_map::GridMapRosConverter::toMessage(*map_ptr_));
 }
 
 void RadarGridMapNode::radarSectorCallback(const marine_sensor_msgs::msg::RadarSector::SharedPtr msg)
@@ -135,6 +137,26 @@ void RadarGridMapNode::procesQueue()
 }
 
 
+void RadarGridMapNode::recenterMap(const grid_map::Position& new_center)
+{
+  grid_map::Position old_center = map_ptr_->getPosition();
+  double distance = (new_center - old_center).norm();
+  double move_threshold = 10.0 * parameters_.map.resolution; // 10x cell size
+
+  if (distance > move_threshold)
+  {
+    map_ptr_->move(new_center);
+    RCLCPP_INFO(this->get_logger(),
+                "Recentered map by %.2f meters (threshold %.2f meters).",
+                distance, move_threshold);
+  }
+  else
+  {
+    RCLCPP_DEBUG(this->get_logger(),
+                 "Map recenter skipped. Distance %.2f meters < threshold %.2f meters.",
+                 distance, move_threshold);
+  }
+}
 
 
 void RadarGridMapNode::processMsg(const marine_sensor_msgs::msg::RadarSector::SharedPtr msg)
@@ -161,6 +183,45 @@ void RadarGridMapNode::processMsg(const marine_sensor_msgs::msg::RadarSector::Sh
               msg->header.stamp.nanosec,
               radar_sector_queue_.size());
 
+  // Move map if needed
+  double x = transform.transform.translation.x;
+  double y = transform.transform.translation.y;
+  grid_map::Position new_center(x, y);
+  recenterMap(new_center);
+
+  double yaw, roll, ptich;
+  {
+    tf2::Quaternion q(
+        transform.transform.rotation.x,
+        transform.transform.rotation.y,
+        transform.transform.rotation.z,
+        transform.transform.rotation.w);
+    tf2::Matrix3x3(q).getRPY(roll, ptich, yaw);
+  }
+
+  for (size_t i = 0; i < msg->intensities.size(); i++) {
+    double angle = msg->angle_start + i * msg->angle_increment + yaw;  // << corrected!
+    double c = std::cos(angle);
+    double s = std::sin(angle);
+    float range_increment = (msg->range_max - msg->range_min) / float(msg->intensities[i].echoes.size());
+
+    for (size_t j = 0; j < msg->intensities[i].echoes.size(); j++) {
+      float echo_intensity = msg->intensities[i].echoes[j];
+      if (echo_intensity <= 0.0f)
+        continue; // skip empty returns
+
+      float range = msg->range_min + j * range_increment;
+
+      double map_x = range * c + transform.transform.translation.x;
+      double map_y = range * s + transform.transform.translation.y;
+
+      grid_map::Position pos(map_x, map_y);
+
+      if (map_ptr_->isInside(pos)) {
+        map_ptr_->atPosition("elevation", pos) = echo_intensity;
+      }
+    }
+  }
 
 }
 

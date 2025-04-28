@@ -42,7 +42,7 @@ public:
         std::string frame_id = "map";
         float length = 4000.0;
         float width = 4000.0;
-        float resolution = 1.0;
+        float resolution = 10.0;
         float pub_interval = 1.0;
       }map;
       int max_queue_size = 100;
@@ -86,6 +86,8 @@ protected:
     void procesQueue();
 
     void processMsg(const marine_sensor_msgs::msg::RadarSector::SharedPtr msg);
+
+    void recenterMap(const grid_map::Position& new_center);
 
     rclcpp::Publisher<grid_map_msgs::msg::GridMap>::SharedPtr grid_map_publisher_;
     rclcpp::Subscription<marine_sensor_msgs::msg::RadarSector>::SharedPtr radar_sector_subscriber_;
