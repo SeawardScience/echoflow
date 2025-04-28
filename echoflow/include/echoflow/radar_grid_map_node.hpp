@@ -38,12 +38,13 @@ public:
 
     struct Parameters
     {
-        std::string map_frame_id_;
-        float map_length_;
-        float map_width_;
-        float map_resolution_;
-        int64_t map_publish_time_interval_;
-
+      struct{
+        std::string frame_id = "map";
+        float length = 4000.0;
+        float width = 4000.0;
+        float resolution = 1.0;
+        float pub_interval = 1.0;
+      }map;
         /**
          * @brief Declares all parameters and initializes stored variables within Parameters struct.
          * 
@@ -92,13 +93,14 @@ protected:
     rclcpp::TimerBase::SharedPtr scan_timer_;
 
 private:
-    RadarGridMap radar_map_;
-    rclcpp::Clock clock_;
+    //RadarGridMap radar_map_;
+  std::shared_ptr<grid_map::GridMap> map_ptr_;
+  rclcpp::Clock clock_;
 
-    // 
-    bool pose_initialized_ = false;
-    bool timer_interval_initialized_ = false;
-    int64_t scan_time_;
+  //
+  bool pose_initialized_ = false;
+  bool timer_interval_initialized_ = false;
+  int64_t scan_time_;
 
 };
 
