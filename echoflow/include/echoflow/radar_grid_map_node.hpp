@@ -1,20 +1,20 @@
 #pragma once
 #include "package_defs.hpp"
-#include <chrono>
-#include <cmath>
-#include <limits>
 #include <memory>
 #include <string>
-#include <utility>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/wait_for_message.hpp>
 #include <grid_map_ros/grid_map_ros.hpp>
 #include <grid_map_msgs/msg/grid_map.hpp>
 #include <marine_sensor_msgs/msg/radar_sector.hpp>
-#include <sensor_msgs/msg/nav_sat_fix.hpp>
-#include <sensor_msgs/msg/point_cloud2.hpp>
-#include <sensor_msgs/point_cloud2_iterator.hpp>
-#include "radar_grid_map.hpp"
+#include <tf2_ros/transform_listener.h>
+#include <tf2_ros/buffer.h>
+#include <geometry_msgs/msg/transform_stamped.hpp>
+#include <deque>
+
+
+
+
 
 using std::placeholders::_1;
 using namespace std::chrono_literals;
@@ -45,6 +45,7 @@ public:
         float resolution = 1.0;
         float pub_interval = 1.0;
       }map;
+      int max_queue_size = 100;
         /**
          * @brief Declares all parameters and initializes stored variables within Parameters struct.
          * 
@@ -78,17 +79,15 @@ protected:
      * 
      * @param msg 
      */
-    void poseCallback(const sensor_msgs::msg::NavSatFix::SharedPtr msg);
-
-    /**
-     * @brief TODO
-     * 
-     * @param msg 
-     */
     void radarSectorCallback(const marine_sensor_msgs::msg::RadarSector::SharedPtr msg);
 
+    void addToQueue(const marine_sensor_msgs::msg::RadarSector::SharedPtr msg);
+
+    void procesQueue();
+
+    void processMsg(const marine_sensor_msgs::msg::RadarSector::SharedPtr msg);
+
     rclcpp::Publisher<grid_map_msgs::msg::GridMap>::SharedPtr grid_map_publisher_;
-    rclcpp::Subscription<sensor_msgs::msg::NavSatFix>::SharedPtr position_subscriber_;
     rclcpp::Subscription<marine_sensor_msgs::msg::RadarSector>::SharedPtr radar_sector_subscriber_;
     rclcpp::TimerBase::SharedPtr scan_timer_;
 
@@ -101,6 +100,13 @@ private:
   bool pose_initialized_ = false;
   bool timer_interval_initialized_ = false;
   int64_t scan_time_;
+  // TF Buffer and Listener
+  std::shared_ptr<tf2_ros::Buffer> m_tf_buffer;
+  std::shared_ptr<tf2_ros::TransformListener> m_tf_listener;
+  std::deque<marine_sensor_msgs::msg::RadarSector::SharedPtr> radar_sector_queue_;
+  size_t drop_counter = 0; // how many we've dropped since last warning
+
+
 
 };
 
