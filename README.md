@@ -56,7 +56,7 @@ Make sure appropriate TF data (e.g., `map -> base_link`) and radar sector topics
 
 ## Nodes
 
-### `radar_grid_map` Node
+### radar_grid_map Node
 
 This node processes incoming marine radar sectors and builds a continuously updating 2D map.
 
@@ -141,21 +141,12 @@ This project is licensed under the LICENSE provided in this repository.
 
 ---
 
-## Public Repository Checklist
+## Credits
 
-✅ README.md complete  
-✅ CONTRIBUTING.md present  
-✅ LICENSE included  
-✅ Semantic Versioning followed  
-✅ Initial tagged release planned (`v0.1.0`)  
-✅ All code in master is deployable  
+Developed by [Seaward Science](https://seaward.science/) for University of New Hampshire Center for Coastal and Ocean Mapping [CCOM](https://www.ccom.unh.edu/)
 
----
+### Authors
+- Dr. Kristohper Krasnosky (lead software engineer)
+- Antonella Willby (software developer)
 
-# Notes
 
-This package was built on top of a custom ROS2 C++ package template emphasizing:
-- Automatic CMake configuration
-- Pre-defined namespaces and file structures
-- Stylish Doxygen output
-- GitHub Actions support for auto-building and deploying documentation

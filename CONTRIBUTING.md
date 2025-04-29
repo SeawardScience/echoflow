@@ -2,27 +2,42 @@
 
 ## Branching Strategy
 
-This repository follows the GitFlow Workflow.  If you are not familiar, please review [this article](https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow).
+This repository follows the [GitFlow Workflow](https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow).  
+If you're not familiar with it, please take a moment to review the basics.
 
-## Think Before you Fork
+## Think Before You Fork
 
-Before you create a fork, it is advisable to create an issue on the github page.  That way, the maintainers can let you know if that feature or bugfix is already under development.
+Before creating a fork, please open an issue on the GitHub page.  
+That gives maintainers an opportunity to:
+- Confirm the bug or feature isn’t already in development
+- Share helpful context or existing work
+- Ensure alignment on goals and design
 
-Please consult the maintainers before you create a fork that will change existing behaviors.
+Avoid forking for changes that alter existing behavior without prior discussion.
 
 ## Fixing a Bug in Production Code
 
-To fix a bug make a create a branch from `master`. This branch should be labeled `hotfix/x.y.z-description` where x.y.z follow the [semantic versioning convention](https://semver.org/).
+To fix a bug, create a branch from `master`.  
+This branch should be named using the format: `hotfix/x.y.z-description`
 
-When the bugfix is complete, make a pull request back to `master` and the maintainers will review and merge it.  
+Where `x.y.z` follows [Semantic Versioning](https://semver.org/).
+
+Once complete, submit a pull request (PR) to `master`.  
+A maintainer will review and merge the change.
 
 ## Adding a Feature
 
-If you wish to add a new feature, please make a fork from the `devel` branch.
+To add a new feature, branch from `devel`.
 
-Once your modification is completed, make a pull request back to the `devel` branch.  If it is accepted, your modifications will be available in the `master` branch (default branch) after the next release.
+Once your work is complete and tested, open a PR to `devel`.  
+If accepted, your contribution will be included in the next stable release from `master`.
 
 ## Additional Guidelines
 
-Please review and adhere to the style guidelines our [Development Conventions]().   
+- Include or update documentation (Doxygen/README/etc.) as appropriate
+- Keep commits focused and meaningful (squash if needed before PR)
+- Ensure `colcon build` passes with no errors or warnings
 
+---
+
+Thank you for helping make this project better! 🛰️
