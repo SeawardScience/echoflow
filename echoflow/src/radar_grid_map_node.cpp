@@ -24,6 +24,7 @@ void RadarGridMapNode::Parameters::init(rclcpp::Node *node)
   setupParam(&map.resolution, node, "map.resolution", map.resolution);
   setupParam(&map.pub_interval, node, "map.pub_interval", map.pub_interval); // TODO default should be scan_time
   setupParam(&max_queue_size, node, "max_queue_size", max_queue_size);
+  setupParam(&filter.near_clutter_range, node, "filter.near_clutter_range,", filter.near_clutter_range);
 }
 
 RadarGridMapNode::RadarGridMapNode()
@@ -44,7 +45,7 @@ RadarGridMapNode::RadarGridMapNode()
     m_tf_listener = std::make_shared<tf2_ros::TransformListener>(*m_tf_buffer);
 
 
-    map_ptr_.reset(new grid_map::GridMap({"elevation"}));
+    map_ptr_.reset(new grid_map::GridMap({"intensity"}));
     map_ptr_->setFrameId(parameters_.map.frame_id);
     map_ptr_->setGeometry(grid_map::Length(parameters_.map.length, parameters_.map.width), parameters_.map.resolution);
     RCLCPP_INFO(
@@ -54,8 +55,13 @@ RadarGridMapNode::RadarGridMapNode()
         map_ptr_->getSize()(0), map_ptr_->getSize()(1));
 
 
-    scan_timer_ = this->create_wall_timer(std::chrono::milliseconds(50),
-                    std::bind(&RadarGridMapNode::scanTimerCallback, this));
+    costmap_timer_ = this->create_wall_timer(std::chrono::milliseconds(int(parameters_.map.pub_interval*1000)),
+                           std::bind(&RadarGridMapNode::publishCostmap, this));
+
+    queue_timer_ = this->create_wall_timer(
+        std::chrono::milliseconds(10),
+        std::bind(&RadarGridMapNode::procesQueue, this));
+
                       
 
 }
@@ -64,19 +70,13 @@ void RadarGridMapNode::waitForTopics() {
 
 }
 
-void RadarGridMapNode::scanTimerCallback()
-{
-  //grid_map_publisher_->publish(grid_map::GridMapRosConverter::toMessage(*map_ptr_));
-  publishCostmap();
-}
-
 void RadarGridMapNode::publishCostmap()
 {
   if (!map_ptr_)
     return;
 
   nav_msgs::msg::OccupancyGrid occupancyGrid;
-  grid_map::GridMapRosConverter::toOccupancyGrid(*map_ptr_, "elevation", 0.0, 1.0, occupancyGrid);
+  grid_map::GridMapRosConverter::toOccupancyGrid(*map_ptr_, "intensity", 0.0, 1.0, occupancyGrid);
   costmap_publisher_->publish(occupancyGrid);
 
 }
@@ -85,14 +85,36 @@ void RadarGridMapNode::publishCostmap()
 void RadarGridMapNode::radarSectorCallback(const marine_sensor_msgs::msg::RadarSector::SharedPtr msg)
 {
   addToQueue(msg);
-  procesQueue();
 }
-
 
 
 void RadarGridMapNode::addToQueue(const marine_sensor_msgs::msg::RadarSector::SharedPtr msg)
 {
-  size_t MAX_QUEUE_SIZE = parameters_.max_queue_size; // Max allowed in queue
+  size_t MAX_QUEUE_SIZE = parameters_.max_queue_size;
+
+  if (!tf_ready_)
+  {
+    if (m_tf_buffer->canTransform(
+            parameters_.map.frame_id,
+            msg->header.frame_id,
+            rclcpp::Time(msg->header.stamp),
+            tf2::durationFromSec(0.01)))
+    {
+      tf_ready_ = true; // ✅ TFs are now ready
+      RCLCPP_INFO(this->get_logger(), "TFs are now available. Radar messages will be buffered normally.");
+    }
+    else
+    {
+      // ❌ Still no TF — drop this message
+      RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 5000,
+                           "Dropping radar sector at time %u.%u: TF not yet available from %s to %s.",
+                           msg->header.stamp.sec, msg->header.stamp.nanosec,
+                           msg->header.frame_id.c_str(), parameters_.map.frame_id.c_str());
+      return;
+    }
+  }
+
+  // ✅ If we get here, TFs are ready!
 
   if (radar_sector_queue_.size() >= MAX_QUEUE_SIZE)
   {
@@ -102,18 +124,16 @@ void RadarGridMapNode::addToQueue(const marine_sensor_msgs::msg::RadarSector::Sh
 
   radar_sector_queue_.push_back(msg);
 
-  // Only occasionally warn if we've dropped
   if (drop_counter > 0)
   {
     RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 5000,
                          "Radar sector queue full (>%zu). Dropped %zu message(s).",
                          MAX_QUEUE_SIZE, drop_counter);
 
-    drop_counter = 0; // Reset counter after warning
+    drop_counter = 0;
   }
-
-
 }
+
 
 void RadarGridMapNode::procesQueue()
 {
@@ -163,7 +183,7 @@ void RadarGridMapNode::recenterMap(const grid_map::Position& new_center)
   if (distance > move_threshold)
   {
     map_ptr_->move(new_center);
-    RCLCPP_INFO(this->get_logger(),
+    RCLCPP_DEBUG(this->get_logger(),
                 "Recentered map by %.2f meters (threshold %.2f meters).",
                 distance, move_threshold);
   }
@@ -194,7 +214,7 @@ void RadarGridMapNode::processMsg(const marine_sensor_msgs::msg::RadarSector::Sh
     return;
   }
 
-  RCLCPP_INFO(this->get_logger(),
+  RCLCPP_DEBUG(this->get_logger(),
               "Processing radar sector at time %u.%u. Queue size: %zu",
               msg->header.stamp.sec,
               msg->header.stamp.nanosec,
@@ -206,6 +226,8 @@ void RadarGridMapNode::processMsg(const marine_sensor_msgs::msg::RadarSector::Sh
   grid_map::Position new_center(x, y);
   recenterMap(new_center);
 
+
+
   double yaw, roll, ptich;
   {
     tf2::Quaternion q(
@@ -215,6 +237,28 @@ void RadarGridMapNode::processMsg(const marine_sensor_msgs::msg::RadarSector::Sh
         transform.transform.rotation.w);
     tf2::Matrix3x3(q).getRPY(roll, ptich, yaw);
   }
+
+  // Clear the area covered by this radar sector
+  for (size_t i = 0; i < msg->intensities.size(); i++) {
+    double angle = msg->angle_start + i * msg->angle_increment + yaw;
+    double c = std::cos(angle);
+    double s = std::sin(angle);
+    float range_increment = (msg->range_max - msg->range_min) / float(msg->intensities[i].echoes.size());
+
+    for (size_t j = 0; j < msg->intensities[i].echoes.size(); j++) {
+      float range = msg->range_min + j * range_increment;
+
+      double map_x = range * c + transform.transform.translation.x;
+      double map_y = range * s + transform.transform.translation.y;
+
+      grid_map::Position pos(map_x, map_y);
+
+      if (map_ptr_->isInside(pos)) {
+        map_ptr_->atPosition("intensity", pos) = NAN; // ✅ Clear the cell
+      }
+    }
+  }
+
 
   for (size_t i = 0; i < msg->intensities.size(); i++) {
     double angle = msg->angle_start + i * msg->angle_increment + yaw;  // << corrected!
@@ -228,6 +272,8 @@ void RadarGridMapNode::processMsg(const marine_sensor_msgs::msg::RadarSector::Sh
         continue; // skip empty returns
 
       float range = msg->range_min + j * range_increment;
+      if (range <= parameters_.filter.near_clutter_range)
+        continue;
 
       double map_x = range * c + transform.transform.translation.x;
       double map_y = range * s + transform.transform.translation.y;
@@ -235,7 +281,7 @@ void RadarGridMapNode::processMsg(const marine_sensor_msgs::msg::RadarSector::Sh
       grid_map::Position pos(map_x, map_y);
 
       if (map_ptr_->isInside(pos)) {
-        map_ptr_->atPosition("elevation", pos) = echo_intensity;
+        map_ptr_->atPosition("intensity", pos) = echo_intensity;
       }
     }
   }

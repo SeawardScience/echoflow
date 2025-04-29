@@ -1,4 +1,5 @@
 #pragma once
+
 #include "package_defs.hpp"
 #include <memory>
 #include <string>
@@ -14,106 +15,140 @@
 #include <grid_map_ros/GridMapRosConverter.hpp>
 #include <nav_msgs/msg/occupancy_grid.hpp>
 
-
-
-
-
 using std::placeholders::_1;
 using namespace std::chrono_literals;
 
-NS_HEAD 
+NS_HEAD
 
-
-/**
- * @brief TODO
- * 
+    /**
+ * @brief Node that builds a 2D grid map from incoming marine radar sector messages.
+ *
+ * This node subscribes to radar sector messages, applies optional near-field clutter filtering,
+ * performs coordinate transformations using TF2, and publishes both a grid map and an occupancy grid.
  */
-class RadarGridMapNode : public rclcpp::Node 
+    class RadarGridMapNode : public rclcpp::Node
 {
 public:
-    /**
-     * @brief Construct a new Radar Grid Map Node object
-     * 
-     * TODO
+  /**
+     * @brief Construct a new RadarGridMapNode object.
      */
-    RadarGridMapNode();
+  RadarGridMapNode();
 
-    struct Parameters
-    {
-      struct{
-        std::string frame_id = "map";
-        float length = 4000.0;
-        float width = 4000.0;
-        float resolution = 10.0;
-        float pub_interval = 1.0;
-      }map;
-      int max_queue_size = 100;
-        /**
-         * @brief Declares all parameters and initializes stored variables within Parameters struct.
-         * 
-         * @param node Pointer to node to use to initialize the parameters.
-         */
-        void init(rclcpp::Node * node);
-    };
+  /**
+     * @brief Struct to hold ros2 parameters.
+     */
+  struct Parameters
+  {
+    struct {
+      std::string frame_id = "map";   ///< The fixed frame for the output grid map.
+      float length = 10000.0;         ///< Length of the grid map in meters.
+      float width = 10000.0;          ///< Width of the grid map in meters.
+      float resolution = 10.0;        ///< map cell resolution in meters.
+      float pub_interval = 0.05;       ///< map publication interval in seconds.
+    } map;
+
+    struct {
+      float near_clutter_range = 30.0; ///< Maximum range in meters for near-field clutter filtering.
+    } filter;
+
+    int max_queue_size = 1000; ///< Maximum number of radar messages to buffer.
+
+    /**
+       * @brief Declares and initializes all node parameters.
+       *
+       * @param node Pointer to the ROS2 node for parameter declaration.
+       */
+    void init(rclcpp::Node * node);
+  };
 
 protected:
-    Parameters parameters_;
+  Parameters parameters_; ///< Runtime parameters.
 
-    /**
-     * @brief todo
-     * 
+  /**
+     * @brief Waits for topics and TFs to become available.
      */
-    void waitForTopics();
+  void waitForTopics();
 
-    /**
-     * @brief Update map origin from robot pose and publish grid_map 
-     * on same time interval as the radar takes to complete a scan. 
-     * 
-     * By default, timer is set to scan_time from the first RadarSector message received. 
-     * This time may not exactly correspond to the timestamp that the radar begins a new scan.
-     * 
-     * User can also set the timer interval as a parameter.
+  /**
+     * @brief Publishes the current grid map as an occupancy grid.
      */
-    void scanTimerCallback();
+  void publishCostmap();
 
-    void publishCostmap();
-
-    /**
-     * @brief TODO
-     * 
-     * @param msg 
+  /**
+     * @brief Callback when a new radar sector message is received.
+     *
+     * @param msg Shared pointer to the received radar sector message.
      */
-    void radarSectorCallback(const marine_sensor_msgs::msg::RadarSector::SharedPtr msg);
+  void radarSectorCallback(const marine_sensor_msgs::msg::RadarSector::SharedPtr msg);
 
-    void addToQueue(const marine_sensor_msgs::msg::RadarSector::SharedPtr msg);
+  /**
+     * @brief Adds a radar sector message to the internal processing queue.
+     *
+     * @param msg Shared pointer to the radar sector message.
+     */
+  void addToQueue(const marine_sensor_msgs::msg::RadarSector::SharedPtr msg);
 
-    void procesQueue();
+  /**
+     * @brief Processes all messages in the radar sector queue.
+     */
+  void procesQueue();
 
-    void processMsg(const marine_sensor_msgs::msg::RadarSector::SharedPtr msg);
+  /**
+     * @brief Processes a single radar sector message.
+     *
+     * @param msg Shared pointer to the radar sector message.
+     */
+  void processMsg(const marine_sensor_msgs::msg::RadarSector::SharedPtr msg);
 
-    void recenterMap(const grid_map::Position& new_center);
-
-    rclcpp::Publisher<grid_map_msgs::msg::GridMap>::SharedPtr grid_map_publisher_;
-    rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr costmap_publisher_;
-    rclcpp::Subscription<marine_sensor_msgs::msg::RadarSector>::SharedPtr radar_sector_subscriber_;
-    rclcpp::TimerBase::SharedPtr scan_timer_;
+  /**
+     * @brief Recenters the grid map around a new position.
+     *
+     * @param new_center New center position in map coordinates.
+     */
+  void recenterMap(const grid_map::Position& new_center);
 
 private:
-    //RadarGridMap radar_map_;
-  std::shared_ptr<grid_map::GridMap> map_ptr_;
-  rclcpp::Clock clock_;
+  //------------------------------------------------------------------------------
+  // ROS Interfaces
+  //------------------------------------------------------------------------------
 
-  //
-  bool pose_initialized_ = false;
-  bool timer_interval_initialized_ = false;
-  int64_t scan_time_;
-  // TF Buffer and Listener
-  std::shared_ptr<tf2_ros::Buffer> m_tf_buffer;
-  std::shared_ptr<tf2_ros::TransformListener> m_tf_listener;
-  std::deque<marine_sensor_msgs::msg::RadarSector::SharedPtr> radar_sector_queue_;
-  size_t drop_counter = 0; // how many we've dropped since last warning
+  // Publishers
+  rclcpp::Publisher<grid_map_msgs::msg::GridMap>::SharedPtr grid_map_publisher_; ///< Publishes the full radar grid map.
+  rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr costmap_publisher_; ///< Publishes a simplified occupancy grid.
 
+  // Subscriber
+  rclcpp::Subscription<marine_sensor_msgs::msg::RadarSector>::SharedPtr radar_sector_subscriber_; ///< Subscribes to incoming radar sector messages.
 
+  // Timers
+  rclcpp::TimerBase::SharedPtr costmap_timer_; ///< Timer to periodically publish the occupancy grid.
+  rclcpp::TimerBase::SharedPtr queue_timer_;   ///< Timer to regularly process buffered radar sector messages.
+
+  //------------------------------------------------------------------------------
+  // Core Data
+  //------------------------------------------------------------------------------
+
+  std::shared_ptr<grid_map::GridMap> map_ptr_; ///< Main grid map data structure.
+  std::deque<marine_sensor_msgs::msg::RadarSector::SharedPtr> radar_sector_queue_; ///< Queue for buffering radar sector messages.
+
+  //------------------------------------------------------------------------------
+  // TF and Timing
+  //------------------------------------------------------------------------------
+
+  std::shared_ptr<tf2_ros::Buffer> m_tf_buffer; ///< TF2 buffer for transform lookups.
+  std::shared_ptr<tf2_ros::TransformListener> m_tf_listener; ///< TF2 listener attached to the buffer.
+
+  rclcpp::Clock clock_; ///< Node-local clock used for throttling and timing.
+
+  //------------------------------------------------------------------------------
+  // Status Flags and Counters
+  //------------------------------------------------------------------------------
+
+  bool tf_ready_ = false; ///< True once at least one valid TF has been received.
+  bool pose_initialized_ = false; ///< True once initial map centering has been done.
+  bool timer_interval_initialized_ = false; ///< True once timers are fully initialized.
+
+  size_t drop_counter = 0; ///< Counter for number of dropped radar messages due to queue overflow.
+  int64_t scan_time_; ///< Optional timestamp of last radar scan processing.
 
 };
 
