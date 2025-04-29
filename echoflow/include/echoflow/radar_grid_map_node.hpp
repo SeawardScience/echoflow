@@ -51,7 +51,7 @@ public:
       float near_clutter_range = 30.0; ///< Maximum range in meters for near-field clutter filtering.
     } filter;
 
-    int max_queue_size = 1000; ///< Maximum number of radar messages to buffer.
+    int max_queue_size = 100; ///< Maximum number of radar messages to buffer.
 
     /**
        * @brief Declares and initializes all node parameters.

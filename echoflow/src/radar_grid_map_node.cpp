@@ -238,60 +238,94 @@ void RadarGridMapNode::processMsg(const marine_sensor_msgs::msg::RadarSector::Sh
     tf2::Matrix3x3(q).getRPY(roll, ptich, yaw);
   }
 
-  // Clear the area covered by this radar sector using a triangle polygon
   grid_map::Polygon sector_polygon;
 
   // Build triangle vertices
+  grid_map::Position p0(transform.transform.translation.x, transform.transform.translation.y);
+
+  double left_angle = msg->angle_start + yaw;
+  double right_angle = msg->angle_start + (msg->intensities.size() - 1) * msg->angle_increment + yaw;
+  double max_range = msg->range_max * 1.3; // Stretch a little to ensure coverage
+
+  grid_map::Position p1(
+      transform.transform.translation.x + max_range * std::cos(left_angle),
+      transform.transform.translation.y + max_range * std::sin(left_angle));
+
+  grid_map::Position p2(
+      transform.transform.translation.x + max_range * std::cos(right_angle),
+      transform.transform.translation.y + max_range * std::sin(right_angle));
+
+  sector_polygon.addVertex(p0);
+  sector_polygon.addVertex(p1);
+  sector_polygon.addVertex(p2);
+
+  // Precompute range increment
+  float range_increment = (msg->range_max - msg->range_min);
+  if (!msg->intensities.empty())
+    range_increment /= static_cast<float>(msg->intensities.front().echoes.size());
+
+  // Iterate over all map cells inside the sector
+  for (grid_map::PolygonIterator it(*map_ptr_, sector_polygon); !it.isPastEnd(); ++it)
   {
-    grid_map::Position p0(transform.transform.translation.x, transform.transform.translation.y);
-
-    double left_angle = msg->angle_start + yaw;
-    double right_angle = msg->angle_start + (msg->intensities.size() - 1) * msg->angle_increment + yaw;
-    double max_range = msg->range_max*1.3;
-
-    grid_map::Position p1(
-        transform.transform.translation.x + max_range * std::cos(left_angle),
-        transform.transform.translation.y + max_range * std::sin(left_angle));
-
-    grid_map::Position p2(
-        transform.transform.translation.x + max_range * std::cos(right_angle),
-        transform.transform.translation.y + max_range * std::sin(right_angle));
-
-    sector_polygon.addVertex(p0);
-    sector_polygon.addVertex(p1);
-    sector_polygon.addVertex(p2);
-  }
-
-  // Iterate over all cells in the polygon and clear them
-  for (grid_map::PolygonIterator it(*map_ptr_, sector_polygon); !it.isPastEnd(); ++it) {
     map_ptr_->at("intensity", *it) = NAN;
-  }
+    grid_map::Position pos;
+    map_ptr_->getPosition(*it, pos);
 
-
-  for (size_t i = 0; i < msg->intensities.size(); i++) {
-    double angle = msg->angle_start + i * msg->angle_increment + yaw;  // << corrected!
-    double c = std::cos(angle);
-    double s = std::sin(angle);
-    float range_increment = (msg->range_max - msg->range_min) / float(msg->intensities[i].echoes.size());
-
-    for (size_t j = 0; j < msg->intensities[i].echoes.size(); j++) {
-      float echo_intensity = msg->intensities[i].echoes[j];
-      if (echo_intensity <= 0.0f)
-        continue; // skip empty returns
-
-      float range = msg->range_min + j * range_increment;
-      if (range <= parameters_.filter.near_clutter_range)
-        continue;
-
-      double map_x = range * c + transform.transform.translation.x;
-      double map_y = range * s + transform.transform.translation.y;
-
-      grid_map::Position pos(map_x, map_y);
-
-      if (map_ptr_->isInside(pos)) {
-        map_ptr_->atPosition("intensity", pos) = echo_intensity;
-      }
+    // Compute range and angle from radar
+    double dx = pos.x() - transform.transform.translation.x;
+    double dy = pos.y() - transform.transform.translation.y;
+    double range = std::hypot(dx, dy);
+    // Skip if clearly out of radar range
+    if (range > msg->range_max){
+      continue;
     }
+
+    double angle = std::atan2(dy, dx) - yaw;
+
+    // Normalize angle into [0, 2*pi] range
+    while (angle < 0.0)
+      angle += 2.0 * M_PI;
+    while (angle > 2.0 * M_PI)
+      angle -= 2.0 * M_PI;
+
+    // Normalize sector start/end
+    double sector_start = msg->angle_start;
+    double sector_end = msg->angle_start + msg->angle_increment * (msg->intensities.size() - 1);
+
+    // Normalize sector limits into [0, 2*pi] as well
+    while (sector_start < 0.0)
+      sector_start += 2.0 * M_PI;
+    while (sector_end > 2.0 * M_PI)
+      sector_end -= 2.0 * M_PI;
+
+    // Check if this map cell is inside the radar sector
+    // bool inside_sector = false;
+    // if (sector_start <= sector_end)
+    //   inside_sector = (angle >= sector_start && angle <= sector_end);
+    // else
+    //   inside_sector = (angle >= sector_start || angle <= sector_end);
+
+    // if (!inside_sector)
+    //   continue; // skip cells outside beam sector
+
+    // Find nearest beam index
+    int i = static_cast<int>((angle - msg->angle_start) / msg->angle_increment + 0.5); // nearest neighbor
+    if (i < 0 || i >= static_cast<int>(msg->intensities.size()))
+      continue;
+
+    // Find nearest range bin
+    int j = static_cast<int>((range - msg->range_min) / range_increment + 0.5);
+    if (j < 0 || j >= static_cast<int>(msg->intensities[i].echoes.size()))
+      continue;
+
+    // Fetch echo intensity
+    float echo_intensity = msg->intensities[i].echoes[j];
+
+    // Write to map
+    if (echo_intensity > 0.0f)
+      map_ptr_->at("intensity", *it) = echo_intensity;
+    else
+      map_ptr_->at("intensity", *it) = NAN; // Mark empty or unknown
   }
 
 }
