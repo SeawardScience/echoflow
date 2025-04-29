@@ -44,7 +44,7 @@ public:
       float length = 10000.0;         ///< Length of the grid map in meters.
       float width = 10000.0;          ///< Width of the grid map in meters.
       float resolution = 10.0;        ///< map cell resolution in meters.
-      float pub_interval = 0.05;       ///< map publication interval in seconds.
+      float pub_interval = 0.1;       ///< map publication interval in seconds.
     } map;
 
     struct {
