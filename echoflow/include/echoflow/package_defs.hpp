@@ -6,9 +6,7 @@
   namespace CMAKE_PACKAGE_NAME { */
 
 #define NS_HEAD  \
-  namespace template_pkg {
+  namespace echoflow {
 
 #define NS_FOOT  \
   }
-
-

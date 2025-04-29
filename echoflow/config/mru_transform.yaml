@@ -1,0 +1,16 @@
+/**:
+  ros__parameters:
+    base_frame: base_link
+    map_frame: map
+    odom_frame: odom
+    odom_topic: odom
+    sensor_timeout: 2.0
+    sensors:
+      microstrain:
+        topics:
+          orientation:  sensors/mru/ekf/imu/data
+          position:     sensors/mru/ekf/llh_position
+          velocity:     sensors/mru/ekf/velocity
+    sensors_names:
+    - microstrain
+    use_sim_time: false

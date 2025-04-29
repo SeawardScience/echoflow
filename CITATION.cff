@@ -1,10 +1,10 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
 authors:
-- family-names: "@todo"
-  given-names: "@todo"
-  orcid: "https://orcid.org/@todo"
-title: "Template_Package"
-version: 1.0.0
-date-released: 2024-01-25
-url: ""
+- family-names: "Krasnosky"
+  given-names: "Kristopher"
+  orcid: "https://orcid.org/0000-0002-2215-7792"
+title: "echoflow"
+version: 0.1.0
+date-released: 2025-04-29
+url: "https://github.com/SeawardScience/echoflow"

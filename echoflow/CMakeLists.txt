@@ -5,19 +5,27 @@ cmake_minimum_required(VERSION 3.8)
 ################################
 
 set(ROS_DEPENDS
-    ament_cmake
-    rclcpp
-    std_msgs
-    template_pkg_interfaces
-  )
+  ament_cmake
+  grid_map_core
+  grid_map_ros
+  grid_map_msgs
+  grid_map_costmap_2d
+  marine_sensor_msgs
+  rclcpp
+  sensor_msgs
+  std_msgs
+  tf2
+  tf2_ros
+  tf2_geometry_msgs
+  geometry_msgs
+)
 
 set(EXTERNAL_DEPENDS
-
-  )
+  Eigen3
+)
 
 set(EXTERNAL_DEPENDS_LIB
-
-  )
+)
 
 
 get_filename_component(PACKAGE_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME)
@@ -100,9 +108,22 @@ install(DIRECTORY
 ## testing ##
 #############
 
+#if(BUILD_TESTING)
+#  find_package(ament_lint_auto REQUIRED)
+#  ament_lint_auto_find_test_dependencies()
+#endif()
+
 if(BUILD_TESTING)
-  find_package(ament_lint_auto REQUIRED)
-  ament_lint_auto_find_test_dependencies()
+  find_package(ament_cmake_gtest REQUIRED)
+  ament_add_gtest(${PROJECT_NAME} test/radar_grid_map_test.cpp)
+  target_include_directories(${PROJECT_NAME} PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
+  )
+  ament_target_dependencies(${PROJECT_NAME}
+    std_msgs
+  )
+  target_link_libraries(${PROJECT_NAME})
 endif()
 
 ament_package()

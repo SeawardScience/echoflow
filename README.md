@@ -1,73 +1,152 @@
-# ROS2 Template C++ Package
-![alt text](docs/media/template_package.png)
-This package is was designed as a starting point for building a ROS2 C++ package with:
-- automatically configuring cmake file
-- pre-defined structures and conventions for namespacing and code structures
-- adherence to ROS2 design conventions
-- pre-included doxygen configuration with easy to use and stylish output
-- pre-defined github actions to build the documentation and deploy it to github.io
+# echoflow
 
-It is highly recomended that you complete the following checklist before you make public a repository derived from this package.
+**echoflow** is a ROS 2 package designed to transform marine radar sector data into a real-time, 2D grid map for navigation and environmental awareness.
 
-# Public Repository Checklist   
+The `radar_grid_map` node listens to radar sector messages, applies optional near-field clutter filtering, transforms the data into a global map frame using TF2, and publishes both a detailed `GridMap` and a simplified `OccupancyGrid` suitable for further path planning, SLAM, or tracking algorithms.
 
-## Requirements
+![echoflow visualization](docs/media/radar_grid_map_demo.gif)
 
-All public repositories for this organization must comply with the following checklist.  If they do not, an administrator will make your repository private until it complies. 
-
-- **README.md file:** Every package must have a README.md file in the root of the repository.  The readme must describe, at least, the following:
-  - The name of the package
-  - A few sentences briefly describing what the package is for
-  - Installation instructions detailed enough to be executed by a novice linux/ROS user
-  - A quick start guide or hello world
-  - A template [README.md](README.md) is available below.
-- **CONTRIBUTING.md file:** This file describes how to contribute to the project.  A default [CONTRIBUTING.md](CONTRIBUTING.md) is available here.  It can be modified as necessary.
-- **LICENSE file:** A license file should be included. (the licence file in this packag has some options)
-- **Semantic Versioning:** The repo must adhere to [Semantic Versioning 2.0](https://semver.org/).
-- **An initial tagged release:** 
-  - If the project is ready to ship  include initial release with `v1.0.0`
-  - Pre-release code may be shared and must be tagged as `v0.x.y`
-- **All code in the master branch must ALWAYS be deployable**
-
-## Highly Encouraged
-
-- **Adherence to our [Style Guide](style_guide):** This is especially recommended if you are starting a new project.  If you are migrating an old one, it can be overlooked.
-- **Use of GitFlow:** Follow our [guidelines on version control](version_control) for more info
-
-## Sugested
-- Issues template
-- Doxygen documentation for C++ code (a template can be foudn in this package)
-
-
-
-# README template  
-
-A few lines describing what your project is and what it does.   A picture of your software in action is highly recomended.
+---
 
 ## Installation
 
-how to install the package whitout compilation.
+To install `echoflow` without compiling manually:
+
+```bash
+# Clone the repository into your workspace src/
+cd ~/ros2_ws/src
+git clone https://github.com/YOUR_ORG/echoflow.git
+
+# Install dependencies
+cd ~/ros2_ws
+rosdep install --from-paths src --ignore-src -r -y
+```
+
+---
 
 ## Compiling
 
-how to compile the package including dependencies and nicely formatted commands.  This section should be geared toward developers and collaborators.
+To build the package and all required dependencies:
+
+```bash
+cd ~/ros2_ws
+colcon build --packages-select echoflow
+source install/setup.bash
+```
+
+You may also wish to build with tests and warnings enabled:
+
+```bash
+colcon build --packages-select echoflow --cmake-args -DCMAKE_BUILD_TYPE=Release
+```
+
+---
+
+## Running the Package
+
+After sourcing your workspace, you can start the node:
+
+```bash
+ros2 run echoflow radar_grid_map
+```
+
+Make sure appropriate TF data (e.g., `map -> base_link`) and radar sector topics are available.
+
+---
+
+## Nodes
+
+### radar_grid_map Node
+
+This node processes incoming marine radar sectors and builds a continuously updating 2D map.
+
+#### Published Topics
+
+| Topic                  | Message Type                          | Description                         |
+|-------------------------|---------------------------------------|-------------------------------------|
+| `occupancy_grid`   | `nav_msgs::msg::OccupancyGrid`         | Simplified occupancy representation |
+
+#### Subscribed Topics
+
+| Topic                  | Message Type                          | Description                         |
+|-------------------------|---------------------------------------|-------------------------------------|
+| `data`                 | `marine_sensor_msgs::msg::RadarSector` | Incoming radar sector scans         |
+
+The above correspond to the standards set in the UNH marine radar messages.  Therefore you should run this node in the namespace of the desired radar channel.  For example.
 
 ```
-sudo make install
+ros2 run echoflow radar_grid_map --ros-args -r __ns:=/aura/perception/sensors/halo_a 
 ```
 
-## Running the package
+#### Parameters
 
-A basic hello world use of your package
+| Parameter Name                     | Type          | Default Value  | Description                                          |
+|-------------------------------------|---------------|----------------|------------------------------------------------------|
+| `map.frame_id`                     | `std::string` | `"map"`        | The fixed frame for the output grid map.             |
+| `map.length`                       | `float`       | `10000.0`      | Length of the map area in meters.                    |
+| `map.width`                        | `float`       | `10000.0`      | Width of the map area in meters.                     |
+| `map.resolution`                   | `float`       | `10.0`         | Resolution (cell size) of the map in meters.         |
+| `map.pub_interval`                 | `float`       | `0.1`          | Time between costmap publication updates (seconds). |
+| `filter.near_clutter_range`         | `float`       | `30.0`         | Maximum range in meters for clutter filtering.       |
+| `max_queue_size`                   | `int`         | `1000`         | Maximum radar message queue length.                  |
 
-## Parameters
+Example configuration snippet:
 
-a description of the ros parameters for your package.  It would be good to update the config directory too with some example yaml.
+```yaml
+map:
+  frame_id: "map"
+  length: 10000.0
+  width: 10000.0
+  resolution: 10.0
+  pub_interval: 0.1
+
+filter:
+  near_clutter_range: 30.0
+
+max_queue_size: 1000
+```
+
+---
 
 ## Services
 
-a description of any ros services your package uses
+Currently, this node does not provide ROS2 services.
+
+---
+
+## Example Use Cases
+
+- Real-time mapping of harbor environments from marine radar
+- Providing occupancy grids for obstacle avoidance on ASVs (Autonomous Surface Vessels)
+- Feeding particle filters or SLAM algorithms with radar-derived data
+- Situational awareness systems for marine robotics
+
+---
 
 ## Contributing
 
-Thank you for considering a contribution to this package.   Please review our [CONTRIBUTING](CONTRIBUTING.md) guidelines to get started.
+We welcome contributions!  
+Please read the [CONTRIBUTING.md](CONTRIBUTING.md) guidelines to get started.
+
+When making contributions, remember:
+- Follow the [Semantic Versioning 2.0](https://semver.org/) model.
+- Ensure all changes maintain deployability of the `master` branch.
+- Keep documentation (README, Doxygen comments) up to date.
+
+---
+
+## License
+
+This project is licensed under the LICENSE provided in this repository.
+
+---
+
+## Credits
+
+Developed by [Seaward Science](https://seaward.science/) for University of New Hampshire Center for Coastal and Ocean Mapping [CCOM](https://www.ccom.unh.edu/)
+
+### Authors
+- Dr. Kristohper Krasnosky (lead software engineer)
+- Antonella Willby (software developer)
+
+
