@@ -238,34 +238,34 @@ void RadarGridMapNode::processMsg(const marine_sensor_msgs::msg::RadarSector::Sh
     tf2::Matrix3x3(q).getRPY(roll, ptich, yaw);
   }
 
-  // Clear the area covered by this radar sector using a triangle polygon
-  grid_map::Polygon sector_polygon;
+  // // Clear the area covered by this radar sector using a triangle polygon
+  // grid_map::Polygon sector_polygon;
 
-  // Build triangle vertices
-  {
-    grid_map::Position p0(transform.transform.translation.x, transform.transform.translation.y);
+  // // Build triangle vertices
+  // {
+  //   grid_map::Position p0(transform.transform.translation.x, transform.transform.translation.y);
 
-    double left_angle = msg->angle_start + yaw;
-    double right_angle = msg->angle_start + (msg->intensities.size() - 1) * msg->angle_increment + yaw;
-    double max_range = msg->range_max*1.3;
+  //   double left_angle = msg->angle_start + yaw;
+  //   double right_angle = msg->angle_start + (msg->intensities.size() - 1) * msg->angle_increment + yaw;
+  //   double max_range = msg->range_max*1.3;
 
-    grid_map::Position p1(
-        transform.transform.translation.x + max_range * std::cos(left_angle),
-        transform.transform.translation.y + max_range * std::sin(left_angle));
+  //   grid_map::Position p1(
+  //       transform.transform.translation.x + max_range * std::cos(left_angle),
+  //       transform.transform.translation.y + max_range * std::sin(left_angle));
 
-    grid_map::Position p2(
-        transform.transform.translation.x + max_range * std::cos(right_angle),
-        transform.transform.translation.y + max_range * std::sin(right_angle));
+  //   grid_map::Position p2(
+  //       transform.transform.translation.x + max_range * std::cos(right_angle),
+  //       transform.transform.translation.y + max_range * std::sin(right_angle));
 
-    sector_polygon.addVertex(p0);
-    sector_polygon.addVertex(p1);
-    sector_polygon.addVertex(p2);
-  }
+  //   sector_polygon.addVertex(p0);
+  //   sector_polygon.addVertex(p1);
+  //   sector_polygon.addVertex(p2);
+  // }
 
-  // Iterate over all cells in the polygon and clear them
-  for (grid_map::PolygonIterator it(*map_ptr_, sector_polygon); !it.isPastEnd(); ++it) {
-    map_ptr_->at("intensity", *it) = NAN;
-  }
+  // // Iterate over all cells in the polygon and clear them
+  // for (grid_map::PolygonIterator it(*map_ptr_, sector_polygon); !it.isPastEnd(); ++it) {
+  //   map_ptr_->at("intensity", *it) = NAN;
+  // }
 
 
   for (size_t i = 0; i < msg->intensities.size(); i++) {
@@ -276,12 +276,7 @@ void RadarGridMapNode::processMsg(const marine_sensor_msgs::msg::RadarSector::Sh
 
     for (size_t j = 0; j < msg->intensities[i].echoes.size(); j++) {
       float echo_intensity = msg->intensities[i].echoes[j];
-      if (echo_intensity <= 0.0f)
-        continue; // skip empty returns
-
       float range = msg->range_min + j * range_increment;
-      if (range <= parameters_.filter.near_clutter_range)
-        continue;
 
       double map_x = range * c + transform.transform.translation.x;
       double map_y = range * s + transform.transform.translation.y;
@@ -290,6 +285,10 @@ void RadarGridMapNode::processMsg(const marine_sensor_msgs::msg::RadarSector::Sh
 
       if (map_ptr_->isInside(pos)) {
         map_ptr_->atPosition("intensity", pos) = echo_intensity;
+        if (range <= parameters_.filter.near_clutter_range)
+          map_ptr_->atPosition("intensity", pos) = NAN;
+        if (echo_intensity <= 0.0f)
+          map_ptr_->atPosition("intensity", pos) = NAN;
       }
     }
   }
