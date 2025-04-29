@@ -32,10 +32,10 @@ RadarGridMapNode::RadarGridMapNode()
 {
     parameters_.init(this);
 
-    grid_map_publisher_ = this->create_publisher<grid_map_msgs::msg::GridMap>(
-                          "radar_grid_map", rclcpp::QoS(1).transient_local());
+    // grid_map_publisher_ = this->create_publisher<grid_map_msgs::msg::GridMap>(
+    //                       "radar_grid_map", rclcpp::QoS(1).transient_local());
 
-    costmap_publisher_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>("costmap", 10);
+    costmap_publisher_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>("occupancy_grid", 10);
 
     radar_sector_subscriber_ = this->create_subscription<marine_sensor_msgs::msg::RadarSector>(
                                "data", 50, std::bind(&RadarGridMapNode::radarSectorCallback, this, _1));
