@@ -14,7 +14,7 @@ filter_child_frame_id : "ins"
 #     For GQ7 - in the vehicle frame wrt IMU origin (meters)
 #     For all other models - in the IMU frame wrt IMU origin (meters)
 #     Note: Make this as accurate as possible for good performance
-gnss1_antenna_offset : [0.2032, 0.2921, -1.3716]
+gnss1_antenna_offset : [0.2032, 0.2032, -1.3716]
 
 gnss2_antenna_offset : [0.2032, -1.4986, -1.3716]
 
@@ -258,19 +258,19 @@ gnss2_time_data_rate           : 2  # Rate of gnss_2/time topic
 
 # The speed at which the individual Filter publishers will publish at.
 filter_human_readable_status_data_rate : 1  # Rate of ekf/status
-filter_imu_data_rate                   : 25  # Rate of ekf/imu/data topic
+filter_imu_data_rate                   : 100  # Rate of ekf/imu/data topic
                                             # Note: Both filter_odometry_earth_data_rate and filter_odometry_map_data_rate depend on the contents of this message.
                                             #       If either are set to a higher value, this message will be published at that rate.
-filter_llh_position_data_rate          : 25  # Rate of ekf/llh_position topic
-filter_velocity_data_rate              : 25  # Rate of ekf/velocity topic
+filter_llh_position_data_rate          : 100  # Rate of ekf/llh_position topic
+filter_velocity_data_rate              : 100  # Rate of ekf/velocity topic
                                             # Note: filter_odometry_map_data_rate depends on the contents of this message.
                                             #       If either are set to a higher value, this message will be published at that rate.
 filter_velocity_ecef_data_rate         : 0  # Rate of ekf/velocity_ecef topic
                                             # Note: filter_odometry_earth_data_rate depends on the contents of this message.
                                             #       If either are set to a higher value, this message will be published at that rate.
-filter_odometry_earth_data_rate        : 25 # Rate of ekf/odometry_earth topic
+filter_odometry_earth_data_rate        : 100 # Rate of ekf/odometry_earth topic
 filter_odometry_map_data_rate          : 0  # Rate of ekf/odometry_map topic
-filter_dual_antenna_heading_data_rate  : 0  # Rate of ekf/dual_antenna_heading topic
+filter_dual_antenna_heading_data_rate  : 2  # Rate of ekf/dual_antenna_heading topic
                                             # Note: mip_filter_gnss_position_aiding_status_data_rate depends on the contents of this message.
                                             #       If either are set to a higher value, this message will be published at that rate.
 
