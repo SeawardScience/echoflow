@@ -32,8 +32,8 @@ RadarGridMapNode::RadarGridMapNode()
 {
     parameters_.init(this);
 
-    // grid_map_publisher_ = this->create_publisher<grid_map_msgs::msg::GridMap>(
-    //                       "radar_grid_map", rclcpp::QoS(1).transient_local());
+    grid_map_publisher_ = this->create_publisher<grid_map_msgs::msg::GridMap>(
+                          "radar_grid_map", rclcpp::QoS(1).transient_local());
 
     costmap_publisher_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>("occupancy_grid", 10);
 
@@ -62,7 +62,7 @@ RadarGridMapNode::RadarGridMapNode()
         std::chrono::milliseconds(10),
         std::bind(&RadarGridMapNode::procesQueue, this));
 
-                      
+
 
 }
 
@@ -78,6 +78,10 @@ void RadarGridMapNode::publishCostmap()
   nav_msgs::msg::OccupancyGrid occupancyGrid;
   grid_map::GridMapRosConverter::toOccupancyGrid(*map_ptr_, "intensity", 0.0, 1.0, occupancyGrid);
   costmap_publisher_->publish(occupancyGrid);
+
+  std::unique_ptr<grid_map_msgs::msg::GridMap> message;
+  message = grid_map::GridMapRosConverter::toMessage(*map_ptr_);
+  grid_map_publisher_->publish(std::move(message));
 
 }
 

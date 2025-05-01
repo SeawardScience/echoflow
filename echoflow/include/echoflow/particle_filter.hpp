@@ -5,6 +5,8 @@
 #include <random>
 #include <cmath>
 #include <numeric>
+#include <grid_map_ros/grid_map_ros.hpp>
+
 
 NS_HEAD
 
@@ -26,9 +28,9 @@ class MultiTargetParticleFilter {
 public:
   MultiTargetParticleFilter(size_t num_particles = 500);
 
-  void initialize(const std::vector<Detection>& detections);
+  void initialize(std::shared_ptr<grid_map::GridMap> map_ptr);
   void predict(double dt);
-  void updateWeights(const std::vector<Detection>& detections);
+  void updateWeights(std::shared_ptr<grid_map::GridMap> map_ptr);
   void resample();
   const std::vector<Target> & getParticles();
 
@@ -37,8 +39,9 @@ private:
   std::default_random_engine rng_;
 
   std::normal_distribution<double> noise_pos_{0.0, 0.1};
-  std::normal_distribution<double> noise_yaw_{0.0, 0.5};
-  std::normal_distribution<double> noise_speed_{0.0, 1.0};
+  std::normal_distribution<double> noise_yaw_{0.0, 0.4};
+  std::normal_distribution<double> noise_yaw_rate_{0.0, 1.0};
+  std::normal_distribution<double> noise_speed_{0.0, 4.0};
 };
 
 

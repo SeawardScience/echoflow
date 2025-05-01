@@ -5,13 +5,15 @@
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <sensor_msgs/point_cloud2_iterator.hpp>
 #include "particle_filter.hpp"
+#include <radar_grid_map_node.hpp>
+#include <grid_map_filters.hpp>
 
 NS_HEAD
 
 class ParticleFilterNode : public rclcpp::Node {
 public:
   ParticleFilterNode() : Node("particle_filter_node") {
-    this->declare_parameter("num_particles", 500);
+    this->declare_parameter("num_particles", 100000);
     size_t num_particles = this->get_parameter("num_particles").as_int();
     pf_ = std::make_unique<MultiTargetParticleFilter>(num_particles);
 
@@ -28,6 +30,8 @@ public:
     last_update_time_ = now();
   }
 
+  std::shared_ptr<grid_map::GridMap> map_ptr_;
+
 private:
   void detectionCallback(const geometry_msgs::msg::Point::SharedPtr msg) {
     Detection d{msg->x, msg->y};
@@ -39,15 +43,19 @@ private:
     double dt = (now_time - last_update_time_).seconds();
     last_update_time_ = now_time;
 
+    computeEDTFromIntensity(*map_ptr_,"intensity","edt");
+
     if (!initialized_ && !pending_detections_.empty()) {
-      pf_->initialize(pending_detections_);
+      pf_->initialize(map_ptr_);
       initialized_ = true;
     }
 
     if (!initialized_) return;
 
+    pf_->initialize(map_ptr_);
+
     pf_->predict(dt);
-    pf_->updateWeights(pending_detections_);
+    pf_->updateWeights(map_ptr_);
     pf_->resample();
     pending_detections_.clear();
 
@@ -55,6 +63,10 @@ private:
   }
 
   void publishPointCloud() {
+
+
+
+
     const auto& particles = pf_->getParticles();
     sensor_msgs::msg::PointCloud2 cloud;
     cloud.header.frame_id = "map";
@@ -110,7 +122,17 @@ NS_FOOT
 
 int main(int argc, char **argv) {
   rclcpp::init(argc, argv);
-  rclcpp::spin(std::make_shared<echoflow::ParticleFilterNode>());
+
+  auto filter_node = std::make_shared<echoflow::ParticleFilterNode>();
+  auto grid_node = std::make_shared<echoflow::RadarGridMapNode>();
+
+  filter_node->map_ptr_ = grid_node->getMapPtr();
+
+  rclcpp::executors::MultiThreadedExecutor executor;
+  executor.add_node(filter_node);
+  executor.add_node(grid_node);
+  executor.spin();
+
   rclcpp::shutdown();
   return 0;
 }

@@ -41,14 +41,14 @@ public:
   {
     struct {
       std::string frame_id = "map";   ///< The fixed frame for the output grid map.
-      float length = 10000.0;         ///< Length of the grid map in meters.
-      float width = 10000.0;          ///< Width of the grid map in meters.
+      float length = 400.0;         ///< Length of the grid map in meters.
+      float width = 400.0;          ///< Width of the grid map in meters.
       float resolution = 10.0;        ///< map cell resolution in meters.
       float pub_interval = 0.1;       ///< map publication interval in seconds.
     } map;
 
     struct {
-      float near_clutter_range = 30.0; ///< Maximum range in meters for near-field clutter filtering.
+      float near_clutter_range = 0.0; ///< Maximum range in meters for near-field clutter filtering.
     } filter;
 
     int max_queue_size = 1000; ///< Maximum number of radar messages to buffer.
@@ -60,6 +60,8 @@ public:
        */
     void init(rclcpp::Node * node);
   };
+
+  std::shared_ptr<grid_map::GridMap> getMapPtr(){return map_ptr_;}
 
 protected:
   Parameters parameters_; ///< Runtime parameters.
@@ -106,6 +108,8 @@ protected:
      * @param new_center New center position in map coordinates.
      */
   void recenterMap(const grid_map::Position& new_center);
+
+
 
 private:
   //------------------------------------------------------------------------------
