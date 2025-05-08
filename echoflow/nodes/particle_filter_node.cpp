@@ -17,10 +17,6 @@ public:
     size_t num_particles = this->get_parameter("num_particles").as_int();
     pf_ = std::make_unique<MultiTargetParticleFilter>(num_particles);
 
-    detections_sub_ = create_subscription<geometry_msgs::msg::Point>(
-        "detections", 10,
-        std::bind(&ParticleFilterNode::detectionCallback, this, std::placeholders::_1));
-
     cloud_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("particle_cloud", 10);
 
     timer_ = create_wall_timer(
@@ -33,10 +29,10 @@ public:
   std::shared_ptr<grid_map::GridMap> map_ptr_;
 
 private:
-  void detectionCallback(const geometry_msgs::msg::Point::SharedPtr msg) {
-    Detection d{msg->x, msg->y};
-    pending_detections_.push_back(d);
-  }
+  // void detectionCallback(const geometry_msgs::msg::Point::SharedPtr msg) {
+  //   Detection d{msg->x, msg->y};
+  //   pending_detections_.push_back(d);
+  // }
 
   void update() {
     auto now_time = now();
@@ -45,7 +41,7 @@ private:
 
     computeEDTFromIntensity(*map_ptr_,"intensity","edt");
 
-    if (!initialized_ && !pending_detections_.empty()) {
+    if (!initialized_) {
       pf_->initialize(map_ptr_);
       initialized_ = true;
     }

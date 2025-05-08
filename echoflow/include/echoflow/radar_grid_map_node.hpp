@@ -41,8 +41,8 @@ public:
   {
     struct {
       std::string frame_id = "map";   ///< The fixed frame for the output grid map.
-      float length = 400.0;         ///< Length of the grid map in meters.
-      float width = 400.0;          ///< Width of the grid map in meters.
+      float length = 1500.0;         ///< Length of the grid map in meters.
+      float width = 1500.0;          ///< Width of the grid map in meters.
       float resolution = 10.0;        ///< map cell resolution in meters.
       float pub_interval = 0.1;       ///< map publication interval in seconds.
     } map;
