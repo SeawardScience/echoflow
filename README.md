@@ -191,6 +191,6 @@ Developed by [Seaward Science](https://seaward.science/) for University of New H
 
 ### Authors
 - Dr. Kristohper Krasnosky (lead software engineer)
-- Antonella Willby (software developer)
+- Antonella Wilby (software developer)
 
 

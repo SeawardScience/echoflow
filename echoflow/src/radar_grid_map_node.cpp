@@ -60,9 +60,7 @@ RadarGridMapNode::RadarGridMapNode()
 
     queue_timer_ = this->create_wall_timer(
         std::chrono::milliseconds(10),
-        std::bind(&RadarGridMapNode::procesQueue, this));
-
-
+        std::bind(&RadarGridMapNode::processQueue, this));
 
 }
 
@@ -139,7 +137,7 @@ void RadarGridMapNode::addToQueue(const marine_sensor_msgs::msg::RadarSector::Sh
 }
 
 
-void RadarGridMapNode::procesQueue()
+void RadarGridMapNode::processQueue()
 {
   while (!radar_sector_queue_.empty())
   {
@@ -299,6 +297,5 @@ void RadarGridMapNode::processMsg(const marine_sensor_msgs::msg::RadarSector::Sh
   }
 
 }
-
 
 NS_FOOT

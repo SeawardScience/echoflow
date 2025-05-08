@@ -1,12 +1,12 @@
-#include <rclcpp/rclcpp.hpp>
 #include <geometry_msgs/msg/point.hpp>
-#include <visualization_msgs/msg/marker_array.hpp>
-#include <visualization_msgs/msg/marker.hpp>
+#include <grid_map_filters.hpp>
+#include <radar_grid_map_node.hpp>
+#include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <sensor_msgs/point_cloud2_iterator.hpp>
+#include <visualization_msgs/msg/marker_array.hpp>
+#include <visualization_msgs/msg/marker.hpp>
 #include "particle_filter.hpp"
-#include <radar_grid_map_node.hpp>
-#include <grid_map_filters.hpp>
 
 NS_HEAD
 
@@ -59,9 +59,6 @@ private:
   }
 
   void publishPointCloud() {
-
-
-
 
     const auto& particles = pf_->getParticles();
     sensor_msgs::msg::PointCloud2 cloud;

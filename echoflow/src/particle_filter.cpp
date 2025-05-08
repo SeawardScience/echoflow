@@ -35,6 +35,7 @@ void MultiTargetParticleFilter::initialize(std::shared_ptr<grid_map::GridMap> ma
   }
 
   // Add new particles at randomly selected valid positions
+  // TODO: revisit this section for tracking different sizes of blobs or "ignoring" static blobs
   for (size_t i = 0; i < 10; ++i) {
     const auto& pos = valid_positions[rand() % valid_positions.size()];
     Target p;
@@ -48,10 +49,9 @@ void MultiTargetParticleFilter::initialize(std::shared_ptr<grid_map::GridMap> ma
   }
 }
 
-
 void MultiTargetParticleFilter::predict(double dt) {
   for (auto& p : particles_) {
-    double v = p.speed + noise_speed_(rng_);
+    double v = p.speed + noise_speed_(rng_);      // variable name
     double yaw = p.heading + noise_yaw_(rng_);
     double omega = p.yaw_rate + noise_yaw_rate_(rng_);
 
@@ -76,6 +76,7 @@ void MultiTargetParticleFilter::updateWeights(std::shared_ptr<grid_map::GridMap>
     return;
   }
 
+  // todo: should these parameters be user-tunable?
   double sigma = 30.0;
 
   const double decay_factor = 0.95;  // Retain 50% of previous weight if outside detection
@@ -110,8 +111,6 @@ void MultiTargetParticleFilter::updateWeights(std::shared_ptr<grid_map::GridMap>
   }
 }
 
-
-
 void MultiTargetParticleFilter::resample() {
   // Filter out particles with speed < 3 m/s
   std::vector<Target> filtered_particles;
@@ -133,6 +132,7 @@ void MultiTargetParticleFilter::resample() {
   double c = source_particles[0].weight;
   size_t i = 0;
 
+    // TODO: revisit variable names
   for (size_t m = 0; m < source_particles.size(); ++m) {
     double U = r + m * step;
     while (U > c && i < source_particles.size() - 1) {
@@ -145,7 +145,6 @@ void MultiTargetParticleFilter::resample() {
 
   particles_ = std::move(new_particles);
 }
-
 
 const std::vector<Target>& MultiTargetParticleFilter::getParticles()
 {

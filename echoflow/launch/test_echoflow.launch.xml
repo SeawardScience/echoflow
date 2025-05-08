@@ -2,11 +2,9 @@
 
 <launch>
 
-  <include file="$(find-pkg-share marine_radar_tracker)/launch/marine_radar_to_pointcloud.launch.xml" />
-
-  <node pkg="echoflow" exec="echoflow_node" name="echoflow">
+  <!--<node pkg="echoflow" exec="echoflow_node" name="echoflow">
     <param from="$(find-pkg-share echoflow)/config/radar_grid_map.yaml" />
-  </node>
+  </node>-->
 
   <node pkg="grid_map_visualization" exec="grid_map_visualization" name="grid_map_visualization" output="screen">
     <param from="$(find-pkg-share echoflow)/config/grid_map_visualization.yaml" />
