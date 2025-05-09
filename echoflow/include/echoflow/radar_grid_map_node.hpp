@@ -1,50 +1,50 @@
 #pragma once
 
-#include "package_defs.hpp"
+#include <deque>
 #include <memory>
 #include <string>
-#include <rclcpp/rclcpp.hpp>
-#include <rclcpp/wait_for_message.hpp>
+#include <geometry_msgs/msg/transform_stamped.hpp>
 #include <grid_map_ros/grid_map_ros.hpp>
 #include <grid_map_msgs/msg/grid_map.hpp>
+#include <grid_map_ros/GridMapRosConverter.hpp>
 #include <marine_sensor_msgs/msg/radar_sector.hpp>
+#include <nav_msgs/msg/occupancy_grid.hpp>
+#include <rclcpp/rclcpp.hpp>
+#include <rclcpp/wait_for_message.hpp>
 #include <tf2_ros/transform_listener.h>
 #include <tf2_ros/buffer.h>
-#include <geometry_msgs/msg/transform_stamped.hpp>
-#include <deque>
-#include <grid_map_ros/GridMapRosConverter.hpp>
-#include <nav_msgs/msg/occupancy_grid.hpp>
+#include "package_defs.hpp"
 
 using std::placeholders::_1;
 using namespace std::chrono_literals;
 
 NS_HEAD
 
-    /**
+/**
  * @brief Node that builds a 2D grid map from incoming marine radar sector messages.
  *
  * This node subscribes to radar sector messages, applies optional near-field clutter filtering,
  * performs coordinate transformations using TF2, and publishes both a grid map and an occupancy grid.
  */
-    class RadarGridMapNode : public rclcpp::Node
+class RadarGridMapNode : public rclcpp::Node
 {
 public:
   /**
-     * @brief Construct a new RadarGridMapNode object.
-     */
+   * @brief Construct a new RadarGridMapNode object.
+   */
   RadarGridMapNode();
 
   /**
-     * @brief Struct to hold ros2 parameters.
-     */
+   * @brief Struct to hold ros2 parameters.
+   */
   struct Parameters
   {
     struct {
-      std::string frame_id = "map";   ///< The fixed frame for the output grid map.
-      float length = 1500.0;         ///< Length of the grid map in meters.
-      float width = 1500.0;          ///< Width of the grid map in meters.
-      float resolution = 10.0;        ///< map cell resolution in meters.
-      float pub_interval = 0.1;       ///< map publication interval in seconds.
+      std::string frame_id = "map";    ///< The fixed frame for the output grid map.
+      float length = 1500.0;           ///< Length of the grid map in meters.
+      float width = 1500.0;            ///< Width of the grid map in meters.
+      float resolution = 10.0;         ///< map cell resolution in meters.
+      float pub_interval = 0.1;        ///< map publication interval in seconds.
     } map;
 
     struct {
@@ -54,10 +54,10 @@ public:
     int max_queue_size = 1000; ///< Maximum number of radar messages to buffer.
 
     /**
-       * @brief Declares and initializes all node parameters.
-       *
-       * @param node Pointer to the ROS2 node for parameter declaration.
-       */
+     * @brief Declares and initializes all node parameters.
+     *
+     * @param node Pointer to the ROS2 node for parameter declaration.
+     */
     void init(rclcpp::Node * node);
   };
 
@@ -67,49 +67,47 @@ protected:
   Parameters parameters_; ///< Runtime parameters.
 
   /**
-     * @brief Waits for topics and TFs to become available.
-     */
+   * @brief Waits for topics and TFs to become available.
+   */
   void waitForTopics();
 
   /**
-     * @brief Publishes the current grid map as an occupancy grid.
-     */
+   * @brief Publishes the current grid map as an occupancy grid.
+   */
   void publishCostmap();
 
   /**
-     * @brief Callback when a new radar sector message is received.
-     *
-     * @param msg Shared pointer to the received radar sector message.
-     */
+   * @brief Callback when a new radar sector message is received.
+   *
+   * @param msg Shared pointer to the received radar sector message.
+   */
   void radarSectorCallback(const marine_sensor_msgs::msg::RadarSector::SharedPtr msg);
 
   /**
-     * @brief Adds a radar sector message to the internal processing queue.
-     *
-     * @param msg Shared pointer to the radar sector message.
-     */
+   * @brief Adds a radar sector message to the internal processing queue.
+   *
+   * @param msg Shared pointer to the radar sector message.
+   */
   void addToQueue(const marine_sensor_msgs::msg::RadarSector::SharedPtr msg);
 
   /**
-     * @brief Processes all messages in the radar sector queue.
-     */
+   * @brief Processes all messages in the radar sector queue.
+   */
   void processQueue();
 
   /**
-     * @brief Processes a single radar sector message.
-     *
-     * @param msg Shared pointer to the radar sector message.
-     */
+   * @brief Processes a single radar sector message.
+   *
+   * @param msg Shared pointer to the radar sector message.
+   */
   void processMsg(const marine_sensor_msgs::msg::RadarSector::SharedPtr msg);
 
   /**
-     * @brief Recenters the grid map around a new position.
-     *
-     * @param new_center New center position in map coordinates.
-     */
+   * @brief Recenters the grid map around a new position.
+   *
+   * @param new_center New center position in map coordinates.
+   */
   void recenterMap(const grid_map::Position& new_center);
-
-
 
 private:
   //------------------------------------------------------------------------------

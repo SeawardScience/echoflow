@@ -10,6 +10,6 @@
     <param from="$(find-pkg-share echoflow)/config/grid_map_visualization.yaml" />
   </node>
 
-  <node pkg="rviz2" exec="rviz2" name="rviz2" output="screen" />
+  <!--<node pkg="rviz2" exec="rviz2" name="rviz2" output="screen" />-->
 
 </launch>

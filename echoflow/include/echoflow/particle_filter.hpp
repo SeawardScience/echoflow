@@ -34,8 +34,7 @@ struct Detection {
 };
 
 /**
- * @brief todo
- *
+ * @brief Implements a particle filter for tracking multiple targets.
  */
 class MultiTargetParticleFilter {
 public:
@@ -83,7 +82,7 @@ public:
   /**
    * @brief Get particles.
    *
-   * @return const std::vector<Target>& Vector of particles on target. // todo
+   * @return const std::vector<Target>& Vector of particles on target.
    */
   const std::vector<Target> & getParticles();
 
