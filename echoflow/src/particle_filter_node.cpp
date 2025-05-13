@@ -37,7 +37,7 @@ void ParticleFilterNode::update()
   double dt = (now_time - last_update_time_).seconds();
   last_update_time_ = now_time;
 
-  computeEDTFromIntensity(*map_ptr_,"intensity","edt");
+  computeEDTFromIntensity(*map_ptr_, "intensity", "edt");
 
   if (!initialized_) {
     pf_->initialize(map_ptr_);
@@ -54,7 +54,6 @@ void ParticleFilterNode::update()
   pending_detections_.clear();
 
   pf_statistics_->clearAll();
-  std::cerr << "cleared statistics map" << std::endl;
 
   publishPointCloud();
 }
@@ -88,8 +87,7 @@ void ParticleFilterNode::publishPointCloud()
   sensor_msgs::PointCloud2Iterator<float> iter_yaw_rate(cloud, "yaw_rate");
   sensor_msgs::PointCloud2Iterator<float> iter_weight(cloud, "weight");
 
-  for (const auto& p : particles)
-  {
+  for (const auto& p : particles) {
     *iter_x = static_cast<float>(p.x);
     *iter_y = static_cast<float>(p.y);
     *iter_z = 0.0f;
@@ -104,20 +102,14 @@ void ParticleFilterNode::publishPointCloud()
     // TODO: currently uses same map size/resolution as grid map -- need to update this to
     // use different map sizes and resolutions from the grid map
     grid_map::Position pos(p.x, p.y);
-    if (pf_statistics_->isInside(pos))
-    {
-      if (std::isnan(pf_statistics_->atPosition("particles_per_cell", pos)))
-      {
-        //std::cerr << "setting to zero" << std::endl;
+    if (pf_statistics_->isInside(pos)) {
+      if (std::isnan(pf_statistics_->atPosition("particles_per_cell", pos))) {
         pf_statistics_->atPosition("particles_per_cell", pos) = 0;
-        //std::cerr << pf_statistics_->atPosition("particles_per_cell", pos) << std::endl;
         pf_statistics_->atPosition("average_x_position", pos) = 0;
         pf_statistics_->atPosition("average_y_position", pos) = 0;
         pf_statistics_->atPosition("average_heading", pos) = 0;
         pf_statistics_->atPosition("average_velocity", pos) = 0;
-      }
-      else
-      {
+      } else {
         pf_statistics_->atPosition("particles_per_cell", pos)++;
         pf_statistics_->atPosition("average_x_position", pos) = pf_statistics_->atPosition("average_x_position", pos) + p.x;
         pf_statistics_->atPosition("average_y_position", pos) += p.y;
@@ -133,8 +125,7 @@ void ParticleFilterNode::publishPointCloud()
   // the values for particles in each cell instead of just accumulating totals and averaging!
   // need to re-implement this
   // TODO: at some point the map is not getting repopulated after it's set to NAN on clearing, so these calculations become nan
-  for (grid_map::GridMapIterator iterator(*pf_statistics_); !iterator.isPastEnd(); ++iterator)
-  {
+  for (grid_map::GridMapIterator iterator(*pf_statistics_); !iterator.isPastEnd(); ++iterator) {
     pf_statistics_->at("average_x_position", *iterator) = pf_statistics_->at("average_x_position", *iterator) / pf_statistics_->at("particles_per_cell", *iterator);
 
   }
@@ -150,20 +141,3 @@ void ParticleFilterNode::publishPointCloud()
 }
 
 NS_FOOT
-
-int main(int argc, char **argv) {
-  rclcpp::init(argc, argv);
-
-  auto filter_node = std::make_shared<echoflow::ParticleFilterNode>();
-  auto grid_node = std::make_shared<echoflow::RadarGridMapNode>();
-
-  filter_node->map_ptr_ = grid_node->getMapPtr();
-
-  rclcpp::executors::MultiThreadedExecutor executor;
-  executor.add_node(filter_node);
-  executor.add_node(grid_node);
-  executor.spin();
-
-  rclcpp::shutdown();
-  return 0;
-}

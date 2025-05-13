@@ -2,7 +2,6 @@
 
 #include <geometry_msgs/msg/point.hpp>
 #include <grid_map_msgs/msg/grid_map.hpp>
-#include <radar_grid_map_node.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <sensor_msgs/point_cloud2_iterator.hpp>

@@ -1,7 +1,5 @@
 #include "radar_grid_map_node.hpp"
 
-//#include <radar_grid_map_node.hpp> // TODO: CHECK ME
-
 NS_HEAD
 
 template<typename T>
