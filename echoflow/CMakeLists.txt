@@ -27,7 +27,6 @@ set(EXTERNAL_DEPENDS
 set(EXTERNAL_DEPENDS_LIB
 )
 
-
 get_filename_component(PACKAGE_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME)
 message("Creating Package: ${PACKAGE_NAME}")
 project(${PACKAGE_NAME})  ## this package name is the name of the directory this cmake file is in
