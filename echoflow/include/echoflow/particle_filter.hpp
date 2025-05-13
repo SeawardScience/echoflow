@@ -12,7 +12,7 @@
 NS_HEAD
 
 /**
- * @brief TODO
+ * @brief Struct for holding the properties of a particle (position, heading, speed, weight).
  *
  */
 struct Target {
@@ -63,7 +63,12 @@ public:
   void predict(double dt);
 
   /**
-   * @brief Update particle weights TODO
+   * @brief Update particle weights using the Euclidean distance transform for each particle.
+   *
+   * Each particle is re-weighted from 0 to 1 according to a Gaussian function of their
+   * Euclidean distance transform. If the particle re-weight results in a weight of 0, the weight is
+   * reduced by a given decay factor. Individual particle weights are then normalized by the total
+   * weight of all particles.
    *
    * @param map_ptr Shared pointer to GridMap with radar intensity-based targets to track.
    */
