@@ -7,6 +7,7 @@ cmake_minimum_required(VERSION 3.8)
 set(ROS_DEPENDS
   ament_cmake
   grid_map_core
+  grid_map_cv
   grid_map_ros
   grid_map_msgs
   grid_map_costmap_2d
