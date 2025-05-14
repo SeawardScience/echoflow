@@ -54,11 +54,18 @@ public:
     int max_queue_size = 1000; ///< Maximum number of radar messages to buffer.
 
     /**
-     * @brief Declares and initializes all node parameters.
+     * @brief Declares all node parameters.
      *
      * @param node Pointer to the ROS2 node for parameter declaration.
      */
-    void init(rclcpp::Node * node);
+    void declare(rclcpp::Node * node);
+
+    /**
+     * @brief Updates all node parameters.
+     *
+     * @param node Pointer to the ROS2 node for parameter update.
+     */
+    void update(rclcpp::Node * node);
   };
 
   std::shared_ptr<grid_map::GridMap> getMapPtr(){return map_ptr_;}
