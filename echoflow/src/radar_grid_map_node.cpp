@@ -52,7 +52,7 @@ RadarGridMapNode::RadarGridMapNode()
       map_ptr_->getLength().x(), map_ptr_->getLength().y(),
       map_ptr_->getSize()(0), map_ptr_->getSize()(1));
 
-  costmap_timer_ = this->create_wall_timer(std::chrono::milliseconds(int(parameters_.map.pub_interval*1000)),
+  costmap_timer_ = this->create_wall_timer(std::chrono::milliseconds(int(parameters_.map.pub_interval * 1000)),
                           std::bind(&RadarGridMapNode::publishCostmap, this));
 
   queue_timer_ = this->create_wall_timer(

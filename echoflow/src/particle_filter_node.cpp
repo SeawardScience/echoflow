@@ -2,18 +2,40 @@
 
 NS_HEAD
 
+void ParticleFilterNode::Parameters::declare(rclcpp::Node * node)
+{
+  node->declare_parameter("particle_filter.num_particles", particle_filter.num_particles);
+  node->declare_parameter("particle_filter_statistics.frameId", particle_filter_statistics.frameId);
+  node->declare_parameter("particle_filter_statistics.length", particle_filter_statistics.length);
+  node->declare_parameter("particle_filter_statistics.width", particle_filter_statistics.width);
+  node->declare_parameter("particle_filter_statistics.resolution", particle_filter_statistics.resolution);
+  node->declare_parameter("particle_filter_statistics.pub_interval", particle_filter_statistics.pub_interval);
+}
+
+void ParticleFilterNode::Parameters::update(rclcpp::Node * node)
+{
+  node->get_parameter("particle_filter.num_particles", particle_filter.num_particles);
+  node->get_parameter("particle_filter_statistics.frameId", particle_filter_statistics.frameId);
+  node->get_parameter("particle_filter_statistics.length", particle_filter_statistics.length);
+  node->get_parameter("particle_filter_statistics.width", particle_filter_statistics.width);
+  node->get_parameter("particle_filter_statistics.resolution", particle_filter_statistics.resolution);
+  node->get_parameter("particle_filter_statistics.pub_interval", particle_filter_statistics.pub_interval);
+}
+
 ParticleFilterNode::ParticleFilterNode()
       : Node("particle_filter_node")
 {
-  this->declare_parameter("num_particles", 100000);
-  size_t num_particles = this->get_parameter("num_particles").as_int();
-  pf_ = std::make_unique<MultiTargetParticleFilter>(num_particles);
+  parameters_.declare(this);
+  parameters_.update(this);
+
+  pf_ = std::make_unique<MultiTargetParticleFilter>(parameters_.particle_filter.num_particles);
 
   cloud_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("particle_cloud", 10);
 
+  // Timer for particle filter update function
   timer_ = create_wall_timer(
-      std::chrono::milliseconds(100),
-      std::bind(&ParticleFilterNode::update, this));
+              std::chrono::milliseconds(update_timer_interval_),
+              std::bind(&ParticleFilterNode::update, this));
 
   // Initialize GridMap for keeping track of particle filter statistics
   pf_statistics_pub_ = this->create_publisher<grid_map_msgs::msg::GridMap>("particle_filter_statistics", 10);
@@ -23,9 +45,15 @@ ParticleFilterNode::ParticleFilterNode()
                                           "average_heading",
                                           "average_velocity"});
 
-  // TODO: need to let user specify size of this map, but for now just set position here
-  pf_statistics_->setGeometry(grid_map::Length(1500, 1500), 10.0);
-  pf_statistics_->setFrameId("map"); // todo get from params
+  // Timer for computing and publishing particle filter statistics on user-settable time interval
+  pf_statistics_timer_ = create_wall_timer(
+                          std::chrono::milliseconds(int(parameters_.particle_filter_statistics.pub_interval * 1000)),
+                          std::bind(&ParticleFilterNode::computeParticleFilterStatistics, this));
+
+  pf_statistics_->setGeometry(grid_map::Length(parameters_.particle_filter_statistics.length,
+                                               parameters_.particle_filter_statistics.width),
+                              parameters_.particle_filter_statistics.resolution);
+  pf_statistics_->setFrameId(parameters_.particle_filter_statistics.frameId);
 
   last_update_time_ = now();
 
@@ -53,9 +81,58 @@ void ParticleFilterNode::update()
   pf_->resample();
   pending_detections_.clear();
 
-  pf_statistics_->clearAll();
-
   publishPointCloud();
+}
+
+void ParticleFilterNode::computeParticleFilterStatistics()
+{
+  pf_statistics_->clearAll();
+  const auto& particles = pf_->getParticles();
+
+  for (const auto& particle: particles) {
+
+    // TODO: write function to average heading correctly -- this is wrong
+
+    // Accumulate statistics on the current particles
+    // TODO: currently uses same map size/resolution as grid map -- need to update this to
+    // use different map sizes and resolutions from the grid map
+
+    // Accumulate number of particles per cell and averages of the particle statistics
+    grid_map::Position position(particle.x, particle.y);
+    if (pf_statistics_->isInside(position)) {
+      if (std::isnan(pf_statistics_->atPosition("particles_per_cell", position))) {
+        pf_statistics_->atPosition("particles_per_cell", position) = 0;
+        pf_statistics_->atPosition("average_x_position", position) = 0;
+        pf_statistics_->atPosition("average_y_position", position) = 0;
+        pf_statistics_->atPosition("average_heading", position) = 0;
+        pf_statistics_->atPosition("average_velocity", position) = 0;
+      } else {
+        pf_statistics_->atPosition("particles_per_cell", position)++;
+        pf_statistics_->atPosition("average_x_position", position) = pf_statistics_->atPosition("average_x_position", position) + particle.x;
+        pf_statistics_->atPosition("average_y_position", position) += particle.y;
+        pf_statistics_->atPosition("average_heading", position) += particle.heading;
+        pf_statistics_->atPosition("average_velocity", position) += particle.speed;
+      }
+    }
+
+  }
+
+  // Compute averages of pf statistics
+  // TODO: to compute the standard deviation of each metric we're going to have to keep track of
+  // the values for particles in each cell instead of just accumulating totals and averaging!
+  // need to re-implement this
+  // TODO: at some point the map is not getting repopulated after it's set to NAN on clearing, so these calculations become nan
+  for (grid_map::GridMapIterator iterator(*pf_statistics_); !iterator.isPastEnd(); ++iterator) {
+    pf_statistics_->at("average_x_position", *iterator) = pf_statistics_->at("average_x_position", *iterator) / pf_statistics_->at("particles_per_cell", *iterator);
+
+  }
+
+  //grid_map::Position radar_grid_map_center = map_ptr_->getPosition();
+  //pf_statistics_->move(radar_grid_map_center);
+  std::unique_ptr<grid_map_msgs::msg::GridMap> message;
+  message = grid_map::GridMapRosConverter::toMessage(*pf_statistics_);
+  pf_statistics_pub_->publish(std::move(message));
+
 }
 
 void ParticleFilterNode::publishPointCloud()
@@ -87,55 +164,17 @@ void ParticleFilterNode::publishPointCloud()
   sensor_msgs::PointCloud2Iterator<float> iter_yaw_rate(cloud, "yaw_rate");
   sensor_msgs::PointCloud2Iterator<float> iter_weight(cloud, "weight");
 
-  for (const auto& p : particles) {
-    *iter_x = static_cast<float>(p.x);
-    *iter_y = static_cast<float>(p.y);
+  for (const auto& particle : particles) {
+    *iter_x = static_cast<float>(particle.x);
+    *iter_y = static_cast<float>(particle.y);
     *iter_z = 0.0f;
-    *iter_heading = static_cast<float>(p.heading);
-    *iter_speed = static_cast<float>(p.speed);
-    *iter_yaw_rate = static_cast<float>(p.yaw_rate);
-    *iter_weight = static_cast<float>(p.weight);
+    *iter_heading = static_cast<float>(particle.heading);
+    *iter_speed = static_cast<float>(particle.speed);
+    *iter_yaw_rate = static_cast<float>(particle.yaw_rate);
+    *iter_weight = static_cast<float>(particle.weight);
     ++iter_x; ++iter_y; ++iter_z;
     ++iter_heading; ++iter_speed; ++iter_yaw_rate; ++iter_weight;
-
-    // Accumulate statistics on the current particles
-    // TODO: currently uses same map size/resolution as grid map -- need to update this to
-    // use different map sizes and resolutions from the grid map
-    grid_map::Position pos(p.x, p.y);
-    if (pf_statistics_->isInside(pos)) {
-      if (std::isnan(pf_statistics_->atPosition("particles_per_cell", pos))) {
-        pf_statistics_->atPosition("particles_per_cell", pos) = 0;
-        pf_statistics_->atPosition("average_x_position", pos) = 0;
-        pf_statistics_->atPosition("average_y_position", pos) = 0;
-        pf_statistics_->atPosition("average_heading", pos) = 0;
-        pf_statistics_->atPosition("average_velocity", pos) = 0;
-      } else {
-        pf_statistics_->atPosition("particles_per_cell", pos)++;
-        pf_statistics_->atPosition("average_x_position", pos) = pf_statistics_->atPosition("average_x_position", pos) + p.x;
-        pf_statistics_->atPosition("average_y_position", pos) += p.y;
-        pf_statistics_->atPosition("average_heading", pos) += p.heading;
-        pf_statistics_->atPosition("average_velocity", pos) += p.speed;
-      }
-    }
-
   }
-
-  // Compute averages of pf statistics
-  // TODO: to compute the standard deviation of each metric we're going to have to keep track of
-  // the values for particles in each cell instead of just accumulating totals and averaging!
-  // need to re-implement this
-  // TODO: at some point the map is not getting repopulated after it's set to NAN on clearing, so these calculations become nan
-  for (grid_map::GridMapIterator iterator(*pf_statistics_); !iterator.isPastEnd(); ++iterator) {
-    pf_statistics_->at("average_x_position", *iterator) = pf_statistics_->at("average_x_position", *iterator) / pf_statistics_->at("particles_per_cell", *iterator);
-
-  }
-
-  // TODO: move this to own function once it's working
-  //grid_map::Position radar_grid_map_center = map_ptr_->getPosition();
-  //pf_statistics_->move(radar_grid_map_center);
-  std::unique_ptr<grid_map_msgs::msg::GridMap> message;
-  message = grid_map::GridMapRosConverter::toMessage(*pf_statistics_);
-  pf_statistics_pub_->publish(std::move(message));
 
   cloud_pub_->publish(cloud);
 }

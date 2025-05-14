@@ -12,7 +12,10 @@
     <include file="$(find-pkg-share marine_radar_tracker)/launch/marine_radar_to_pointcloud.launch.xml" />
 
     <!-- Launch particle filter and radar grid map node -->
-    <node pkg="echoflow" exec="particle_filter_node" name="particle_filter_node" />
+    <node pkg="echoflow" exec="particle_filter_node" name="particle_filter_node">
+      <param from="$(find-pkg-share echoflow)/config/particle_filter.yaml" />
+      <!--<param from="$(find-pkg-share echoflow)/config/radar_grid_map.yaml" />-->
+    </node>
   </group>
 
   <group>

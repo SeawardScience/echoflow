@@ -30,17 +30,64 @@ public:
    */
   ParticleFilterNode();
 
+  /**
+   * @brief Struct to hold ROS2 parameters.
+   *
+   */
+  struct Parameters
+  {
+    struct {
+      int num_particles = 100000;
+    } particle_filter;
+
+    struct {
+      std::string frameId = "map";
+      float length = 1500.0;
+      float width = 1500.0;
+      float resolution = 10.0;
+      float pub_interval = 0.1;               // seconds
+    } particle_filter_statistics;
+
+    /**
+     * @brief Declares all node parameters.
+     *
+     * @param node Pointer to the ROS2 node for parameter declaration.
+     */
+    void declare(rclcpp::Node * node);
+
+    /**
+     * @brief Updates all node parameters.
+     *
+     * @param node Pointer to the ROS2 node for parameter update.
+     */
+    void update(rclcpp::Node * node);
+  };
+
   std::shared_ptr<grid_map::GridMap> map_ptr_;
+
+protected:
+  Parameters parameters_; // Runtime parameters.
 
 private:
   /**
-   * @brief todo
+   * @brief Main particle filter update function that
    *
+   * pdates the particle filter by predicting the next particle position and heading,
+   * udpating particle weights, and resampling particles. Also computes aggregated statistics
+   * on the particles in the point cloud.
+   *
+   * Publishes: point cloud of all live particles.
    */
   void update();
 
   /**
-   * @brief Convert particle filters to a pointcloud and publish.
+   * @brief TODO
+   *
+   */
+   void computeParticleFilterStatistics();
+
+  /**
+   * @brief Convert particles to a pointcloud and publish.
    *
    * Publishes a sensor_msgs::msg::PointCloud2 topic.
    */
@@ -49,9 +96,11 @@ private:
   std::unique_ptr<MultiTargetParticleFilter> pf_;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr cloud_pub_;
   rclcpp::TimerBase::SharedPtr timer_;
+  uint8_t update_timer_interval_ = 100;       // milliseconds
   std::vector<Detection> pending_detections_;
 
   rclcpp::Publisher<grid_map_msgs::msg::GridMap>::SharedPtr pf_statistics_pub_;
+  rclcpp::TimerBase::SharedPtr pf_statistics_timer_;
   grid_map::GridMap *pf_statistics_;
 
   bool initialized_ = false;
