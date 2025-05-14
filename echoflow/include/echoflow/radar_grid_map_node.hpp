@@ -74,11 +74,6 @@ protected:
   Parameters parameters_; ///< Runtime parameters.
 
   /**
-   * @brief Waits for topics and TFs to become available.
-   */
-  void waitForTopics();
-
-  /**
    * @brief Publishes the current grid map as an occupancy grid.
    */
   void publishCostmap();

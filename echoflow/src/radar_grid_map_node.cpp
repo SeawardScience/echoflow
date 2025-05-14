@@ -61,10 +61,6 @@ RadarGridMapNode::RadarGridMapNode()
 
 }
 
-void RadarGridMapNode::waitForTopics() {
-
-}
-
 void RadarGridMapNode::publishCostmap()
 {
   if (!map_ptr_)
