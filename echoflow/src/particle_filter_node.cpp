@@ -48,7 +48,9 @@ ParticleFilterNode::ParticleFilterNode()
                                           "y_position_mean",
                                           "y_position_std_dev",
                                           "heading_mean",
-                                          "heading_std_dev",
+                                          "heading_sines",   // TODO (antonella): this is a hacky way of keeping track of
+                                          "heading_cosines", // sines and cosines in order to compute the circular mean
+                                          "heading_std_dev", // and circ variance -- likely can be improved
                                           "velocity_mean",
                                           "velocity_std_dev"});
 
@@ -107,6 +109,8 @@ void ParticleFilterNode::computeParticleFilterStatistics()
         pf_statistics_->atPosition("y_position_mean", position) = 0;
         pf_statistics_->atPosition("y_position_std_dev", position) = 0;
         pf_statistics_->atPosition("heading_mean", position) = 0;
+        pf_statistics_->atPosition("heading_sines", position) = 0;
+        pf_statistics_->atPosition("heading_cosines", position) = 0;
         pf_statistics_->atPosition("heading_std_dev", position) = 0;
         pf_statistics_->atPosition("velocity_mean", position) = 0;
         pf_statistics_->atPosition("velocity_std_dev", position) = 0;
@@ -114,22 +118,30 @@ void ParticleFilterNode::computeParticleFilterStatistics()
         pf_statistics_->atPosition("particles_per_cell", position)++;
         pf_statistics_->atPosition("x_position_mean", position) += particle.x;
         pf_statistics_->atPosition("y_position_mean", position) += particle.y;
-        // todo: call utility function to average heading correctly
-        pf_statistics_->atPosition("heading_mean", position) += particle.heading;
+        // todo: re-factor this into something more sensible
+        // accumulate sum of sines and cosines of heading
+        pf_statistics_->atPosition("heading_sines", position) += sin(particle.heading);
+        pf_statistics_->atPosition("heading_cosines", position) += cos(particle.heading);
         pf_statistics_->atPosition("velocity_mean", position) += particle.speed;
       }
     }
   }
 
   // Compute averages of pf statistics
-      // TODO: at some point the map is not getting repopulated after it's set to NAN on clearing,
-    // so these calculations become nan
   for (grid_map::GridMapIterator iterator(*pf_statistics_); !iterator.isPastEnd(); ++iterator) {
     pf_statistics_->at("x_position_mean", *iterator) = pf_statistics_->at("x_position_mean", *iterator)
                                                           / pf_statistics_->at("particles_per_cell", *iterator);
     pf_statistics_->at("y_position_mean", *iterator) = pf_statistics_->at("y_position_mean", *iterator)
                                                           / pf_statistics_->at("particles_per_cell", *iterator);
-    // todo: heading average calculation
+    // todo: this implementation can hopefully be improved
+    // todo (antonella): look into eigen matrix functions, might be able to make some of this more effient w/o iterators
+    pf_statistics_->at("heading_mean", *iterator) = atan2(pf_statistics_->at("heading_sines", *iterator),
+                                                          pf_statistics_->at("heading_cosines", *iterator));
+    // Compute C, S for circ std dev
+    pf_statistics_->at("heading_sines", *iterator) = pf_statistics_->at("heading_sines", *iterator)
+                                                    / pf_statistics_->at("particles_per_cell", *iterator);
+    pf_statistics_->at("heading_cosines", *iterator) = pf_statistics_->at("heading_cosines", *iterator)
+                                                    / pf_statistics_->at("particles_per_cell", *iterator);
     pf_statistics_->at("velocity_mean", *iterator) = pf_statistics_->at("velocity_mean", *iterator)
                                                         / pf_statistics_->at("particles_per_cell", *iterator);
   }
@@ -154,8 +166,9 @@ void ParticleFilterNode::computeParticleFilterStatistics()
                                                           / pf_statistics_->at("particles_per_cell", *iterator));
     pf_statistics_->at("y_position_std_dev", *iterator) = sqrt(pf_statistics_->at("y_position_std_dev", *iterator)
                                                           / pf_statistics_->at("particles_per_cell", *iterator));
-    pf_statistics_->at("heading_std_dev", *iterator) = sqrt(pf_statistics_->at("heading_std_dev", *iterator)
-                                                       / pf_statistics_->at("particles_per_cell", *iterator));
+    pf_statistics_->at("heading_std_dev", *iterator) = sqrt(2 * (1 - sqrt(
+                                                       pow(pf_statistics_->at("heading_sines", *iterator), 2) +
+                                                       pow(pf_statistics_->at("heading_cosines", *iterator), 2))));
     pf_statistics_->at("velocity_std_dev", *iterator) = sqrt(pf_statistics_->at("velocity_std_dev", *iterator)
                                                         / pf_statistics_->at("particles_per_cell", *iterator));
   }
