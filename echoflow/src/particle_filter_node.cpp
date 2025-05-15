@@ -25,7 +25,7 @@ void ParticleFilterNode::Parameters::update(rclcpp::Node * node)
 }
 
 ParticleFilterNode::ParticleFilterNode()
-      : Node("particle_filter_node")
+      : Node("particle_filter")
 {
   parameters_.declare(this);
   parameters_.update(this);
@@ -96,8 +96,8 @@ void ParticleFilterNode::computeParticleFilterStatistics()
   pf_statistics_->clearAll();
   const auto& particles = pf_->getParticles();
 
+  // Accumulate number of particles per cell and totals of the particle properties
   for (const auto& particle : particles) {
-    // Accumulate number of particles per cell and averages of the particle statistics
     grid_map::Position position(particle.x, particle.y);
     if (pf_statistics_->isInside(position)) {
       if (std::isnan(pf_statistics_->atPosition("particles_per_cell", position))) {
@@ -106,17 +106,17 @@ void ParticleFilterNode::computeParticleFilterStatistics()
         pf_statistics_->atPosition("x_position_std_dev", position) = 0;
         pf_statistics_->atPosition("y_position_mean", position) = 0;
         pf_statistics_->atPosition("y_position_std_dev", position) = 0;
-        pf_statistics_->atPosition("heading_average", position) = 0;
+        pf_statistics_->atPosition("heading_mean", position) = 0;
         pf_statistics_->atPosition("heading_std_dev", position) = 0;
-        pf_statistics_->atPosition("velocity_average", position) = 0;
+        pf_statistics_->atPosition("velocity_mean", position) = 0;
         pf_statistics_->atPosition("velocity_std_dev", position) = 0;
       } else {
         pf_statistics_->atPosition("particles_per_cell", position)++;
-        pf_statistics_->atPosition("x_position_average", position) += particle.x;
-        pf_statistics_->atPosition("y_position_average", position) += particle.y;
+        pf_statistics_->atPosition("x_position_mean", position) += particle.x;
+        pf_statistics_->atPosition("y_position_mean", position) += particle.y;
         // todo: call utility function to average heading correctly
-        pf_statistics_->atPosition("heading_average", position) += particle.heading;
-        pf_statistics_->atPosition("velocity_average", position) += particle.speed;
+        pf_statistics_->atPosition("heading_mean", position) += particle.heading;
+        pf_statistics_->atPosition("velocity_mean", position) += particle.speed;
       }
     }
   }
@@ -125,12 +125,12 @@ void ParticleFilterNode::computeParticleFilterStatistics()
       // TODO: at some point the map is not getting repopulated after it's set to NAN on clearing,
     // so these calculations become nan
   for (grid_map::GridMapIterator iterator(*pf_statistics_); !iterator.isPastEnd(); ++iterator) {
-    pf_statistics_->at("x_position_average", *iterator) = pf_statistics_->at("x_position_average", *iterator)
+    pf_statistics_->at("x_position_mean", *iterator) = pf_statistics_->at("x_position_mean", *iterator)
                                                           / pf_statistics_->at("particles_per_cell", *iterator);
-    pf_statistics_->at("y_position_average", *iterator) = pf_statistics_->at("y_position_average", *iterator)
+    pf_statistics_->at("y_position_mean", *iterator) = pf_statistics_->at("y_position_mean", *iterator)
                                                           / pf_statistics_->at("particles_per_cell", *iterator);
     // todo: heading average calculation
-    pf_statistics_->at("velocity_average", *iterator) = pf_statistics_->at("velocity_average", *iterator)
+    pf_statistics_->at("velocity_mean", *iterator) = pf_statistics_->at("velocity_mean", *iterator)
                                                         / pf_statistics_->at("particles_per_cell", *iterator);
   }
 
@@ -139,12 +139,12 @@ void ParticleFilterNode::computeParticleFilterStatistics()
     grid_map::Position position(particle.x, particle.y);
     if (pf_statistics_->isInside(position)) {
       pf_statistics_->atPosition("x_position_std_dev", position) +=
-          pow(particle.x - pf_statistics_->atPosition("x_position_average", position), 2);
+          pow(particle.x - pf_statistics_->atPosition("x_position_mean", position), 2);
       pf_statistics_->atPosition("y_position_std_dev", position) +=
-          pow(particle.x - pf_statistics_->atPosition("y_position_average", position), 2);
+          pow(particle.x - pf_statistics_->atPosition("y_position_mean", position), 2);
       // todo: heading calculation
       pf_statistics_->atPosition("velocity_std_dev", position) +=
-          pow(particle.x - pf_statistics_->atPosition("velocity_average", position), 2);
+          pow(particle.x - pf_statistics_->atPosition("velocity_mean", position), 2);
     }
   }
 

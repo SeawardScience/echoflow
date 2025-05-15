@@ -12,6 +12,7 @@
 #include <visualization_msgs/msg/marker_array.hpp>
 #include <visualization_msgs/msg/marker.hpp>
 #include "grid_map_filters.hpp"
+//#include "heading_utilities.hpp"
 #include "particle_filter.hpp"
 
 NS_HEAD

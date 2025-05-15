@@ -7,6 +7,6 @@ grid_map_visualization:
     occupancy_grid:
         type: occupancy_grid
         params:
-          layer: pf_statistics
+          layer: particles_per_cell
           data_min: 0.0
           data_max: 1.0
