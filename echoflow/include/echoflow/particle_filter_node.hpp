@@ -1,5 +1,9 @@
 #pragma once
 
+#include <cmath>
+#include <memory>
+#include <string>
+#include <vector>
 #include <geometry_msgs/msg/point.hpp>
 #include <grid_map_msgs/msg/grid_map.hpp>
 #include <rclcpp/rclcpp.hpp>
@@ -26,18 +30,17 @@ class ParticleFilterNode : public rclcpp::Node
 public:
   /**
    * @brief Construct a new Particle Filter Node object.
-   *
    */
   ParticleFilterNode();
 
   /**
    * @brief Struct to hold ROS2 parameters.
-   *
    */
   struct Parameters
   {
     struct {
       int num_particles = 100000;
+      float update_interval = 0.1;            // seconds
     } particle_filter;
 
     struct {
@@ -45,7 +48,7 @@ public:
       float length = 1500.0;
       float width = 1500.0;
       float resolution = 10.0;
-      float pub_interval = 0.1;               // seconds
+      float pub_interval = 1.0;               // seconds
     } particle_filter_statistics;
 
     /**
@@ -66,13 +69,13 @@ public:
   std::shared_ptr<grid_map::GridMap> map_ptr_;
 
 protected:
-  Parameters parameters_; // Runtime parameters.
+  Parameters parameters_;     // Runtime parameters.
 
 private:
   /**
-   * @brief Main particle filter update function that
+   * @brief Main particle filter update function.
    *
-   * pdates the particle filter by predicting the next particle position and heading,
+   * Updates the particle filter by predicting the next particle position and heading,
    * udpating particle weights, and resampling particles. Also computes aggregated statistics
    * on the particles in the point cloud.
    *
@@ -81,22 +84,31 @@ private:
   void update();
 
   /**
-   * @brief TODO
+   * @brief Computes and publishes statistics on the particles in the particle filter.
    *
+   * Computes the following statistics on the particles in each cell over a user-specified
+   * window of the grid map:
+   *    * Number of particles
+   *    * Average x-position of particles (mean and standard deviation)
+   *    * Average y-position of particles (mean and standard deviation)
+   *    * Average heading of particles (circular mean and circular standard deviation)
+   *    * Average velocity of particles (mean and standard deviation)
+   *
+   * Publishes: grid_map_msgs::msg::GridMap topic containing particle filter statistics as
+   * layers in a grid map.
    */
    void computeParticleFilterStatistics();
 
   /**
    * @brief Convert particles to a pointcloud and publish.
    *
-   * Publishes a sensor_msgs::msg::PointCloud2 topic.
+   * Publishes: sensor_msgs::msg::PointCloud2 topic of all currently live particles.
    */
   void publishPointCloud();
 
   std::unique_ptr<MultiTargetParticleFilter> pf_;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr cloud_pub_;
   rclcpp::TimerBase::SharedPtr timer_;
-  uint8_t update_timer_interval_ = 100;       // milliseconds
   std::vector<Detection> pending_detections_;
 
   rclcpp::Publisher<grid_map_msgs::msg::GridMap>::SharedPtr pf_statistics_pub_;

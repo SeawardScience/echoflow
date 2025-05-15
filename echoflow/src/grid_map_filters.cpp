@@ -28,7 +28,9 @@ void computeEDTFromIntensity(grid_map::GridMap& map,
   distance_image *= map_resolution;
 
   // Store result in GridMap layer
-  map.add(distance_layer, std::numeric_limits<float>::quiet_NaN());
+  if (!map.exists(distance_layer)) {
+    map.add(distance_layer, std::numeric_limits<float>::quiet_NaN());
+  }
 
   for (grid_map::GridMapIterator it(map); !it.isPastEnd(); ++it) {
     const grid_map::Index img_idx(it.getUnwrappedIndex());
