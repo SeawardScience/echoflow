@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<launch>
+
+  <node pkg="grid_map_visualization" exec="grid_map_visualization" name="grid_map_visualization" output="screen">
+    <param from="$(find-pkg-share echoflow)/config/grid_map_visualization.yaml" />
+  </node>
+
+</launch>

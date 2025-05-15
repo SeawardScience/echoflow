@@ -169,7 +169,7 @@ Currently, this node does not provide ROS2 services.
 
 ## Contributing
 
-We welcome contributions!  
+We welcome contributions!
 Please read the [CONTRIBUTING.md](CONTRIBUTING.md) guidelines to get started.
 
 When making contributions, remember:
@@ -190,7 +190,5 @@ This project is licensed under the LICENSE provided in this repository.
 Developed by [Seaward Science](https://seaward.science/) for University of New Hampshire Center for Coastal and Ocean Mapping [CCOM](https://www.ccom.unh.edu/)
 
 ### Authors
-- Dr. Kristohper Krasnosky (lead software engineer)
-- Antonella Willby (software developer)
-
-
+- Dr. Kristopher Krasnosky (lead software engineer)
+- Antonella Wilby (software developer)

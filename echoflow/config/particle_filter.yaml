@@ -1,0 +1,11 @@
+/**:
+  ros__parameters:
+    particle_filter:
+      num_particles: 100000
+      update_interval: 0.1    # seconds
+    particle_filter_statistics:
+      frameId: map
+      length: 1500.0
+      width: 1500.0
+      resolution: 1.0
+      pub_interval: 1.0       # seconds

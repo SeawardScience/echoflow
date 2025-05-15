@@ -1,11 +1,11 @@
 /**:
   ros__parameters:
-    map_parameters:
-      frameId: "map"
-      length: 5000.0
+    filter:
+      near_clutter_range: 0.0
+    map:
+      frameId: map
+      length: 1500.0              # meters
+      width: 1500.0               # meters
       resolution: 1.0
-      width: 5000.0
-    publisher_parameters:
-      timeInterval: 1.0
-
-
+      pub_interval: 0.1           # seconds
+    max_queue_size: 1000

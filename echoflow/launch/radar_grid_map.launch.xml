@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<launch>
+
+  <arg name="radar_ns" default="" />
+
+  <node pkg="echoflow" exec="radar_grid_map" name="radar_grid_map_node" namespace="$(var radar_ns)">
+    <param from="$(find-pkg-share echoflow)/config/radar_grid_map.yaml" />
+  </node>
+
+</launch>

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<launch>
+
+  <arg name="radar1_ns" default="aura/perception/sensors/halo_a" />
+  <arg name="radar2_ns" default="aura/perception/sensors/halo_b" />
+
+  <group>
+    <push-ros-namespace namespace="$(var radar1_ns)"/>
+
+    <!-- Launch radar to pointcloud node -->
+    <include file="$(find-pkg-share marine_radar_tracker)/launch/marine_radar_to_pointcloud.launch.xml" />
+
+    <!-- Launch particle filter and radar grid map node -->
+    <node pkg="echoflow" exec="particle_filter_node" name="particle_filter_node">
+      <param from="$(find-pkg-share echoflow)/config/particle_filter.yaml" />
+      <!--<param from="$(find-pkg-share echoflow)/config/radar_grid_map.yaml" />-->
+    </node>
+  </group>
+
+  <group>
+    <push-ros-namespace namespace="$(var radar2_ns)"/>
+
+  </group>
+
+  <!-- Launch Rviz2 with configuration file -->
+  <node pkg="rviz2" exec="rviz2" name="rviz2" output="screen"
+        args="-d $(find-pkg-share echoflow)/config/echoflow.rviz" />
+
+</launch>
