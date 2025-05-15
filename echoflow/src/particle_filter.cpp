@@ -42,9 +42,9 @@ void MultiTargetParticleFilter::initialize(std::shared_ptr<grid_map::GridMap> ma
     Target particle;
     particle.x = position.x();
     particle.y = position.y();
-    particle.heading = 2.0 * M_PI * static_cast<double>(rand() / RAND_MAX); // TODO rand_r() thread safe
-    particle.speed = 20.0 * static_cast<double>(rand() / RAND_MAX);
-    particle.yaw_rate = 0.0 * static_cast<double>(rand() / RAND_MAX);
+    particle.speed = 20.0 * static_cast<double>(rand()) / RAND_MAX;
+    particle.heading = 2.0 * M_PI * static_cast<double>(rand()) / RAND_MAX;
+    particle.yaw_rate = 0.0 * static_cast<double>(rand()) / RAND_MAX;
     particle.weight = 1.0;  // Will be normalized later
     particles_.push_back(particle);
   }
@@ -79,7 +79,7 @@ void MultiTargetParticleFilter::updateWeights(std::shared_ptr<grid_map::GridMap>
   }
 
   // todo: should these parameters be user-tunable?
-  double sigma = 30.0;
+  double sigma = 100.0;
 
   const double decay_factor = 0.95;  // Retain 50% of previous weight if outside detection < todo: 50%?
   double total_weight = 0.0;
@@ -117,11 +117,11 @@ void MultiTargetParticleFilter::resample()
 {
   // Filter out particles with speed < 3 m/s
   std::vector<Target> filtered_particles;
-  for (const auto& particle : particles_) {
-    if (particle.speed >= 3.0) {
-      filtered_particles.push_back(particle);
-    }
-  }
+  // for (const auto& particle : particles_) {   // debugging code to limit velocity
+  //   if (particle.speed >= 3.0) {
+  //     filtered_particles.push_back(particle);
+  //   }
+  // }
 
   // If no particles survive the filter, fall back to all particles to avoid failure
   const auto& source_particles = filtered_particles.empty() ? particles_ : filtered_particles;

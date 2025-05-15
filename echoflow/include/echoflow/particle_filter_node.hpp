@@ -48,7 +48,7 @@ public:
       std::string frameId = "map";
       float length = 1500.0;
       float width = 1500.0;
-      float resolution = 10.0;
+      float resolution = 20.0;
       float pub_interval = 1.0;               // seconds
     } particle_filter_statistics;
 

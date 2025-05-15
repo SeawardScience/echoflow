@@ -15,10 +15,10 @@ void computeEDTFromIntensity(grid_map::GridMap& map,
   // Convert radar intensity layer to OpenCV image and invert it to
   // create a binary OpenCV mask where occupied = 0, free = 255
   cv::Mat radar_intensity_image;
-  grid_map::GridMapCvConverter::toImage<uint8_t, 1>(
-          map, intensity_layer, CV_8UC1, radar_intensity_image);
+  grid_map::GridMapCvConverter::toImage<unsigned char, 1>(
+      map, intensity_layer, CV_8UC1, 0.0, 1.0, radar_intensity_image);
   cv::Mat binary_mask;
-  cv::bitwise_not(radar_intensity_image, binary_mask);
+  cv::threshold(radar_intensity_image, binary_mask, 0, 255, cv::THRESH_BINARY_INV);
 
   // Compute the distance transform (in pixels)
   cv::Mat distance_image;
