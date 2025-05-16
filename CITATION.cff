@@ -4,6 +4,9 @@ authors:
 - family-names: "Krasnosky"
   given-names: "Kristopher"
   orcid: "https://orcid.org/0000-0002-2215-7792"
+- family-names: "Wilby"
+  given-names: "Antonella"
+  orcid: "https://orcid.org/0000-0002-8459-9254"
 title: "echoflow"
 version: 0.1.0
 date-released: 2025-04-29
