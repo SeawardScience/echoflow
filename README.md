@@ -147,6 +147,9 @@ filter:
 max_queue_size: 1000
 ```
 
+### particle_filter Node
+
+TODO 
 
 ---
 
@@ -176,6 +179,11 @@ When making contributions, remember:
 - Follow the [Semantic Versioning 2.0](https://semver.org/) model.
 - Ensure all changes maintain deployability of the `master` branch.
 - Keep documentation (README, Doxygen comments) up to date.
+
+
+## Generating Documentation 
+
+Documentation is auto-generated using Doxygen. You will also need to install a LaTeX distribution in order to compile the documentation. 
 
 ---
 
