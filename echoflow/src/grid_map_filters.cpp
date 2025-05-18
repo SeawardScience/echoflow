@@ -38,4 +38,9 @@ void computeEDTFromIntensity(grid_map::GridMap& map,
   }
 }
 
+void computeCircularMean()
+{
+
+}
+
 NS_FOOT

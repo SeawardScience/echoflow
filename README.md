@@ -149,7 +149,7 @@ max_queue_size: 1000
 
 ### particle_filter Node
 
-TODO 
+TODO
 
 ---
 
@@ -181,9 +181,16 @@ When making contributions, remember:
 - Keep documentation (README, Doxygen comments) up to date.
 
 
-## Generating Documentation 
+## Generating Documentation
 
-Documentation is auto-generated using Doxygen. You will also need to install a LaTeX distribution in order to compile the documentation. 
+Documentation is auto-generated using Doxygen. Doxygen can be installed from `apt` with:
+
+`sudo apt install doxygen`
+
+You will also need to install LaTeX, Ghostscript, and dvips in order to compile the math formulas in the documentation (more details in the [Doxygen manual](https://www.doxygen.nl/manual/formulas.html)).
+All necessary packages can be installed by the following:
+
+`sudo apt install texlive texlive-latex-extras`
 
 ---
 

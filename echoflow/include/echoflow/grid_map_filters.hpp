@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cmath>
 #include <limits>
 #include <string>
 #include <grid_map_core/grid_map_core.hpp>
@@ -25,5 +26,16 @@ NS_HEAD
 void computeEDTFromIntensity(grid_map::GridMap& map,
                              const std::string& intensity_layer,
                              const std::string& distance_layer);
+
+/**
+ * @brief Compute the circular mean angle on a sample of angle observations.
+ *
+ * \f$\overline{\alpha}= \textrm{atan2}\biggl(\sum_{j=1}^{n} \sin \alpha_j, \sum_{j=1}^{n} \cos \alpha_j) \biggr)\f$
+ *
+ * Function is implemented using TODO
+ *
+ *
+ */
+void computeCircularMean();
 
 NS_FOOT
