@@ -58,7 +58,7 @@ void MultiTargetParticleFilter::initialize(std::shared_ptr<grid_map::GridMap> ma
     Target particle;
     particle.x = position.x();
     particle.y = position.y();
-    particle.speed = 20.0 * static_cast<double>(rand()) / RAND_MAX; // TODO: make parameter inital max speed
+    particle.speed = initial_max_speed_ * static_cast<double>(rand()) / RAND_MAX;
     particle.heading = 2.0 * M_PI * static_cast<double>(rand()) / RAND_MAX;
     particle.yaw_rate = 0.0 * static_cast<double>(rand()) / RAND_MAX;
     particle.weight = 1.0;  // Will be normalized later
@@ -94,8 +94,8 @@ void MultiTargetParticleFilter::updateWeights(std::shared_ptr<grid_map::GridMap>
     return;
   }
 
-  double sigma = 100.0; // Standard deviation for Gaussian weight function TODO: make parameter observation_sigma
-  const double decay_factor = 0.95;  // Retain 50% of previous weight if outside detection TODO: make parameter
+  double sigma = observation_sigma_;
+  const double decay_factor = decay_factor_;
   double total_weight = 0.0;
 
   for (auto& particle : particles_) {
@@ -131,13 +131,13 @@ void MultiTargetParticleFilter::updateWeights(std::shared_ptr<grid_map::GridMap>
 
 void MultiTargetParticleFilter::resample()
 {
-  // Filter out particles with speed > 3 m/s
+  // Filter out particles with speed > min_resample_speed
   std::vector<Target> filtered_particles;
-  // for (const auto& particle : particles_) {   // debugging code to limit velocity TODO: set min resample speed threshold to a param
-  //   if (particle.speed >= 3.0) {
-  //     filtered_particles.push_back(particle);
-  //   }
-  // }
+  for (const auto& particle : particles_) {   // debugging code to limit velocity TODO: set min resample speed threshold to a param
+    if (particle.speed >= min_resample_speed_) {
+      filtered_particles.push_back(particle);
+    }
+  }
 
   // If no particles survive the filter, fall back to all particles to avoid failure
   const auto& source_particles = filtered_particles.empty() ? particles_ : filtered_particles;
