@@ -40,15 +40,23 @@ public:
   {
     struct {
       int num_particles = 100000;
-      float update_interval = 0.1;            // seconds
+      double update_interval = 0.1;            // seconds
+      double initial_max_speed = 20.0;
+      double observation_sigma = 100.0;
+      double decay_factor = 0.95;
+      double min_resample_speed = 3.0;
+      double noise_std_pos = 0.1;
+      double noise_std_yaw = 0.4;
+      double noise_std_yaw_rate = 1.0;
+      double noise_std_speed = 4.0;
     } particle_filter;
 
     struct {
       std::string frameId = "map";
-      float length = 1500.0;
-      float width = 1500.0;
-      float resolution = 10.0;
-      float pub_interval = 1.0;               // seconds
+      double length = 1500.0;
+      double width = 1500.0;
+      double resolution = 10.0;
+      double pub_interval = 1.0;               // seconds
     } particle_filter_statistics;
 
     /**
@@ -106,6 +114,7 @@ private:
    */
   void publishPointCloud();
 
+  rclcpp::Node::OnSetParametersCallbackHandle::SharedPtr parameter_event_sub_; //!< Handle for parameter event subscription
   std::unique_ptr<MultiTargetParticleFilter> pf_;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr cloud_pub_;
   rclcpp::TimerBase::SharedPtr timer_;

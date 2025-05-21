@@ -2,7 +2,23 @@
 
 NS_HEAD
 
-MultiTargetParticleFilter::MultiTargetParticleFilter(size_t num_particles)
+MultiTargetParticleFilter::MultiTargetParticleFilter(size_t num_particles,
+                                                       double initial_max_speed,
+                                                       double observation_sigma,
+                                                       double decay_factor,
+                                                       double min_resample_speed,
+                                                       double noise_std_pos,
+                                                       double noise_std_yaw,
+                                                       double noise_std_yaw_rate,
+                                                       double noise_std_speed)
+  : initial_max_speed_(initial_max_speed),
+    observation_sigma_(observation_sigma),
+    decay_factor_(decay_factor),
+    min_resample_speed_(min_resample_speed),
+    noise_pos_(std::normal_distribution<double>(0.0, noise_std_pos)),
+    noise_yaw_(std::normal_distribution<double>(0.0, noise_std_yaw)),
+    noise_yaw_rate_(std::normal_distribution<double>(0.0, noise_std_yaw_rate)),
+    noise_speed_(std::normal_distribution<double>(0.0, noise_std_speed))
 {
   particles_.resize(num_particles);
   rng_.seed(std::random_device{}());
@@ -42,7 +58,7 @@ void MultiTargetParticleFilter::initialize(std::shared_ptr<grid_map::GridMap> ma
     Target particle;
     particle.x = position.x();
     particle.y = position.y();
-    particle.speed = 20.0 * static_cast<double>(rand()) / RAND_MAX;
+    particle.speed = 20.0 * static_cast<double>(rand()) / RAND_MAX; // TODO: make parameter inital max speed
     particle.heading = 2.0 * M_PI * static_cast<double>(rand()) / RAND_MAX;
     particle.yaw_rate = 0.0 * static_cast<double>(rand()) / RAND_MAX;
     particle.weight = 1.0;  // Will be normalized later
@@ -74,20 +90,19 @@ void MultiTargetParticleFilter::predict(double dt)
 void MultiTargetParticleFilter::updateWeights(std::shared_ptr<grid_map::GridMap> map_ptr)
 {
   if (!map_ptr || !map_ptr->exists("edt")) {
-    RCLCPP_WARN(rclcpp::get_logger("MultiTargetParticleFilter"), "GridMap does not contain 'edt' layer.");
+    RCLCPP_WARN(rclcpp::get_logger("MultiTargetParticleFilter"), "GridMap does not contain 'edt' layer."); // maybe change to throttle
     return;
   }
 
-  // todo: should these parameters be user-tunable?
-  double sigma = 100.0;
-
-  const double decay_factor = 0.95;  // Retain 50% of previous weight if outside detection < todo: 50%?
+  double sigma = 100.0; // Standard deviation for Gaussian weight function TODO: make parameter observation_sigma
+  const double decay_factor = 0.95;  // Retain 50% of previous weight if outside detection TODO: make parameter
   double total_weight = 0.0;
 
   for (auto& particle : particles_) {
     grid_map::Position position(particle.x, particle.y);
     double new_weight = 0.0;
 
+    // Check if the particle is inside the map
     if (map_ptr->isInside(position)) {
       try {
         double distance = map_ptr->atPosition("edt", position);
@@ -106,6 +121,7 @@ void MultiTargetParticleFilter::updateWeights(std::shared_ptr<grid_map::GridMap>
     total_weight += new_weight;
   }
 
+  // Normalize weights
   if (total_weight > 0.0) {
     for (auto& particle : particles_) {
       particle.weight /= total_weight;
@@ -115,9 +131,9 @@ void MultiTargetParticleFilter::updateWeights(std::shared_ptr<grid_map::GridMap>
 
 void MultiTargetParticleFilter::resample()
 {
-  // Filter out particles with speed < 3 m/s
+  // Filter out particles with speed > 3 m/s
   std::vector<Target> filtered_particles;
-  // for (const auto& particle : particles_) {   // debugging code to limit velocity
+  // for (const auto& particle : particles_) {   // debugging code to limit velocity TODO: set min resample speed threshold to a param
   //   if (particle.speed >= 3.0) {
   //     filtered_particles.push_back(particle);
   //   }
@@ -129,16 +145,16 @@ void MultiTargetParticleFilter::resample()
   std::vector<Target> new_particles;
   new_particles.reserve(source_particles.size());
 
-  std::uniform_real_distribution<double> dist_u(0.0, 1.0);
+  std::uniform_real_distribution<double> dist_u(0.0, 1.0); // uniform distribution
   double step = 1.0 / source_particles.size();
-  double r = dist_u(rng_) * step;
-  double c = source_particles[0].weight;
-  size_t i = 0;
+  double r = dist_u(rng_) * step; // initial offset
+  double c = source_particles[0].weight; // cumulative weight
+  size_t i = 0; // source index
 
   // TODO: revisit variable names
-  for (size_t m = 0; m < source_particles.size(); ++m)
+  for (size_t m = 0; m < source_particles.size(); ++m) // m resample index
   {
-    double U = r + m * step;
+    double U = r + m * step; // uniform sample point along [0,1] range used to pick a particle based on weights
     while (U > c && i < source_particles.size() - 1)
     {
       ++i;
