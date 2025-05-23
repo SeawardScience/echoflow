@@ -38,7 +38,17 @@ void computeEDTFromIntensity(grid_map::GridMap& map,
   }
 }
 
+float computeSequentialMean(float new_observation, float num_samples, float prior_mean)
+{
+  return prior_mean + ((new_observation - prior_mean) / num_samples);
+}
+
 void computeCircularMean()
+{
+
+}
+
+void computeCircularStdDev()
 {
 
 }

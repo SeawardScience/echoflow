@@ -98,41 +98,44 @@ void ParticleFilterNode::computeParticleFilterStatistics()
   pf_statistics_->clearAll();
   const auto& particles = pf_->getParticles();
 
-  // Accumulate number of particles per cell and totals of the particle properties
+  // Zero out all cells in the particle statistics grid before re-computing statistics
+  for (const auto& layer : pf_statistics_->getLayers()) {
+    (*pf_statistics_)[layer].setConstant(0.0);
+  }
+
+  // Accumulate number of particles per cell and TODO
   for (const auto& particle : particles) {
     grid_map::Position position(particle.x, particle.y);
     if (pf_statistics_->isInside(position)) {
-      if (std::isnan(pf_statistics_->atPosition("particles_per_cell", position))) {
-        pf_statistics_->atPosition("particles_per_cell", position) = 0;
-        pf_statistics_->atPosition("x_position_mean", position) = 0;
-        pf_statistics_->atPosition("x_position_std_dev", position) = 0;
-        pf_statistics_->atPosition("y_position_mean", position) = 0;
-        pf_statistics_->atPosition("y_position_std_dev", position) = 0;
-        pf_statistics_->atPosition("heading_mean", position) = 0;
-        pf_statistics_->atPosition("heading_sines", position) = 0;
-        pf_statistics_->atPosition("heading_cosines", position) = 0;
-        pf_statistics_->atPosition("heading_std_dev", position) = 0;
-        pf_statistics_->atPosition("velocity_mean", position) = 0;
-        pf_statistics_->atPosition("velocity_std_dev", position) = 0;
-      } else {
-        pf_statistics_->atPosition("particles_per_cell", position)++;
-        pf_statistics_->atPosition("x_position_mean", position) += particle.x;
-        pf_statistics_->atPosition("y_position_mean", position) += particle.y;
-        // todo: re-factor this into something more sensible
-        // accumulate sum of sines and cosines of heading
-        pf_statistics_->atPosition("heading_sines", position) += sin(particle.heading);
-        pf_statistics_->atPosition("heading_cosines", position) += cos(particle.heading);
-        pf_statistics_->atPosition("velocity_mean", position) += particle.speed;
-      }
+      pf_statistics_->atPosition("particles_per_cell", position)++;
+      pf_statistics_->atPosition("x_position_mean", position) = computeSequentialMean(
+                                 particle.x,
+                                 pf_statistics_->atPosition("particles_per_cell", position),
+                                 pf_statistics_->atPosition("x_position_mean", position));
+      pf_statistics_->atPosition("y_position_mean", position) = computeSequentialMean(
+                                 particle.y,
+                                 pf_statistics_->atPosition("particles_per_cell", position),
+                                 pf_statistics_->atPosition("y_position_mean", position));
+
+
+
+
+
+
+
+
+
+      // todo: re-factor this into something more sensible
+      // accumulate sum of sines and cosines of heading
+      pf_statistics_->atPosition("heading_sines", position) += sin(particle.heading);
+      pf_statistics_->atPosition("heading_cosines", position) += cos(particle.heading);
+      pf_statistics_->atPosition("velocity_mean", position) += particle.speed;
     }
   }
 
   // Compute averages of pf statistics
   for (grid_map::GridMapIterator iterator(*pf_statistics_); !iterator.isPastEnd(); ++iterator) {
-    pf_statistics_->at("x_position_mean", *iterator) = pf_statistics_->at("x_position_mean", *iterator)
-                                                          / pf_statistics_->at("particles_per_cell", *iterator);
-    pf_statistics_->at("y_position_mean", *iterator) = pf_statistics_->at("y_position_mean", *iterator)
-                                                          / pf_statistics_->at("particles_per_cell", *iterator);
+
     // todo: this implementation can hopefully be improved
     // todo (antonella): look into eigen matrix functions, might be able to make some of this more effient w/o iterators
     pf_statistics_->at("heading_mean", *iterator) = atan2(pf_statistics_->at("heading_sines", *iterator),
