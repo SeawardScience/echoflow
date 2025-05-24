@@ -43,16 +43,20 @@ ParticleFilterNode::ParticleFilterNode()
   // Initialize GridMap for keeping track of particle filter statistics
   pf_statistics_pub_ = this->create_publisher<grid_map_msgs::msg::GridMap>("particle_filter_statistics", 10);
   pf_statistics_ = new grid_map::GridMap({"particles_per_cell",
-                                          "x_position_mean",
-                                          "x_position_std_dev",
+                                          "x_position_mean",        // Arithmetic mean of x-position of particles
+                                          "x_position_ssdm",        // Sum of squared deviations from mean used for computing variance/stdev
+                                          "x_position_std_dev",     // Standard deviation of x-position of particles
                                           "y_position_mean",
+                                          "y_position_ssdm",
                                           "y_position_std_dev",
+                                          "speed_mean",
+                                          "speed_ssdm",
+                                          "speed_std_dev",
                                           "heading_mean",
                                           "heading_sines",   // TODO (antonella): this is a hacky way of keeping track of
                                           "heading_cosines", // sines and cosines in order to compute the circular mean
-                                          "heading_std_dev", // and circ variance -- likely can be improved
-                                          "velocity_mean",
-                                          "velocity_std_dev"});
+                                          "heading_std_dev"  // and circ variance -- likely can be improved
+                                          });
 
   // Timer for computing and publishing particle filter statistics on user-settable time interval
   pf_statistics_timer_ = create_wall_timer(
@@ -107,7 +111,16 @@ void ParticleFilterNode::computeParticleFilterStatistics()
   for (const auto& particle : particles) {
     grid_map::Position position(particle.x, particle.y);
     if (pf_statistics_->isInside(position)) {
+
+      // Update count of particles per cell
       pf_statistics_->atPosition("particles_per_cell", position)++;
+
+      // Store prior means for running standard deviation computation
+      float prior_x_position_mean = pf_statistics_->atPosition("x_position_mean", position);
+      float prior_y_position_mean = pf_statistics_->atPosition("y_position_mean", position);
+      float prior_speed_mean = pf_statistics_->atPosition("speed_mean", position);
+
+      // Update arithmetic means
       pf_statistics_->atPosition("x_position_mean", position) = computeSequentialMean(
                                  particle.x,
                                  pf_statistics_->atPosition("particles_per_cell", position),
@@ -116,20 +129,40 @@ void ParticleFilterNode::computeParticleFilterStatistics()
                                  particle.y,
                                  pf_statistics_->atPosition("particles_per_cell", position),
                                  pf_statistics_->atPosition("y_position_mean", position));
+      pf_statistics_->atPosition("speed_mean", position) = computeSequentialMean(
+                                 particle.speed,
+                                 pf_statistics_->atPosition("particles_per_cell", position),
+                                 pf_statistics_->atPosition("speed_mean", position));
 
+      // Update sum of squared deviations from mean and standard deviations
+      auto [x_std_dev, x_ssdm] = computeSequentialStdDev(particle.x,
+                                                         pf_statistics_->atPosition("particles_per_cell", position),
+                                                         prior_x_position_mean,
+                                                         pf_statistics_->atPosition("x_position_mean", position),
+                                                         pf_statistics_->atPosition("x_position_ssdm", position));
+      pf_statistics_->atPosition("x_position_ssdm", position) = x_ssdm;
+      pf_statistics_->atPosition("x_position_std_dev", position) = x_std_dev;
 
+      auto [y_std_dev, y_ssdm] = computeSequentialStdDev(particle.y,
+                                                         pf_statistics_->atPosition("particles_per_cell", position),
+                                                         prior_y_position_mean,
+                                                         pf_statistics_->atPosition("y_position_mean", position),
+                                                         pf_statistics_->atPosition("y_position_ssdm", position));
+      pf_statistics_->atPosition("y_position_ssdm", position) = y_ssdm;
+      pf_statistics_->atPosition("y_position_std_dev", position) = y_std_dev;
 
-
-
-
-
-
+      auto [speed_std_dev, speed_ssdm] = computeSequentialStdDev(particle.speed,
+                                                         pf_statistics_->atPosition("particles_per_cell", position),
+                                                         prior_speed_mean,
+                                                         pf_statistics_->atPosition("speed_mean", position),
+                                                         pf_statistics_->atPosition("speed_ssdm", position));
+      pf_statistics_->atPosition("speed_ssdm", position) = speed_ssdm;
+      pf_statistics_->atPosition("speed_std_dev", position) = speed_std_dev;
 
       // todo: re-factor this into something more sensible
       // accumulate sum of sines and cosines of heading
       pf_statistics_->atPosition("heading_sines", position) += sin(particle.heading);
       pf_statistics_->atPosition("heading_cosines", position) += cos(particle.heading);
-      pf_statistics_->atPosition("velocity_mean", position) += particle.speed;
     }
   }
 
@@ -145,35 +178,13 @@ void ParticleFilterNode::computeParticleFilterStatistics()
                                                     / pf_statistics_->at("particles_per_cell", *iterator);
     pf_statistics_->at("heading_cosines", *iterator) = pf_statistics_->at("heading_cosines", *iterator)
                                                     / pf_statistics_->at("particles_per_cell", *iterator);
-    pf_statistics_->at("velocity_mean", *iterator) = pf_statistics_->at("velocity_mean", *iterator)
-                                                        / pf_statistics_->at("particles_per_cell", *iterator);
-  }
-
-  // Accumulate squared deviations from the mean
-  for (const auto& particle : particles) {
-    grid_map::Position position(particle.x, particle.y);
-    if (pf_statistics_->isInside(position)) {
-      pf_statistics_->atPosition("x_position_std_dev", position) +=
-          pow(particle.x - pf_statistics_->atPosition("x_position_mean", position), 2);
-      pf_statistics_->atPosition("y_position_std_dev", position) +=
-          pow(particle.x - pf_statistics_->atPosition("y_position_mean", position), 2);
-      // todo: heading calculation
-      pf_statistics_->atPosition("velocity_std_dev", position) +=
-          pow(particle.x - pf_statistics_->atPosition("velocity_mean", position), 2);
-    }
   }
 
   // Compute standard deviation
   for (grid_map::GridMapIterator iterator(*pf_statistics_); !iterator.isPastEnd(); ++iterator) {
-    pf_statistics_->at("x_position_std_dev", *iterator) = sqrt(pf_statistics_->at("x_position_std_dev", *iterator)
-                                                          / pf_statistics_->at("particles_per_cell", *iterator));
-    pf_statistics_->at("y_position_std_dev", *iterator) = sqrt(pf_statistics_->at("y_position_std_dev", *iterator)
-                                                          / pf_statistics_->at("particles_per_cell", *iterator));
     pf_statistics_->at("heading_std_dev", *iterator) = sqrt(2 * (1 - sqrt(
                                                        pow(pf_statistics_->at("heading_sines", *iterator), 2) +
                                                        pow(pf_statistics_->at("heading_cosines", *iterator), 2))));
-    pf_statistics_->at("velocity_std_dev", *iterator) = sqrt(pf_statistics_->at("velocity_std_dev", *iterator)
-                                                        / pf_statistics_->at("particles_per_cell", *iterator));
   }
 
   grid_map::Position radar_grid_map_center = map_ptr_->getPosition();
