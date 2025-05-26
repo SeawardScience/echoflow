@@ -116,6 +116,10 @@ install(DIRECTORY
 if(BUILD_TESTING)
   find_package(ament_cmake_gtest REQUIRED)
   ament_add_gtest(${PROJECT_NAME} test/radar_grid_map_test.cpp)
+  ament_add_gtest(${PROJECT_NAME}
+    test/grid_map_filters_test.cpp
+    include/echoflow/grid_map_filters.hpp
+    src/grid_map_filters.cpp)
   target_include_directories(${PROJECT_NAME} PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>

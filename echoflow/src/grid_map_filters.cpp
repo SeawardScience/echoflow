@@ -58,7 +58,7 @@ std::tuple<float, float> computeSequentialVariance(float new_observation, float 
 std::tuple<float, float> computeSequentialStdDev(float new_observation, float num_samples, float prior_mean, float new_mean, float prior_ssdm)
 {
   auto [variance, ssdm] = computeSequentialVariance(new_observation, num_samples, prior_mean, new_mean, prior_ssdm);
-  return {sqrt(variance), ssdm};
+  return { sqrt(variance), ssdm };
 }
 
 void computeCircularMean()
