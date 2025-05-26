@@ -90,7 +90,10 @@ foreach(NODE_FILE ${NODES})
 endforeach(NODE_FILE)
 
 
-message("  Installing: " ${EXECUTABLES})
+message("  Installing: ")
+foreach(EXEC_FILE ${EXECUTABLES})
+  message("  - " ${EXEC_FILE})
+endforeach(EXEC_FILE)
 install(TARGETS
   ${EXECUTABLES}
   DESTINATION lib/${PROJECT_NAME}/
