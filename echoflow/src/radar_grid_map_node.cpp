@@ -60,14 +60,7 @@ RadarGridMapNode::RadarGridMapNode()
 
     queue_timer_ = this->create_wall_timer(
         std::chrono::milliseconds(10),
-        std::bind(&RadarGridMapNode::procesQueue, this));
-
-
-
-}
-
-void RadarGridMapNode::waitForTopics() {
-
+        std::bind(&RadarGridMapNode::processQueue, this));
 }
 
 void RadarGridMapNode::publishCostmap()
@@ -82,15 +75,12 @@ void RadarGridMapNode::publishCostmap()
   std::unique_ptr<grid_map_msgs::msg::GridMap> message;
   message = grid_map::GridMapRosConverter::toMessage(*map_ptr_);
   grid_map_publisher_->publish(std::move(message));
-
 }
-
 
 void RadarGridMapNode::radarSectorCallback(const marine_sensor_msgs::msg::RadarSector::SharedPtr msg)
 {
   addToQueue(msg);
 }
-
 
 void RadarGridMapNode::addToQueue(const marine_sensor_msgs::msg::RadarSector::SharedPtr msg)
 {
@@ -138,8 +128,7 @@ void RadarGridMapNode::addToQueue(const marine_sensor_msgs::msg::RadarSector::Sh
   }
 }
 
-
-void RadarGridMapNode::procesQueue()
+void RadarGridMapNode::processQueue()
 {
   while (!radar_sector_queue_.empty())
   {
@@ -177,7 +166,6 @@ void RadarGridMapNode::procesQueue()
   }
 }
 
-
 void RadarGridMapNode::recenterMap(const grid_map::Position& new_center)
 {
   grid_map::Position old_center = map_ptr_->getPosition();
@@ -198,7 +186,6 @@ void RadarGridMapNode::recenterMap(const grid_map::Position& new_center)
                  distance, move_threshold);
   }
 }
-
 
 void RadarGridMapNode::processMsg(const marine_sensor_msgs::msg::RadarSector::SharedPtr msg)
 {

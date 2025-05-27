@@ -67,11 +67,6 @@ protected:
   Parameters parameters_; ///< Runtime parameters.
 
   /**
-     * @brief Waits for topics and TFs to become available.
-     */
-  void waitForTopics();
-
-  /**
      * @brief Publishes the current grid map as an occupancy grid.
      */
   void publishCostmap();
@@ -93,7 +88,7 @@ protected:
   /**
      * @brief Processes all messages in the radar sector queue.
      */
-  void procesQueue();
+  void processQueue();
 
   /**
      * @brief Processes a single radar sector message.
