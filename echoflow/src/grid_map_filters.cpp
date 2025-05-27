@@ -8,54 +8,32 @@ void computeEDTFromIntensity(grid_map::GridMap& map, const std::string& intensit
     throw std::runtime_error("GridMap does not contain intensity layer");
   }
 
-  const float resolution = map.getResolution();
-  const grid_map::Size size = map.getSize();
-  const int rows = size(1);  // rows = y
-  const int cols = size(0);  // cols = x
+  const float map_resolution = map.getResolution();
 
-  // Convert the intensity layer to an OpenCV float image
-  cv::Mat intensity_image;
+  // Convert radar intensity layer to OpenCV image and invert it to
+  // create a binary OpenCV mask where occupied = 0, free = 255
+  cv::Mat radar_intensity_image;
   grid_map::GridMapCvConverter::toImage<unsigned char, 1>(
-      map, intensity_layer, CV_8UC1, 0.0, 1.0, intensity_image);
-
-  // Convert intensity to binary: occupied (intensity > 0) = 0, else 255
+      map, intensity_layer, CV_8UC1, 0.0, 1.0, radar_intensity_image);
   cv::Mat binary_mask;
-  cv::threshold(intensity_image, binary_mask, 0, 255, cv::THRESH_BINARY_INV);
+  cv::threshold(radar_intensity_image, binary_mask, 0, 255, cv::THRESH_BINARY_INV);
 
-  // cv::imshow("Binary Mask", binary_mask);
-  // cv::waitKey(1);
-
-  // Compute the distance transform
+  // Compute the distance transform (in pixels)
   cv::Mat distance_image;
   cv::distanceTransform(binary_mask, distance_image, cv::DIST_L2, 3);
 
-  // Scale to real-world units
-  distance_image *= resolution;
+  // Convert to physical distances in meters
+  distance_image *= map_resolution;
 
-  // cv::imshow("distance image", distance_image);
-  // cv::waitKey(1);
-
+  // Store result in GridMap layer
   if (!map.exists(distance_layer)) {
     map.add(distance_layer, std::numeric_limits<float>::quiet_NaN());
   }
 
-  const grid_map::Index& bufferStart = map.getStartIndex();
-  const grid_map::Size& bufferSize = map.getSize();
-
-  for (int y = 0; y < bufferSize(1); ++y) {
-    for (int x = 0; x < bufferSize(0); ++x) {
-      // Logical index (0,0) is top-left of the cv::Mat
-      float val = distance_image.at<float>(y, x);
-
-      // Convert logical index to circular buffer index
-      grid_map::Index bufferIdx;
-      bufferIdx[0] = (y + bufferStart[0]) % bufferSize[0];
-      bufferIdx[1] = (x + bufferStart[1]) % bufferSize[1];
-
-      map.at(distance_layer, bufferIdx) = val;
-    }
+  for (grid_map::GridMapIterator it(map); !it.isPastEnd(); ++it) {
+    const grid_map::Index img_idx(it.getUnwrappedIndex());
+    map.at(distance_layer, *it) = distance_image.at<float>(img_idx(0), img_idx(1));
   }
-
 }
 
 NS_FOOT
