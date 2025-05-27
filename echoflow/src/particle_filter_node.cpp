@@ -71,14 +71,14 @@ void ParticleFilterNode::publishPointCloud() {
   sensor_msgs::PointCloud2Iterator<float> iter_yaw_rate(cloud, "yaw_rate");
   sensor_msgs::PointCloud2Iterator<float> iter_weight(cloud, "weight");
 
-  for (const auto& p : particles) {
-    *iter_x = static_cast<float>(p.x);
-    *iter_y = static_cast<float>(p.y);
+  for (const auto& particle : particles) {
+    *iter_x = static_cast<float>(particle.x);
+    *iter_y = static_cast<float>(particle.y);
     *iter_z = 0.0f;
-    *iter_heading = static_cast<float>(p.heading);
-    *iter_speed = static_cast<float>(p.speed);
-    *iter_yaw_rate = static_cast<float>(p.yaw_rate);
-    *iter_weight = static_cast<float>(p.weight);
+    *iter_heading = static_cast<float>(particle.heading);
+    *iter_speed = static_cast<float>(particle.speed);
+    *iter_yaw_rate = static_cast<float>(particle.yaw_rate);
+    *iter_weight = static_cast<float>(particle.weight);
     ++iter_x; ++iter_y; ++iter_z;
     ++iter_heading; ++iter_speed; ++iter_yaw_rate; ++iter_weight;
   }
