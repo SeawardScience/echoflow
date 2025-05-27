@@ -1,45 +1,32 @@
 #pragma once
-#include "package_defs.hpp"
-#include <vector>
+
 #include <string>
+#include <vector>
 #include <grid_map_core/GridMap.hpp>
+#include "package_defs.hpp"
+
+NS_HEAD
 
 /**
- * @brief todo
- * 
+ * @brief Inherits GridMap to provide threadsafe grid map access functions.
+ *
  */
 class RadarGridMap : public grid_map::GridMap
 {
-public: 
+public:
     /**
-     * @brief Construct a new Radar Grid Map object
-     * 
-     * @param layers 
+     * @brief Construct a new Radar Grid Map object with layer names.
+     *
+     * @param layers Names of layers to create in the grid map.
      */
     RadarGridMap(const std::vector<std::string>& layers);
 
     /**
-     * @brief Construct a new Radar Grid Map object
-     * 
+     * @brief Construct a new empty Radar Grid Map object with no layers.
+     *
      */
     RadarGridMap();
 
-    /**
-     * @brief 
-     * 
-     */
-    void getCellAtPosition(); // todo return type
-
-    /**
-     * @brief 
-     * 
-     */
-    bool setCellAtPosition();
-
-    /**
-     * @brief Currently just a stub function called whenever cell is updated.
-     * TODO: implement this
-     */
-    void addToBuffer();
-
 };
+
+NS_FOOT

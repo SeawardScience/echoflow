@@ -1,7 +1,5 @@
 #include "radar_grid_map_node.hpp"
 
-#include <radar_grid_map_node.hpp>
-
 NS_HEAD
 
 template<typename T>
@@ -30,37 +28,38 @@ void RadarGridMapNode::Parameters::init(rclcpp::Node *node)
 RadarGridMapNode::RadarGridMapNode()
     : Node("radar_grid_map")
 {
-    parameters_.init(this);
+  parameters_.init(this);
 
-    grid_map_publisher_ = this->create_publisher<grid_map_msgs::msg::GridMap>(
-                          "radar_grid_map", rclcpp::QoS(1).transient_local());
+  grid_map_publisher_ = this->create_publisher<grid_map_msgs::msg::GridMap>(
+                        "radar_grid_map", rclcpp::QoS(1).transient_local());
 
-    costmap_publisher_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>("occupancy_grid", 10);
+  costmap_publisher_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>("occupancy_grid", 10);
 
-    radar_sector_subscriber_ = this->create_subscription<marine_sensor_msgs::msg::RadarSector>(
-                               "data", 50, std::bind(&RadarGridMapNode::radarSectorCallback, this, _1));
+  radar_sector_subscriber_ = this->create_subscription<marine_sensor_msgs::msg::RadarSector>(
+                              "data", 50, std::bind(&RadarGridMapNode::radarSectorCallback, this, _1));
 
-    // TF listener
-    m_tf_buffer = std::make_shared<tf2_ros::Buffer>(this->get_clock());
-    m_tf_listener = std::make_shared<tf2_ros::TransformListener>(*m_tf_buffer);
+  // TF listener
+  m_tf_buffer = std::make_shared<tf2_ros::Buffer>(this->get_clock());
+  m_tf_listener = std::make_shared<tf2_ros::TransformListener>(*m_tf_buffer);
+
+  // TODO: wrapping map_ptr function calls in radar gridmap class to make thread safe
+  //map_ptr_.reset(new grid_map::GridMap({"intensity"}));
+  map_ptr_.reset(new RadarGridMap({"intensity"}));
+  map_ptr_->setFrameId(parameters_.map.frame_id);
+  map_ptr_->setGeometry(grid_map::Length(parameters_.map.length, parameters_.map.width), parameters_.map.resolution);
+  RCLCPP_INFO(
+      this->get_logger(),
+      "Created map with size %f x %f m (%i x %i cells).",
+      map_ptr_->getLength().x(), map_ptr_->getLength().y(),
+      map_ptr_->getSize()(0), map_ptr_->getSize()(1));
 
 
-    map_ptr_.reset(new grid_map::GridMap({"intensity"}));
-    map_ptr_->setFrameId(parameters_.map.frame_id);
-    map_ptr_->setGeometry(grid_map::Length(parameters_.map.length, parameters_.map.width), parameters_.map.resolution);
-    RCLCPP_INFO(
-        this->get_logger(),
-        "Created map with size %f x %f m (%i x %i cells).",
-        map_ptr_->getLength().x(), map_ptr_->getLength().y(),
-        map_ptr_->getSize()(0), map_ptr_->getSize()(1));
+  costmap_timer_ = this->create_wall_timer(std::chrono::milliseconds(int(parameters_.map.pub_interval*1000)),
+                          std::bind(&RadarGridMapNode::publishCostmap, this));
 
-
-    costmap_timer_ = this->create_wall_timer(std::chrono::milliseconds(int(parameters_.map.pub_interval*1000)),
-                           std::bind(&RadarGridMapNode::publishCostmap, this));
-
-    queue_timer_ = this->create_wall_timer(
-        std::chrono::milliseconds(10),
-        std::bind(&RadarGridMapNode::processQueue, this));
+  queue_timer_ = this->create_wall_timer(
+      std::chrono::milliseconds(10),
+      std::bind(&RadarGridMapNode::processQueue, this));
 }
 
 void RadarGridMapNode::publishCostmap()

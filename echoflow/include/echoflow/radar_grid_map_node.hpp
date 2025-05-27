@@ -1,19 +1,20 @@
 #pragma once
 
-#include "package_defs.hpp"
+#include <deque>
 #include <memory>
 #include <string>
+#include <geometry_msgs/msg/transform_stamped.hpp>
+#include <grid_map_msgs/msg/grid_map.hpp>
+#include <grid_map_ros/grid_map_ros.hpp>
+#include <grid_map_ros/GridMapRosConverter.hpp>
+#include <marine_sensor_msgs/msg/radar_sector.hpp>
+#include <nav_msgs/msg/occupancy_grid.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/wait_for_message.hpp>
-#include <grid_map_ros/grid_map_ros.hpp>
-#include <grid_map_msgs/msg/grid_map.hpp>
-#include <marine_sensor_msgs/msg/radar_sector.hpp>
 #include <tf2_ros/transform_listener.h>
 #include <tf2_ros/buffer.h>
-#include <geometry_msgs/msg/transform_stamped.hpp>
-#include <deque>
-#include <grid_map_ros/GridMapRosConverter.hpp>
-#include <nav_msgs/msg/occupancy_grid.hpp>
+#include "package_defs.hpp"
+#include "radar_grid_map.hpp"
 
 using std::placeholders::_1;
 using namespace std::chrono_literals;
@@ -61,7 +62,7 @@ public:
     void init(rclcpp::Node * node);
   };
 
-  std::shared_ptr<grid_map::GridMap> getMapPtr(){return map_ptr_;}
+  std::shared_ptr<grid_map::GridMap> getMapPtr(){ return map_ptr_; }
 
 protected:
   Parameters parameters_; ///< Runtime parameters.
