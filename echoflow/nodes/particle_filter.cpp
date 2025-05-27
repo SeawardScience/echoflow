@@ -9,8 +9,8 @@ int main(int argc, char **argv) {
 
   filter_node->map_ptr_ = grid_node->getMapPtr();
 
-  //rclcpp::executors::MultiThreadedExecutor executor;
-  rclcpp::executors::SingleThreadedExecutor executor;
+  rclcpp::executors::MultiThreadedExecutor executor;
+  //rclcpp::executors::SingleThreadedExecutor executor;
   executor.add_node(filter_node);
   executor.add_node(grid_node);
   executor.spin();
