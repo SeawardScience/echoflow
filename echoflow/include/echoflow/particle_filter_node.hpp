@@ -13,6 +13,7 @@
 #include <visualization_msgs/msg/marker.hpp>
 #include "grid_map_filters.hpp"
 #include "particle_filter.hpp"
+#include "radar_grid_map.hpp"
 
 NS_HEAD
 
@@ -33,7 +34,9 @@ public:
    */
   ParticleFilterNode();
 
-  std::shared_ptr<grid_map::GridMap> map_ptr_;
+  // TODO: multi-threading changes
+  //std::shared_ptr<grid_map::GridMap> map_ptr_;
+  std::shared_ptr<RadarGridMap> map_ptr_;
 
 private:
   /**

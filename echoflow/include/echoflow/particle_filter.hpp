@@ -1,11 +1,12 @@
 #pragma once
 
-#include "package_defs.hpp"
-#include <vector>
-#include <random>
 #include <cmath>
 #include <numeric>
+#include <random>
+#include <vector>
 #include <grid_map_ros/grid_map_ros.hpp>
+#include "package_defs.hpp"
+#include "radar_grid_map.hpp"
 
 
 NS_HEAD
@@ -28,9 +29,12 @@ class MultiTargetParticleFilter {
 public:
   MultiTargetParticleFilter(size_t num_particles = 500);
 
-  void initialize(std::shared_ptr<grid_map::GridMap> map_ptr);
+  // TODO: multi-threading changes
+  //void initialize(std::shared_ptr<grid_map::GridMap> map_ptr);
+  void initialize(std::shared_ptr<RadarGridMap> map_ptr);
   void predict(double dt);
-  void updateWeights(std::shared_ptr<grid_map::GridMap> map_ptr);
+  //void updateWeights(std::shared_ptr<grid_map::GridMap> map_ptr);
+  void updateWeights(std::shared_ptr<RadarGridMap> map_ptr);
   void resample();
   const std::vector<Target> & getParticles();
 

@@ -7,7 +7,9 @@ MultiTargetParticleFilter::MultiTargetParticleFilter(size_t num_particles) {
   rng_.seed(std::random_device{}());
 }
 
-void MultiTargetParticleFilter::initialize(std::shared_ptr<grid_map::GridMap> map_ptr)
+// TODO: multi-threading changes
+//void MultiTargetParticleFilter::initialize(std::shared_ptr<grid_map::GridMap> map_ptr)
+void MultiTargetParticleFilter::initialize(std::shared_ptr<RadarGridMap> map_ptr)
 {
   if (!map_ptr || !map_ptr->exists("intensity")) {
     RCLCPP_WARN(rclcpp::get_logger("MultiTargetParticleFilter"), "GridMap missing or lacks 'intensity' layer.");
@@ -20,7 +22,9 @@ void MultiTargetParticleFilter::initialize(std::shared_ptr<grid_map::GridMap> ma
     const auto& index = *it;
     if (!map_ptr->isValid(index, "intensity")) continue;
 
-    double val = map_ptr->at("intensity", index);
+    // TODO: multi-threading changes
+    //double val = map_ptr->at("intensity", index);
+    double val = map_ptr->atCell("intensity", index);
     if (std::isnan(val) || val <= 0.0) continue;
 
     grid_map::Position pos;
@@ -69,7 +73,9 @@ void MultiTargetParticleFilter::predict(double dt) {
   }
 }
 
-void MultiTargetParticleFilter::updateWeights(std::shared_ptr<grid_map::GridMap> map_ptr)
+// TODO: multi-threading changes
+//void MultiTargetParticleFilter::updateWeights(std::shared_ptr<grid_map::GridMap> map_ptr)
+void MultiTargetParticleFilter::updateWeights(std::shared_ptr<RadarGridMap> map_ptr)
 {
   if (!map_ptr || !map_ptr->exists("edt")) {
     RCLCPP_WARN(rclcpp::get_logger("MultiTargetParticleFilter"), "GridMap does not contain 'edt' layer.");

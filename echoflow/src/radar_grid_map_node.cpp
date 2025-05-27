@@ -173,7 +173,9 @@ void RadarGridMapNode::recenterMap(const grid_map::Position& new_center)
 
   if (distance > move_threshold)
   {
-    map_ptr_->move(new_center);
+    // TODO: Multithreading changes
+    // map_ptr_->move(new_center);
+    map_ptr_->moveMap(new_center);
     RCLCPP_DEBUG(this->get_logger(),
                 "Recentered map by %.2f meters (threshold %.2f meters).",
                 distance, move_threshold);
@@ -254,7 +256,9 @@ void RadarGridMapNode::processMsg(const marine_sensor_msgs::msg::RadarSector::Sh
 
   // Iterate over all cells in the polygon and clear them
   for (grid_map::PolygonIterator it(*map_ptr_, sector_polygon); !it.isPastEnd(); ++it) {
-    map_ptr_->at("intensity", *it) = NAN;
+    // TODO: Multithreading changes
+    //map_ptr_->at("intensity", *it) = NAN;
+    map_ptr_->atCell("intensity", *it) = NAN;
   }
 
 
@@ -279,7 +283,9 @@ void RadarGridMapNode::processMsg(const marine_sensor_msgs::msg::RadarSector::Sh
       grid_map::Position pos(map_x, map_y);
 
       if (map_ptr_->isInside(pos)) {
-        map_ptr_->atPosition("intensity", pos) = echo_intensity;
+        // TODO: multithreading changes
+        //map_ptr_->atPosition("intensity", pos) = echo_intensity;
+        map_ptr_->atMapPosition("intensity", pos) = echo_intensity;
       }
     }
   }

@@ -62,7 +62,9 @@ public:
     void init(rclcpp::Node * node);
   };
 
-  std::shared_ptr<grid_map::GridMap> getMapPtr(){ return map_ptr_; }
+  // TODO: multi-threading changes
+  //std::shared_ptr<grid_map::GridMap> getMapPtr(){ return map_ptr_; }
+  std::shared_ptr<RadarGridMap> getMapPtr(){ return map_ptr_; }
 
 protected:
   Parameters parameters_; ///< Runtime parameters.
@@ -127,7 +129,9 @@ private:
   // Core Data
   //------------------------------------------------------------------------------
 
-  std::shared_ptr<grid_map::GridMap> map_ptr_; ///< Main grid map data structure.
+  // TODO: multi-threading changes
+  //std::shared_ptr<grid_map::GridMap> map_ptr_; ///< Main grid map data structure.
+  std::shared_ptr<RadarGridMap> map_ptr_;
   std::deque<marine_sensor_msgs::msg::RadarSector::SharedPtr> radar_sector_queue_; ///< Queue for buffering radar sector messages.
 
   //------------------------------------------------------------------------------

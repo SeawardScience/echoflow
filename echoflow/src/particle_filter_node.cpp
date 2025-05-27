@@ -24,7 +24,7 @@ void ParticleFilterNode::update()
   double dt = (now_time - last_update_time_).seconds();
   last_update_time_ = now_time;
 
-  computeEDTFromIntensity(*map_ptr_,"intensity","edt");
+  computeEDTFromIntensity(*map_ptr_, "intensity", "edt");
 
   if (!initialized_) {
     pf_->initialize(map_ptr_);

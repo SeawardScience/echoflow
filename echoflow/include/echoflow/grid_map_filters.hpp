@@ -7,6 +7,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/core/core.hpp>
 #include "package_defs.hpp"
+#include "radar_grid_map.hpp"
 
 NS_HEAD
 
@@ -21,7 +22,9 @@ NS_HEAD
  * @param intensity_layer Name of intensity layer in grid map.
  * @param distance_layer Name of distance layer in grid map.
  */
-void computeEDTFromIntensity(grid_map::GridMap& map,
+// TODO: multi-threading changes
+//void computeEDTFromIntensity(grid_map::GridMap& map,
+void computeEDTFromIntensity(RadarGridMap& map,
                              const std::string& intensity_layer,
                              const std::string& distance_layer);
 

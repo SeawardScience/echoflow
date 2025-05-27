@@ -1,5 +1,6 @@
 #pragma once
 
+#include <mutex>
 #include <string>
 #include <vector>
 #include <grid_map_core/GridMap.hpp>
@@ -14,19 +15,27 @@ NS_HEAD
 class RadarGridMap : public grid_map::GridMap
 {
 public:
-    /**
-     * @brief Construct a new Radar Grid Map object with layer names.
-     *
-     * @param layers Names of layers to create in the grid map.
-     */
-    RadarGridMap(const std::vector<std::string>& layers);
+  /**
+   * @brief Construct a new Radar Grid Map object with layer names.
+   *
+   * @param layers Names of layers to create in the grid map.
+   */
+  RadarGridMap(const std::vector<std::string>& layers);
 
-    /**
-     * @brief Construct a new empty Radar Grid Map object with no layers.
-     *
-     */
-    RadarGridMap();
+  /**
+   * @brief Construct a new empty Radar Grid Map object with no layers.
+   *
+   */
+  RadarGridMap();
 
+  bool moveMap(const grid_map::Position& position);
+
+  float& atCell(const std::string& layer, const grid_map::Index& index);
+
+  float& atMapPosition(const std::string& layer, const grid_map::Position& position);
+
+private:
+  std::mutex mtx_;
 };
 
 NS_FOOT
