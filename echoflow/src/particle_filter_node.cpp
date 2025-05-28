@@ -50,11 +50,20 @@ ParticleFilterNode::ParticleFilterNode()
   parameters_.declare(this);
   parameters_.update(this);
 
+  pf_ = std::make_unique<MultiTargetParticleFilter>(parameters_.particle_filter.num_particles,
+                                                  parameters_.particle_filter.initial_max_speed);
+
   parameter_event_sub_ = this->add_on_set_parameters_callback(
       [this](const std::vector<rclcpp::Parameter> &parameters) {
           rcl_interfaces::msg::SetParametersResult result;
           result.successful = true;
 
+          // auto paramChanged = [&parameters](const std::string &name) {
+          //     return std::any_of(parameters.begin(), parameters.end(),
+          //                        [&name](const auto &p) { return p.get_name() == name; });
+          // };
+
+          // Log each parameter change
           for (const auto &parameter : parameters) {
               RCLCPP_INFO(this->get_logger(), "Parameter '%s' changed to '%s'",
                           parameter.get_name().c_str(),
@@ -63,18 +72,7 @@ ParticleFilterNode::ParticleFilterNode()
           }
           parameters_.update(this);
           return result;
-      }
-      );
-
-  pf_ = std::make_unique<MultiTargetParticleFilter>(parameters_.particle_filter.num_particles,
-                                                  parameters_.particle_filter.initial_max_speed,
-                                                  parameters_.particle_filter.observation_sigma,
-                                                  parameters_.particle_filter.decay_factor,
-                                                  parameters_.particle_filter.min_resample_speed,
-                                                  parameters_.particle_filter.noise_std_pos,
-                                                  parameters_.particle_filter.noise_std_yaw,
-                                                  parameters_.particle_filter.noise_std_yaw_rate,
-                                                  parameters_.particle_filter.noise_std_speed);
+      });
 
   cloud_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("particle_cloud", 10);
 
@@ -127,8 +125,16 @@ void ParticleFilterNode::update()
 
   if (!initialized_) return;
 
-  pf_->initialize(map_ptr_);
+  // these params can change dynamically
+  pf_->observation_sigma_ = parameters_.particle_filter.observation_sigma;;
+  pf_->decay_factor_ = parameters_.particle_filter.decay_factor;
+  pf_->min_resample_speed_ = parameters_.particle_filter.min_resample_speed;
+  pf_->noise_std_pos_ = parameters_.particle_filter.noise_std_pos;
+  pf_->noise_std_yaw_ = parameters_.particle_filter.noise_std_yaw;
+  pf_->noise_std_yaw_rate_ = parameters_.particle_filter.noise_std_yaw_rate;
+  pf_->noise_std_speed_ = parameters_.particle_filter.noise_std_speed;
 
+  pf_->initialize(map_ptr_);
   pf_->predict(dt);
   pf_->updateWeights(map_ptr_);
   pf_->resample();

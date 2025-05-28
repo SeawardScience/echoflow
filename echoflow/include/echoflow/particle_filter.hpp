@@ -43,23 +43,9 @@ public:
    *
    * @param num_particles Number of particles to use to initialize the particle filter (default: 500 particles).
    * @param initial_max_speed Initial maximum speed of particles (default: 20.0 m/s).
-   * @param observation_sigma Standard deviation for Gaussian weight function (default: 100.0).
-   * @param decay_factor Decay factor for particle weight (default: 0.95).
-   * @param min_resample_speed Minimum speed for resampling particles (default: 3.0 m/s).
-   * @param noise_std_pos Standard deviation for position noise (default: 0.1).
-   * @param noise_std_yaw Standard deviation for yaw noise (default: 0.4).
-   * @param noise_std_yaw_rate Standard deviation for yaw rate noise (default: 1.0).
-   * @param noise_std_speed Standard deviation for speed noise (default: 4.0).
    */
   explicit MultiTargetParticleFilter(size_t num_particles = 500,
-                                     double initial_max_speed = 20.0,
-                                     double observation_sigma = 100.0,
-                                     double decay_factor = 0.95,
-                                     double min_resample_speed = 3.0,
-                                     double noise_std_pos = 0.1,
-                                     double noise_std_yaw = 0.4,
-                                     double noise_std_yaw_rate = 1.0,
-                                     double noise_std_speed = 4.0);
+                                     double initial_max_speed = 20.0);
   /**
    * @brief Initialize multi-target particle filter.
    *
@@ -106,11 +92,6 @@ public:
    */
   const std::vector<Target> & getParticles();
 
-private:
-  std::vector<Target> particles_;
-  std::default_random_engine rng_;
-
-  double initial_max_speed_;  // Initial maximum speed of particles
   double observation_sigma_;  // Standard deviation for Gaussian weight function
   double decay_factor_;       // Decay factor for particle weight
   double min_resample_speed_; // Minimum speed for resampling particles
@@ -119,10 +100,16 @@ private:
   double noise_std_yaw_rate_; // Standard deviation for yaw rate noise
   double noise_std_speed_;    // Standard deviation for speed noise
 
-  std::normal_distribution<double> noise_pos_{0.0, noise_std_pos_};        // Gaussian noise distribution for particle position. TODO: set param noise_std_pos
-  std::normal_distribution<double> noise_yaw_{0.0, noise_std_yaw_};        // Gaussian noise distribution for particle heading. TODO: set param noise_std_yaw
-  std::normal_distribution<double> noise_yaw_rate_{0.0, noise_std_yaw_rate_};   // Gaussian noise distribution for heading change rate. TODO: set param noise_std_yaw_rate
-  std::normal_distribution<double> noise_speed_{0.0, noise_std_speed_};      // Gaussian noise distribution for particle speed. TODO: set param noise_std_speed
+private:
+  std::vector<Target> particles_;
+  std::default_random_engine rng_;
+
+  double initial_max_speed_;  // Initial maximum speed of particles
+
+  std::normal_distribution<double> noise_pos_{0.0, noise_std_pos_};        // Gaussian noise distribution for particle position.
+  std::normal_distribution<double> noise_yaw_{0.0, noise_std_yaw_};        // Gaussian noise distribution for particle heading.
+  std::normal_distribution<double> noise_yaw_rate_{0.0, noise_std_yaw_rate_};   // Gaussian noise distribution for heading change rate.
+  std::normal_distribution<double> noise_speed_{0.0, noise_std_speed_};      // Gaussian noise distribution for particle speed.
 };
 
 NS_FOOT

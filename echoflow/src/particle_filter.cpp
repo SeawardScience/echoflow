@@ -3,22 +3,8 @@
 NS_HEAD
 
 MultiTargetParticleFilter::MultiTargetParticleFilter(size_t num_particles,
-                                                       double initial_max_speed,
-                                                       double observation_sigma,
-                                                       double decay_factor,
-                                                       double min_resample_speed,
-                                                       double noise_std_pos,
-                                                       double noise_std_yaw,
-                                                       double noise_std_yaw_rate,
-                                                       double noise_std_speed)
-  : initial_max_speed_(initial_max_speed),
-    observation_sigma_(observation_sigma),
-    decay_factor_(decay_factor),
-    min_resample_speed_(min_resample_speed),
-    noise_pos_(std::normal_distribution<double>(0.0, noise_std_pos)),
-    noise_yaw_(std::normal_distribution<double>(0.0, noise_std_yaw)),
-    noise_yaw_rate_(std::normal_distribution<double>(0.0, noise_std_yaw_rate)),
-    noise_speed_(std::normal_distribution<double>(0.0, noise_std_speed))
+                                                       double initial_max_speed)
+  : initial_max_speed_(initial_max_speed)
 {
   particles_.resize(num_particles);
   rng_.seed(std::random_device{}());
@@ -60,7 +46,7 @@ void MultiTargetParticleFilter::initialize(std::shared_ptr<grid_map::GridMap> ma
     particle.y = position.y();
     particle.speed = initial_max_speed_ * static_cast<double>(rand()) / RAND_MAX;
     particle.heading = 2.0 * M_PI * static_cast<double>(rand()) / RAND_MAX;
-    particle.yaw_rate = 0.0 * static_cast<double>(rand()) / RAND_MAX;
+    particle.yaw_rate = 0.0 * static_cast<double>(rand()) / RAND_MAX; // This is ZERO always...
     particle.weight = 1.0;  // Will be normalized later
     particles_.push_back(particle);
   }
