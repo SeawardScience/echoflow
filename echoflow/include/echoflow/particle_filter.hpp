@@ -86,6 +86,11 @@ public:
   void resample();
 
   /**
+   * @brief updateNoiseDistributions
+   */
+  void updateNoiseDistributions();
+
+  /**
    * @brief Get particles.
    *
    * @return const std::vector<Target>& Vector of particles on target.

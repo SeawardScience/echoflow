@@ -53,15 +53,17 @@ ParticleFilterNode::ParticleFilterNode()
   pf_ = std::make_unique<MultiTargetParticleFilter>(parameters_.particle_filter.num_particles,
                                                   parameters_.particle_filter.initial_max_speed);
 
+  applyParameters();  // set pf parameters initially
+
   parameter_event_sub_ = this->add_on_set_parameters_callback(
       [this](const std::vector<rclcpp::Parameter> &parameters) {
           rcl_interfaces::msg::SetParametersResult result;
           result.successful = true;
 
-          // auto paramChanged = [&parameters](const std::string &name) {
-          //     return std::any_of(parameters.begin(), parameters.end(),
-          //                        [&name](const auto &p) { return p.get_name() == name; });
-          // };
+          auto paramChanged = [&parameters](const std::string &name) {
+              return std::any_of(parameters.begin(), parameters.end(),
+                                 [&name](const auto &p) { return p.get_name() == name; });
+          };
 
           // Log each parameter change
           for (const auto &parameter : parameters) {
@@ -70,7 +72,17 @@ ParticleFilterNode::ParticleFilterNode()
                           parameter.value_to_string().c_str());
               // TODO: (bonney) handle param updates case by case
           }
+
+          // parameters that require restart
+          if (paramChanged("particle_filter.num_particles") ||
+              paramChanged("particle_filter.initial_max_speed")) {
+              RCLCPP_WARN(this->get_logger(),
+                          "Change to 'num_particles' or 'initial_max_speed' will not take effect until node is restarted.");
+          }
+
           parameters_.update(this);
+          applyParameters(); // dynamically update particle filter parameters
+
           return result;
       });
 
@@ -110,6 +122,17 @@ ParticleFilterNode::ParticleFilterNode()
   last_update_time_ = now();
 }
 
+void ParticleFilterNode::applyParameters() {
+    pf_->observation_sigma_ = parameters_.particle_filter.observation_sigma;
+    pf_->decay_factor_ = parameters_.particle_filter.decay_factor;
+    pf_->min_resample_speed_ = parameters_.particle_filter.min_resample_speed;
+    pf_->noise_std_pos_ = parameters_.particle_filter.noise_std_pos;
+    pf_->noise_std_yaw_ = parameters_.particle_filter.noise_std_yaw;
+    pf_->noise_std_yaw_rate_ = parameters_.particle_filter.noise_std_yaw_rate;
+    pf_->noise_std_speed_ = parameters_.particle_filter.noise_std_speed;
+    pf_->updateNoiseDistributions();
+}
+
 void ParticleFilterNode::update()
 {
   auto now_time = now();
@@ -124,15 +147,6 @@ void ParticleFilterNode::update()
   }
 
   if (!initialized_) return;
-
-  // these params can change dynamically
-  pf_->observation_sigma_ = parameters_.particle_filter.observation_sigma;;
-  pf_->decay_factor_ = parameters_.particle_filter.decay_factor;
-  pf_->min_resample_speed_ = parameters_.particle_filter.min_resample_speed;
-  pf_->noise_std_pos_ = parameters_.particle_filter.noise_std_pos;
-  pf_->noise_std_yaw_ = parameters_.particle_filter.noise_std_yaw;
-  pf_->noise_std_yaw_rate_ = parameters_.particle_filter.noise_std_yaw_rate;
-  pf_->noise_std_speed_ = parameters_.particle_filter.noise_std_speed;
 
   pf_->initialize(map_ptr_);
   pf_->predict(dt);

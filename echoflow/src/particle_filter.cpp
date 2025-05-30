@@ -153,6 +153,13 @@ void MultiTargetParticleFilter::resample()
   particles_ = std::move(new_particles);
 }
 
+void MultiTargetParticleFilter::updateNoiseDistributions() {
+    noise_pos_       = std::normal_distribution<double>(0.0, noise_std_pos_);
+    noise_yaw_       = std::normal_distribution<double>(0.0, noise_std_yaw_);
+    noise_yaw_rate_  = std::normal_distribution<double>(0.0, noise_std_yaw_rate_);
+    noise_speed_     = std::normal_distribution<double>(0.0, noise_std_speed_);
+}
+
 const std::vector<Target>& MultiTargetParticleFilter::getParticles()
 {
   return particles_;

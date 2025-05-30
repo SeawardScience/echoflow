@@ -92,6 +92,14 @@ private:
   void update();
 
   /**
+   * @brief Applies parameters to the particle filter.
+   *
+   * Applies the current parameters to the particle filter, including noise distributions and
+   * other settings. This is called when parameters are updated and on intialization.
+   */
+  void applyParameters();
+
+  /**
    * @brief Computes and publishes statistics on the particles in the particle filter.
    *
    * Computes the following statistics on the particles in each cell over a user-specified
