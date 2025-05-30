@@ -10,6 +10,7 @@ ParticleFilterNode::ParticleFilterNode()
   pf_ = std::make_unique<MultiTargetParticleFilter>(num_particles);
 
   cloud_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("particle_cloud", 10);
+  velocity_field_pub_ = this->create_publisher<geometry_msgs::msg::PoseArray>("velocity_field", 10);
 
   timer_ = create_wall_timer(
       std::chrono::milliseconds(100),
@@ -41,6 +42,7 @@ void ParticleFilterNode::update()
   pending_detections_.clear();
 
   publishPointCloud();
+  publishVelocityField();
 }
 
 void ParticleFilterNode::publishPointCloud() {
@@ -84,6 +86,28 @@ void ParticleFilterNode::publishPointCloud() {
   }
 
   cloud_pub_->publish(cloud);
+}
+
+void ParticleFilterNode::publishVelocityField()
+{
+  const auto& particles = pf_->getParticles();
+  geometry_msgs::msg::PoseArray velocity_field;
+  velocity_field.header.frame_id = "map";
+  velocity_field.header.stamp = this->get_clock()->now();
+
+  geometry_msgs::msg::Pose pose;
+  for (const auto& particle : particles) {
+    pose.position.x = particle.x;
+    pose.position.y = particle.y;
+    pose.position.z = 0.0f;
+    pose.orientation.x = 0.0f;
+    pose.orientation.y = 0.0f;
+    pose.orientation.z = sin(particle.heading / 2);
+    pose.orientation.w = cos(particle.heading / 2);
+    velocity_field.poses.push_back(pose);
+  }
+
+  velocity_field_pub_->publish(velocity_field);
 }
 
 NS_FOOT

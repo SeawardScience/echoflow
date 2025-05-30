@@ -5,6 +5,9 @@
 #include <string>
 #include <vector>
 #include <geometry_msgs/msg/point.hpp>
+#include <geometry_msgs/msg/pose.hpp>
+#include <geometry_msgs/msg/pose_array.hpp>
+#include <geometry_msgs/msg/pose.hpp>
 #include <grid_map_msgs/msg/grid_map.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
@@ -57,8 +60,18 @@ private:
    */
   void publishPointCloud();
 
+  /**
+   * @brief Store particle positions and headings in a pose array and publish.
+   *
+   * TODO: (antonella) The PoseArray message displays a unit vector with the given position and heading.
+   * It does not scale the vector according to the particle speed, so this is probably more appropriately
+   * termed "direction field" or something that does not imply it scales with velocity.
+   */
+  void publishVelocityField();
+
   std::unique_ptr<MultiTargetParticleFilter> pf_;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr cloud_pub_;
+  rclcpp::Publisher<geometry_msgs::msg::PoseArray>::SharedPtr velocity_field_pub_;
   rclcpp::TimerBase::SharedPtr timer_;
   std::vector<Detection> pending_detections_;
 
