@@ -4,10 +4,10 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <geometry_msgs/msg/quaternion.hpp>
 #include <geometry_msgs/msg/point.hpp>
 #include <geometry_msgs/msg/pose.hpp>
 #include <geometry_msgs/msg/pose_array.hpp>
-#include <geometry_msgs/msg/pose.hpp>
 #include <grid_map_msgs/msg/grid_map.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
@@ -66,8 +66,19 @@ private:
    * TODO: (antonella) The PoseArray message displays a unit vector with the given position and heading.
    * It does not scale the vector according to the particle speed, so this is probably more appropriately
    * termed "direction field" or something that does not imply it scales with velocity.
+   *
+   * Publishes:
    */
   void publishVelocityField();
+
+  /**
+   * @brief Helper function to convert heading into "2D" quaternion, i.e. quaternion representing
+   * rotation around Z-axis.
+   *
+   * @param heading Heading to convert to quaternion.
+   * @return geometry_msgs::msg::Quaternion quaternion representation of given heading.
+   */
+  geometry_msgs::msg::Quaternion headingToQuaternion(float heading);
 
   std::unique_ptr<MultiTargetParticleFilter> pf_;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr cloud_pub_;

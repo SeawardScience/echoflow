@@ -96,18 +96,30 @@ void ParticleFilterNode::publishVelocityField()
   velocity_field.header.stamp = this->get_clock()->now();
 
   geometry_msgs::msg::Pose pose;
+  geometry_msgs::msg::Quaternion quaternion;
   for (const auto& particle : particles) {
     pose.position.x = particle.x;
     pose.position.y = particle.y;
     pose.position.z = 0.0f;
-    pose.orientation.x = 0.0f;
-    pose.orientation.y = 0.0f;
-    pose.orientation.z = sin(particle.heading / 2);
-    pose.orientation.w = cos(particle.heading / 2);
+    quaternion = headingToQuaternion(particle.heading);
+    pose.orientation.x = quaternion.x;
+    pose.orientation.y = quaternion.y;
+    pose.orientation.z = quaternion.z;
+    pose.orientation.w = quaternion.w;
     velocity_field.poses.push_back(pose);
   }
 
   velocity_field_pub_->publish(velocity_field);
+}
+
+geometry_msgs::msg::Quaternion ParticleFilterNode::headingToQuaternion(float heading)
+{
+  geometry_msgs::msg::Quaternion quaternion;
+  quaternion.x = 0.0f;
+  quaternion.y = 0.0f;
+  quaternion.z = sin(heading / 2);
+  quaternion.w = cos(heading / 2);
+  return quaternion;
 }
 
 NS_FOOT
