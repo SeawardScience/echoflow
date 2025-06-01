@@ -144,7 +144,7 @@ void MultiTargetParticleFilter::resample()
   const auto& source_particles = filtered_particles.empty() ? particles_ : filtered_particles;
 
   if (filtered_particles.empty()) {
-      RCLCPP_WARN(rclcpp::get_logger("MultiTargetParticleFilter"), "No particles passed speed threshold; falling back to full particle set.");
+      RCLCPP_DEBUG(rclcpp::get_logger("MultiTargetParticleFilter"), "No particles passed speed threshold; falling back to full particle set.");
   }
 
   std::vector<Target> new_particles;
