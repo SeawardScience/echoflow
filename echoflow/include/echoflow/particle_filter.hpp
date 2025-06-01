@@ -109,6 +109,7 @@ private:
   std::vector<Target> particles_;
   std::default_random_engine rng_;
 
+  size_t num_particles_;      // Number of particles in the filter
   double initial_max_speed_;  // Initial maximum speed of particles
 
   std::normal_distribution<double> noise_pos_{0.0, noise_std_pos_};        // Gaussian noise distribution for particle position.

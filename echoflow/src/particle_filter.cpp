@@ -4,7 +4,7 @@ NS_HEAD
 
 MultiTargetParticleFilter::MultiTargetParticleFilter(size_t num_particles,
                                                        double initial_max_speed)
-  : initial_max_speed_(initial_max_speed)
+  : num_particles_(num_particles), initial_max_speed_(initial_max_speed)
 {
   particles_.resize(num_particles);
   rng_.seed(std::random_device{}());
@@ -12,6 +12,13 @@ MultiTargetParticleFilter::MultiTargetParticleFilter(size_t num_particles,
 
 void MultiTargetParticleFilter::initialize(std::shared_ptr<grid_map::GridMap> map_ptr)
 {
+
+  RCLCPP_DEBUG(rclcpp::get_logger("MultiTargetParticleFilter"),
+                "ParticleFilter Config: num_particles=%zu, observation_sigma=%.2f, decay=%.2f, "
+                "min_speed=%.2f, noise_std_pos=%.2f, noise_std_yaw=%.2f, noise_std_yaw_rate=%.2f, noise_std_speed=%.2f",
+                num_particles_, observation_sigma_, decay_factor_,
+                min_resample_speed_, noise_std_pos_, noise_std_yaw_, noise_std_yaw_rate_, noise_std_speed_);
+
   if (!map_ptr || !map_ptr->exists("intensity")) {
     RCLCPP_WARN(rclcpp::get_logger("MultiTargetParticleFilter"), "GridMap missing or lacks 'intensity' layer.");
     return;
@@ -50,10 +57,15 @@ void MultiTargetParticleFilter::initialize(std::shared_ptr<grid_map::GridMap> ma
     particle.weight = 1.0;  // Will be normalized later
     particles_.push_back(particle);
   }
+
+  RCLCPP_INFO(rclcpp::get_logger("MultiTargetParticleFilter"),
+              "Initialized with %zu particles.", particles_.size());
 }
 
 void MultiTargetParticleFilter::predict(double dt)
 {
+  RCLCPP_DEBUG(rclcpp::get_logger("MultiTargetParticleFilter"), "Predicting next state for %zu particles with dt = %.3f", particles_.size(), dt);
+
   for (auto& particle : particles_) {
     double velocity = particle.speed + noise_speed_(rng_);
     double yaw = particle.heading + noise_yaw_(rng_);
@@ -119,14 +131,21 @@ void MultiTargetParticleFilter::resample()
 {
   // Filter out particles with speed > min_resample_speed
   std::vector<Target> filtered_particles;
-  for (const auto& particle : particles_) {   // debugging code to limit velocity TODO: set min resample speed threshold to a param
+  for (const auto& particle : particles_) {   // debugging code to limit velocity
     if (particle.speed >= min_resample_speed_) {
       filtered_particles.push_back(particle);
     }
   }
 
+  RCLCPP_DEBUG(rclcpp::get_logger("MultiTargetParticleFilter"), "Resampling %zu particles. %zu passed min_resample_speed_ = %.2f",
+              particles_.size(), filtered_particles.size(), min_resample_speed_);
+
   // If no particles survive the filter, fall back to all particles to avoid failure
   const auto& source_particles = filtered_particles.empty() ? particles_ : filtered_particles;
+
+  if (filtered_particles.empty()) {
+      RCLCPP_WARN(rclcpp::get_logger("MultiTargetParticleFilter"), "No particles passed speed threshold; falling back to full particle set.");
+  }
 
   std::vector<Target> new_particles;
   new_particles.reserve(source_particles.size());
