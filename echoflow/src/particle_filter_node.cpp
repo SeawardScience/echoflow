@@ -33,6 +33,8 @@ ParticleFilterNode::ParticleFilterNode()
   pf_ = std::make_unique<MultiTargetParticleFilter>(parameters_.particle_filter.num_particles);
 
   cloud_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("particle_cloud", 10);
+  cell_heading_field_pub_ = this->create_publisher<geometry_msgs::msg::PoseArray>("cell_heading_field", 10);
+  particle_heading_field_pub_ = this->create_publisher<geometry_msgs::msg::PoseArray>("particle_heading_field", 10);
 
   // Timer for particle filter update function
   timer_ = create_wall_timer(
@@ -53,9 +55,9 @@ ParticleFilterNode::ParticleFilterNode()
                                           "speed_ssdm",
                                           "speed_std_dev",
                                           "heading_mean",
-                                          "heading_sines",   // TODO (antonella): this is a hacky way of keeping track of
-                                          "heading_cosines", // sines and cosines in order to compute the circular mean
-                                          "heading_std_dev"  // and circ variance -- likely can be improved
+                                          "heading_std_dev",
+                                          "heading_sines",          // These layers store the heading converted to Cartesian coordinates
+                                          "heading_cosines"         // for calculating the circular mean and standard deviation
                                           });
 
   // Timer for computing and publishing particle filter statistics on user-settable time interval
@@ -107,7 +109,9 @@ void ParticleFilterNode::computeParticleFilterStatistics()
     (*pf_statistics_)[layer].setConstant(0.0);
   }
 
-  // Accumulate number of particles per cell and TODO
+  // Iterate through all particles and update the particle filter statistics grid map
+  // Accumulate total particle count per cell, then update the arithmetic means and
+  // standard deviations. Also convert headings from polar to Cartesian coordinates and store
   for (const auto& particle : particles) {
     grid_map::Position position(particle.x, particle.y);
     if (pf_statistics_->isInside(position)) {
@@ -120,7 +124,7 @@ void ParticleFilterNode::computeParticleFilterStatistics()
       float prior_y_position_mean = pf_statistics_->atPosition("y_position_mean", position);
       float prior_speed_mean = pf_statistics_->atPosition("speed_mean", position);
 
-      // Update arithmetic means
+      // Update sequential arithmetic means for x position, y position, particle speed
       pf_statistics_->atPosition("x_position_mean", position) = computeSequentialMean(
                                  particle.x,
                                  pf_statistics_->atPosition("particles_per_cell", position),
@@ -135,6 +139,7 @@ void ParticleFilterNode::computeParticleFilterStatistics()
                                  pf_statistics_->atPosition("speed_mean", position));
 
       // Update sum of squared deviations from mean and standard deviations
+      // for x position, y position, particle speed
       auto [x_std_dev, x_ssdm] = computeSequentialStdDev(particle.x,
                                                          pf_statistics_->atPosition("particles_per_cell", position),
                                                          prior_x_position_mean,
@@ -159,39 +164,42 @@ void ParticleFilterNode::computeParticleFilterStatistics()
       pf_statistics_->atPosition("speed_ssdm", position) = speed_ssdm;
       pf_statistics_->atPosition("speed_std_dev", position) = speed_std_dev;
 
-      // todo: re-factor this into something more sensible
-      // accumulate sum of sines and cosines of heading
+      // Sum heading sines and cosines for each cell
+      // This is effectively converting a heading in polar coordinates to Cartesian coordinates
+      // in order to compute the arithmetic mean of the headings
       pf_statistics_->atPosition("heading_sines", position) += sin(particle.heading);
       pf_statistics_->atPosition("heading_cosines", position) += cos(particle.heading);
     }
   }
 
-  // Compute averages of pf statistics
+  // Iterate through grid map and compute circular means and standard deviations for heading
   for (grid_map::GridMapIterator iterator(*pf_statistics_); !iterator.isPastEnd(); ++iterator) {
 
-    // todo: this implementation can hopefully be improved
-    // todo (antonella): look into eigen matrix functions, might be able to make some of this more effient w/o iterators
-    pf_statistics_->at("heading_mean", *iterator) = atan2(pf_statistics_->at("heading_sines", *iterator),
-                                                          pf_statistics_->at("heading_cosines", *iterator));
-    // Compute C, S for circ std dev
-    pf_statistics_->at("heading_sines", *iterator) = pf_statistics_->at("heading_sines", *iterator)
-                                                    / pf_statistics_->at("particles_per_cell", *iterator);
-    pf_statistics_->at("heading_cosines", *iterator) = pf_statistics_->at("heading_cosines", *iterator)
-                                                    / pf_statistics_->at("particles_per_cell", *iterator);
+    // Only calculate statistics for cells where there are particles
+    if (pf_statistics_->at("particles_per_cell", *iterator) > 0) {
+
+      pf_statistics_->at("heading_mean", *iterator) = computeCircularMean(pf_statistics_->at("heading_sines", *iterator),
+                                                                        pf_statistics_->at("heading_cosines", *iterator));
+
+      pf_statistics_->at("heading_std_dev", *iterator) = computeCircularStdDev(pf_statistics_->at("heading_sines", *iterator),
+                                                                               pf_statistics_->at("heading_cosines", *iterator),
+                                                                               pf_statistics_->at("particles_per_cell", *iterator));
+
+    // Otherwise leave cell with zero value and move on to the next cell
+    } else {
+      continue;
+    }
   }
 
-  // Compute standard deviation
-  for (grid_map::GridMapIterator iterator(*pf_statistics_); !iterator.isPastEnd(); ++iterator) {
-    pf_statistics_->at("heading_std_dev", *iterator) = sqrt(2 * (1 - sqrt(
-                                                       pow(pf_statistics_->at("heading_sines", *iterator), 2) +
-                                                       pow(pf_statistics_->at("heading_cosines", *iterator), 2))));
-  }
-
+  // Update particle filter statistics grid map position and publish
   grid_map::Position radar_grid_map_center = map_ptr_->getPosition();
   pf_statistics_->move(radar_grid_map_center);
   std::unique_ptr<grid_map_msgs::msg::GridMap> message;
   message = grid_map::GridMapRosConverter::toMessage(*pf_statistics_);
   pf_statistics_pub_->publish(std::move(message));
+
+  publishParticleHeadingField();
+  publishCellHeadingField();
 }
 
 void ParticleFilterNode::publishPointCloud()
@@ -236,6 +244,63 @@ void ParticleFilterNode::publishPointCloud()
   }
 
   cloud_pub_->publish(cloud);
+}
+
+void ParticleFilterNode::publishParticleHeadingField()
+{
+  const auto& particles = pf_->getParticles();
+  geometry_msgs::msg::PoseArray heading_field;
+  heading_field.header.frame_id = "map";
+  heading_field.header.stamp = this->get_clock()->now();
+
+  geometry_msgs::msg::Pose pose;
+  geometry_msgs::msg::Quaternion quaternion;
+  for (const auto& particle : particles) {
+    pose.position.x = particle.x;
+    pose.position.y = particle.y;
+    pose.position.z = 0.0f;
+    quaternion = headingToQuaternion(particle.heading);
+    pose.orientation.x = quaternion.x;
+    pose.orientation.y = quaternion.y;
+    pose.orientation.z = quaternion.z;
+    pose.orientation.w = quaternion.w;
+    heading_field.poses.push_back(pose);
+  }
+
+  particle_heading_field_pub_->publish(heading_field);
+}
+
+void ParticleFilterNode::publishCellHeadingField()
+{
+  geometry_msgs::msg::PoseArray heading_field;
+  heading_field.header.frame_id = "map";
+  heading_field.header.stamp = this->get_clock()->now();
+
+  geometry_msgs::msg::Pose pose;
+  geometry_msgs::msg::Quaternion quaternion;
+  for (grid_map::GridMapIterator iterator(*pf_statistics_); !iterator.isPastEnd(); ++iterator) {
+    pose.position.x = pf_statistics_->at("x_position_mean", *iterator);
+    pose.position.y = pf_statistics_->at("y_position_mean", *iterator);
+    pose.position.z = 0.0f;
+    quaternion = headingToQuaternion(pf_statistics_->at("heading_mean", *iterator));
+    pose.orientation.x = quaternion.x;
+    pose.orientation.y = quaternion.y;
+    pose.orientation.z = quaternion.z;
+    pose.orientation.w = quaternion.w;
+    heading_field.poses.push_back(pose);
+  }
+
+  cell_heading_field_pub_->publish(heading_field);
+}
+
+geometry_msgs::msg::Quaternion ParticleFilterNode::headingToQuaternion(float heading)
+{
+  geometry_msgs::msg::Quaternion quaternion;
+  quaternion.x = 0.0f;
+  quaternion.y = 0.0f;
+  quaternion.z = sin(heading / 2);
+  quaternion.w = cos(heading / 2);
+  return quaternion;
 }
 
 NS_FOOT

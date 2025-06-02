@@ -5,6 +5,9 @@
 #include <string>
 #include <vector>
 #include <geometry_msgs/msg/point.hpp>
+#include <geometry_msgs/msg/pose.hpp>
+#include <geometry_msgs/msg/pose_array.hpp>
+#include <geometry_msgs/msg/quaternion.hpp>
 #include <grid_map_msgs/msg/grid_map.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
@@ -47,7 +50,7 @@ public:
       std::string frameId = "map";
       float length = 1500.0;
       float width = 1500.0;
-      float resolution = 10.0;
+      float resolution = 50.0;
       float pub_interval = 1.0;               // seconds
     } particle_filter_statistics;
 
@@ -106,14 +109,45 @@ private:
    */
   void publishPointCloud();
 
-  std::unique_ptr<MultiTargetParticleFilter> pf_;
-  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr cloud_pub_;
-  rclcpp::TimerBase::SharedPtr timer_;
-  std::vector<Detection> pending_detections_;
+  /**
+   * @brief Store particle positions and headings in a pose array and publish. Function can be
+   * visualized in rviz2 as a PoseArray showing particle headings.
+   *
+   * Note: The PoseArray message displays a unit vector with the given position and heading.
+   * It does not scale the vector according to the particle speed, so this has been
+   * termed "particle heading field" instead of "particle velocity field".
+   *
+   * Publishes: geometry_msgs::msg::PoseArray topic of all particles and headings.
+   */
+  void publishParticleHeadingField();
 
-  rclcpp::Publisher<grid_map_msgs::msg::GridMap>::SharedPtr pf_statistics_pub_;
-  rclcpp::TimerBase::SharedPtr pf_statistics_timer_;
+  /**
+   * @brief todo
+   *
+   */
+  void publishCellHeadingField();
+
+  /**
+   * @brief Helper function to convert heading into "2D" quaternion, i.e. quaternion representing
+   * rotation around Z-axis.
+   *
+   * @param heading Heading to convert to quaternion.
+   * @return geometry_msgs::msg::Quaternion quaternion representation of given heading.
+   */
+  geometry_msgs::msg::Quaternion headingToQuaternion(float heading);
+
+  std::unique_ptr<MultiTargetParticleFilter> pf_;
   grid_map::GridMap *pf_statistics_;
+
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr cloud_pub_;
+  rclcpp::Publisher<geometry_msgs::msg::PoseArray>::SharedPtr cell_heading_field_pub_;
+  rclcpp::Publisher<geometry_msgs::msg::PoseArray>::SharedPtr particle_heading_field_pub_;
+  rclcpp::Publisher<grid_map_msgs::msg::GridMap>::SharedPtr pf_statistics_pub_;
+
+  rclcpp::TimerBase::SharedPtr timer_;
+  rclcpp::TimerBase::SharedPtr pf_statistics_timer_;
+
+  std::vector<Detection> pending_detections_;
 
   bool initialized_ = false;
   rclcpp::Time last_update_time_;

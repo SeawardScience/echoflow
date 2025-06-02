@@ -1,7 +1,9 @@
 #pragma once
 
 #include <cmath>
+#include <complex>
 #include <limits>
+#include <stdexcept>
 #include <string>
 #include <tuple>
 #include <grid_map_core/grid_map_core.hpp>
@@ -10,6 +12,7 @@
 #include <opencv2/core/core.hpp>
 #include "package_defs.hpp"
 
+using namespace std::complex_literals;
 
 NS_HEAD
 
@@ -53,7 +56,7 @@ float computeSequentialMean(float new_observation, float num_samples, float prio
  * \f$ s^2_n = s^2_{n-1} + \frac{(x_n - \overline{x}_{n-1})^2}{n} - \frac{s^2_{n-1}}{n-1}\f$
  *
  * Directly using this formula can be numerically unstable, so following Welford's algorithm the
- * sum of squares of deviation from current mean, \f$ M_{2,n} = \sum_{i=1}^{n} (x_i - \overline{x}_n)^2 \f$
+ * sum of squares of deviation from current mean, \f$ M_{2,n} = \sum_\limits{i=1}^{n} (x_i - \overline{x}_n)^2 \f$
  * is used to update the variance:
  *
  * \f$ M_{2,n} = M_{2,n-1} + (x_n - \overline{x}_{n-1})(x_n - \overline{x}_n) \f$
@@ -105,9 +108,18 @@ std::tuple<float, float> computeSequentialStdDev(float new_observation,
  * Given \f$n\f$ angles \f$\alpha_1, ..., \alpha_n\f$ measured in radians, their circular mean is defined as
  * (@cite Mardia_1972, section 2.2.2):
  *
- * \f$\overline{\alpha}= \textrm{arg}\biggl(\sum_{j=1}^{n} e^{i\cdot\alpha_j} \biggr)\f$
+ * \f$\overline{\alpha} = \textrm{arg}\biggl(\sum_\limits{j=1}^{n} e^{i\cdot\alpha_j} \biggr)\f$
+ *
+ * In order to store the Cartesian coordinates of each heading as a real float without an imaginary component,
+ * we instead use the arctan2 formulation to compute the mean resultant angle back to polar coordinates for
+ * to obtain the mean heading, as follows:
+ *
+ * \f$\overline{\alpha} = \textrm{atan2}\biggl(\sum\limits_{j=1}^{n} \sin \alpha_j,
+ *                                             \sum_\limits{j=1}^{n} \cos \alpha_j \biggr)\f$
  */
-void computeCircularMean();
+float computeCircularMean(float sines_sum, float cosines_sum);
+
+float computeCircularVariance(float sines_sum, float cosines_sum, float num_samples);
 
 /**
  * @brief Compute the circular standard deviation on a sample of angle data.
@@ -116,6 +128,9 @@ void computeCircularMean();
  * is defined as (@cite Mardia_1972, section 2.3.4, Eq. 2.3.12):
  *
  */
-void computeCircularStdDev();
+float computeCircularStdDev(float sines_sum, float cosines_sum, float num_samples);
+
+
+float computeMeanResultantLength(float sines_sum, float cosines_sum, float num_samples);
 
 NS_FOOT
