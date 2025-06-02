@@ -32,7 +32,7 @@ void computeEDTFromIntensity(grid_map::GridMap& map,
                              const std::string& distance_layer);
 
 /**
- * @brief Compute the sequential arithmetic mean of a sample given a new observation.
+ * @brief Compute the arithmetic mean of a sample given a new observation.
  *
  * Given a new observation \f$x_n\f$, the prior mean of the data \f$\overline{x}_{n-1}\f$,
  * and the total number of observations \f$n\f$, the recurrence relation for computing
@@ -43,11 +43,12 @@ void computeEDTFromIntensity(grid_map::GridMap& map,
  * @param new_observation New value with which to update the mean.
  * @param num_samples Total number of samples (including current new observation).
  * @param prior_mean Prior mean of the sample data (without new observation).
+ * @return Arithmetic mean of the sample.
  */
 float computeSequentialMean(float new_observation, float num_samples, float prior_mean);
 
 /**
- * @brief Compute the sequential variance of a sample given a new observation.
+ * @brief Compute the variance of a sample given a new observation.
  *
  * This function uses Welford's algorithm @cite welford_1962 to compute the new variance of the sample given
  * the new observation. The following recurrence relation computes the unbiased variance of the sample for
@@ -72,7 +73,7 @@ float computeSequentialMean(float new_observation, float num_samples, float prio
  * @param new_mean New mean of sample including current observation (computeSequentialMean() should be used to
  *                 compute the mean of the sample with the current observation before computing the variance).
  * @param prior_ssdm Prior sum of squared deviations from the mean (without new observation).
- * @return std::tuple<float, float> Variance of sample with new observation, new sum of squared deviations from the mean.
+ * @return Variance of sample with new observation, new sum of squared deviations from the mean.
  */
 std::tuple<float, float> computeSequentialVariance(float new_observation,
                                                    float num_samples,
@@ -81,7 +82,7 @@ std::tuple<float, float> computeSequentialVariance(float new_observation,
                                                    float prior_ssdm);
 
 /**
- * @brief Compute the sequential standard deviation of a sample given a new observation.
+ * @brief Compute the standard deviation of a sample given a new observation.
  *
  * Computes the square root of the variance. See the documentation for the \ref computeSequentialVariance()
  * function for details on how the variance is computed.
@@ -94,7 +95,7 @@ std::tuple<float, float> computeSequentialVariance(float new_observation,
  * @param new_mean New mean of sample including current observation (computeSequentialMean() should be used to
  *                 compute the mean of the sample with the current observation before computing the standard deviation).
  * @param prior_ssdm Prior sum of squared deviations from the mean (without new observation) used to compute variance.
- * @return std::tuple<float, float> Standard deviation of sample with new observation, new sum of squared deviations from the mean.
+ * @return Standard deviation of sample with new observation, new sum of squared deviations from the mean.
  */
 std::tuple<float, float> computeSequentialStdDev(float new_observation,
                                                  float num_samples,
@@ -103,7 +104,7 @@ std::tuple<float, float> computeSequentialStdDev(float new_observation,
                                                  float prior_ssdm);
 
 /**
- * @brief Compute the circular mean angle on a sample of angle data.
+ * @brief Compute the circular mean angle of a sample of angle data.
  *
  * Given \f$n\f$ angles \f$\alpha_1, ..., \alpha_n\f$ measured in radians, their circular mean is defined as
  * (@cite Mardia_1972, section 2.2.2):
@@ -116,21 +117,64 @@ std::tuple<float, float> computeSequentialStdDev(float new_observation,
  *
  * \f$\overline{\alpha} = \textrm{atan2}\biggl(\sum\limits_{j=1}^{n} \sin \alpha_j,
  *                                             \sum_\limits{j=1}^{n} \cos \alpha_j \biggr)\f$
+ * @param sines_sum Sum of the sines of a sample of angle data.
+ * @param cosines_sum Sum of the cosines of a sample of angle data.
+ * @return Circular mean of the sample.
  */
 float computeCircularMean(float sines_sum, float cosines_sum);
 
+/**
+ * @brief Compute the circular variance of a sample of angle data.
+ *
+ * Given \f$n\f$ angles \f$\alpha_1, ..., \alpha_n\f$ measured in radians, their circular variance \f$S_0\f$ is
+ * defined as (@cite Mardia_1972, section 2.3):
+ *
+ * \f$ S_0 = 1 - \overline{R} \f$
+ *
+ * where \f$ \overline{R} \f$ is the mean resultant length of the data, as defined in
+ * \ref computeMeanResultantLength().
+ *
+ * @param sines_sum Sum of the sines of a sample of angle data.
+ * @param cosines_sum Sum of the cosines of a sample of angle data.
+ * @param num_samples Total number of samples in the set of angle data.
+ * @return Circular variance of the sample.
+ */
 float computeCircularVariance(float sines_sum, float cosines_sum, float num_samples);
 
 /**
- * @brief Compute the circular standard deviation on a sample of angle data.
+ * @brief Compute the circular standard deviation of a sample of angle data.
  *
  * Given \f$n\f$ angles \f$\alpha_1, ..., \alpha_n\f$ measured in radians, their circular standard deviation
- * is defined as (@cite Mardia_1972, section 2.3.4, Eq. 2.3.12):
+ * is defined as (@cite Mardia_1972, section 2.3.4, Eq. 2.3.14):
  *
+ * \f$ s_0 = \sqrt{-2.0 * \log(\overline{R})} \f$,
+ *
+ * where \f$ \overline{R} \f$ is the mean resultant length of the data, as defined in
+ * \ref computeMeanResultantLength().
+ *
+ * @param sines_sum Sum of the sines of a sample of angle data.
+ * @param cosines_sum Sum of the cosines of a sample of angle data.
+ * @param num_samples Total number of samples in the set of angle data.
+ * @return Circular standard deviation of the sample.
  */
 float computeCircularStdDev(float sines_sum, float cosines_sum, float num_samples);
 
-
+/**
+ * @brief Compute the mean resultant length of a sample of angle data.
+ *
+ * Given \f$n\f$ angles \f$\alpha_1, ..., \alpha_n\f$ measured in radians, their mean resultant length
+ * is defined as (@cite Mardia_1972):
+ *
+ * \f$\overline{R} = \sqrt{\overline{C}^2 + \overline{S}^2} \f$,
+ *
+ * where \f$\overline{C} = \frac{1}{n} \sum_\limits{i=1}^{n} \cos \alpha_i \f$ and
+ * \f$\overline{S} = \frac{1}{n} \sum_\limits{i=1}^{n} \sin \alpha_i \f$.
+ *
+ * @param sines_sum Sum of the sines of a sample of angle data.
+ * @param cosines_sum Sum of the cosines of a sample of angle data.
+ * @param num_samples Total number of samples in the set of angle data.
+ * @return Mean resultant length of the sample.
+ */
 float computeMeanResultantLength(float sines_sum, float cosines_sum, float num_samples);
 
 NS_FOOT
