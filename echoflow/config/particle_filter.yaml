@@ -3,6 +3,14 @@
     particle_filter:
       num_particles: 100000
       update_interval: 0.1    # seconds
+      initial_max_speed: 20.0
+      observation_sigma: 100.0
+      decay_factor: 0.95
+      min_resample_speed: 3.0
+      noise_std_pos: 0.1
+      noise_std_yaw: 0.4
+      noise_std_yaw_rate: 1.0
+      noise_std_speed: 4.0
     particle_filter_statistics:
       frameId: map
       length: 1500.0

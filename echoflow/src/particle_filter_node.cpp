@@ -6,6 +6,16 @@ void ParticleFilterNode::Parameters::declare(rclcpp::Node * node)
 {
   node->declare_parameter("particle_filter.num_particles", particle_filter.num_particles);
   node->declare_parameter("particle_filter.update_interval", particle_filter.update_interval);
+
+  node->declare_parameter("particle_filter.initial_max_speed", particle_filter.initial_max_speed);
+  node->declare_parameter("particle_filter.observation_sigma", particle_filter.observation_sigma);
+  node->declare_parameter("particle_filter.decay_factor", particle_filter.decay_factor);
+  node->declare_parameter("particle_filter.min_resample_speed", particle_filter.min_resample_speed);
+  node->declare_parameter("particle_filter.noise_std_pos", particle_filter.noise_std_pos);
+  node->declare_parameter("particle_filter.noise_std_yaw", particle_filter.noise_std_yaw);
+  node->declare_parameter("particle_filter.noise_std_yaw_rate", particle_filter.noise_std_yaw_rate);
+  node->declare_parameter("particle_filter.noise_std_speed", particle_filter.noise_std_speed);
+
   node->declare_parameter("particle_filter_statistics.frameId", particle_filter_statistics.frameId);
   node->declare_parameter("particle_filter_statistics.length", particle_filter_statistics.length);
   node->declare_parameter("particle_filter_statistics.width", particle_filter_statistics.width);
@@ -17,6 +27,16 @@ void ParticleFilterNode::Parameters::update(rclcpp::Node * node)
 {
   node->get_parameter("particle_filter.num_particles", particle_filter.num_particles);
   node->get_parameter("particle_filter.update_interval", particle_filter.update_interval);
+
+  node->get_parameter("particle_filter.initial_max_speed", particle_filter.initial_max_speed);
+  node->get_parameter("particle_filter.observation_sigma", particle_filter.observation_sigma);
+  node->get_parameter("particle_filter.decay_factor", particle_filter.decay_factor);
+  node->get_parameter("particle_filter.min_resample_speed", particle_filter.min_resample_speed);
+  node->get_parameter("particle_filter.noise_std_pos", particle_filter.noise_std_pos);
+  node->get_parameter("particle_filter.noise_std_yaw", particle_filter.noise_std_yaw);
+  node->get_parameter("particle_filter.noise_std_yaw_rate", particle_filter.noise_std_yaw_rate);
+  node->get_parameter("particle_filter.noise_std_speed", particle_filter.noise_std_speed);
+
   node->get_parameter("particle_filter_statistics.frameId", particle_filter_statistics.frameId);
   node->get_parameter("particle_filter_statistics.length", particle_filter_statistics.length);
   node->get_parameter("particle_filter_statistics.width", particle_filter_statistics.width);
@@ -30,7 +50,41 @@ ParticleFilterNode::ParticleFilterNode()
   parameters_.declare(this);
   parameters_.update(this);
 
-  pf_ = std::make_unique<MultiTargetParticleFilter>(parameters_.particle_filter.num_particles);
+  pf_ = std::make_unique<MultiTargetParticleFilter>(parameters_.particle_filter.num_particles,
+                                                  parameters_.particle_filter.initial_max_speed);
+
+  applyParameters();  // set pf parameters initially
+
+  parameter_event_sub_ = this->add_on_set_parameters_callback(
+      [this](const std::vector<rclcpp::Parameter> &parameters) {
+          rcl_interfaces::msg::SetParametersResult result;
+          result.successful = true;
+
+          auto paramChanged = [&parameters](const std::string &name) {
+              return std::any_of(parameters.begin(), parameters.end(),
+                                 [&name](const auto &p) { return p.get_name() == name; });
+          };
+
+          // Log each parameter change
+          for (const auto &parameter : parameters) {
+              RCLCPP_INFO(this->get_logger(), "Parameter '%s' changed to '%s'",
+                          parameter.get_name().c_str(),
+                          parameter.value_to_string().c_str());
+              // TODO: (bonney) handle param updates case by case
+          }
+
+          // parameters that require restart
+          if (paramChanged("particle_filter.num_particles") ||
+              paramChanged("particle_filter.initial_max_speed")) {
+              RCLCPP_WARN(this->get_logger(),
+                          "Change to 'num_particles' or 'initial_max_speed' will not take effect until node is restarted.");
+          }
+
+          parameters_.update(this);
+          applyParameters(); // dynamically update particle filter parameters
+
+          return result;
+      });
 
   cloud_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("particle_cloud", 10);
 
@@ -68,6 +122,17 @@ ParticleFilterNode::ParticleFilterNode()
   last_update_time_ = now();
 }
 
+void ParticleFilterNode::applyParameters() {
+    pf_->observation_sigma_ = parameters_.particle_filter.observation_sigma;
+    pf_->decay_factor_ = parameters_.particle_filter.decay_factor;
+    pf_->min_resample_speed_ = parameters_.particle_filter.min_resample_speed;
+    pf_->noise_std_pos_ = parameters_.particle_filter.noise_std_pos;
+    pf_->noise_std_yaw_ = parameters_.particle_filter.noise_std_yaw;
+    pf_->noise_std_yaw_rate_ = parameters_.particle_filter.noise_std_yaw_rate;
+    pf_->noise_std_speed_ = parameters_.particle_filter.noise_std_speed;
+    pf_->updateNoiseDistributions();
+}
+
 void ParticleFilterNode::update()
 {
   auto now_time = now();
@@ -84,7 +149,6 @@ void ParticleFilterNode::update()
   if (!initialized_) return;
 
   pf_->initialize(map_ptr_);
-
   pf_->predict(dt);
   pf_->updateWeights(map_ptr_);
   pf_->resample();
@@ -195,7 +259,7 @@ void ParticleFilterNode::publishPointCloud()
           "x", 1, sensor_msgs::msg::PointField::FLOAT32,
           "y", 1, sensor_msgs::msg::PointField::FLOAT32,
           "z", 1, sensor_msgs::msg::PointField::FLOAT32,
-          "heading", 1, sensor_msgs::msg::PointField::FLOAT32,
+          "heading", 1, sensor_msgs::msg::PointField::FLOAT32, // semantic but heading should probably be bearing, more intuitive
           "speed", 1, sensor_msgs::msg::PointField::FLOAT32,
           "yaw_rate", 1, sensor_msgs::msg::PointField::FLOAT32,
           "weight", 1, sensor_msgs::msg::PointField::FLOAT32);
