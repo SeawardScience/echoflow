@@ -12,7 +12,6 @@ MultiTargetParticleFilter::MultiTargetParticleFilter(size_t num_particles,
 
 void MultiTargetParticleFilter::initialize(std::shared_ptr<grid_map::GridMap> map_ptr)
 {
-
   RCLCPP_DEBUG(rclcpp::get_logger("MultiTargetParticleFilter"),
                 "ParticleFilter Config: num_particles=%zu, observation_sigma=%.2f, decay=%.2f, "
                 "min_speed=%.2f, noise_std_pos=%.2f, noise_std_yaw=%.2f, noise_std_yaw_rate=%.2f, noise_std_speed=%.2f",
@@ -25,19 +24,7 @@ void MultiTargetParticleFilter::initialize(std::shared_ptr<grid_map::GridMap> ma
   }
 
   // Gather valid positions from the map
-  std::vector<grid_map::Position> valid_positions;
-  for (grid_map::GridMapIterator it(*map_ptr); !it.isPastEnd(); ++it) {
-    const auto& index = *it;
-    if (!map_ptr->isValid(index, "intensity")) continue;
-
-    double val = map_ptr->at("intensity", index);
-    if (std::isnan(val) || val <= 0.0) continue;
-
-    grid_map::Position position;
-    if (map_ptr->getPosition(index, position)) {
-      valid_positions.push_back(position);
-    }
-  }
+  std::vector<grid_map::Position> valid_positions = getValidPositionsFromMap(map_ptr);
 
   if (valid_positions.empty()) {
     RCLCPP_WARN(rclcpp::get_logger("MultiTargetParticleFilter"), "No valid positions with intensity > 0 found.");
@@ -130,13 +117,13 @@ void MultiTargetParticleFilter::updateWeights(std::shared_ptr<grid_map::GridMap>
 void MultiTargetParticleFilter::resample(std::shared_ptr<grid_map::GridMap> map_ptr)
 {
     const size_t n_total = num_particles_;
-    const size_t n_seed = static_cast<size_t>(0.05 * n_total);  // 5% new particles
+    const size_t n_seed = static_cast<size_t>(0.001 * n_total); // 0.1% of total particles are seeded
     const size_t n_resample = n_total - n_seed;
 
     std::vector<Target> new_particles;
     new_particles.reserve(n_total);
 
-    // --- Step 1: Resample n_resample particles using low-variance method ---
+    // Step 1: Resample n_resample particles
     std::uniform_real_distribution<double> dist_u(0.0, 1.0);
     double step = 1.0 / static_cast<double>(n_resample);
     double r = dist_u(rng_) * step;
@@ -154,24 +141,8 @@ void MultiTargetParticleFilter::resample(std::shared_ptr<grid_map::GridMap> map_
         new_particles.push_back(p);
     }
 
-    // --- Step 2: Inject n_seed randomly initialized particles ---
-    std::vector<grid_map::Position> valid_positions;
-
-    if (map_ptr && map_ptr->exists("intensity")) {
-        for (grid_map::GridMapIterator it(*map_ptr); !it.isPastEnd(); ++it) {
-            const auto& index = *it;
-            if (!map_ptr->isValid(index, "intensity")) continue;
-
-            double val = map_ptr->at("intensity", index);
-            if (std::isnan(val) || val <= 0.0) continue;
-
-            grid_map::Position position;
-            if (map_ptr->getPosition(index, position)) {
-                valid_positions.push_back(position);
-            }
-        }
-    }
-
+    // Step 2: Inject n_seed randomly initialized particles
+    std::vector<grid_map::Position> valid_positions = getValidPositionsFromMap(map_ptr);
     std::uniform_real_distribution<double> uniform_01(0.0, 1.0);
 
     for (size_t m = 0; m < n_seed && !valid_positions.empty(); ++m) {
@@ -192,6 +163,27 @@ void MultiTargetParticleFilter::resample(std::shared_ptr<grid_map::GridMap> map_
                  "%zu particles: %zu resampled, %zu seeded.",
                  particles_.size(), n_resample, n_seed);
 }
+
+std::vector<grid_map::Position> MultiTargetParticleFilter::getValidPositionsFromMap(const std::shared_ptr<grid_map::GridMap>& map_ptr)
+{
+    std::vector<grid_map::Position> valid_positions;
+
+    for (grid_map::GridMapIterator it(*map_ptr); !it.isPastEnd(); ++it) {
+        const auto& index = *it;
+        if (!map_ptr->isValid(index, "intensity")) continue;
+
+        double val = map_ptr->at("intensity", index);
+        if (std::isnan(val) || val <= 0.0) continue;
+
+        grid_map::Position position;
+        if (map_ptr->getPosition(index, position)) {
+            valid_positions.push_back(position);
+        }
+    }
+
+    return valid_positions;
+}
+
 
 void MultiTargetParticleFilter::updateNoiseDistributions() {
     noise_pos_       = std::normal_distribution<double>(0.0, noise_std_pos_);

@@ -85,6 +85,9 @@ public:
    */
   void resample(std::shared_ptr<grid_map::GridMap> map_ptr);
 
+
+  std::vector<grid_map::Position> getValidPositionsFromMap(const std::shared_ptr<grid_map::GridMap>& map_ptr);
+
   /**
    * @brief updateNoiseDistributions
    */
