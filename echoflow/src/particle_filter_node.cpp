@@ -70,7 +70,6 @@ ParticleFilterNode::ParticleFilterNode()
               RCLCPP_INFO(this->get_logger(), "Parameter '%s' changed to '%s'",
                           parameter.get_name().c_str(),
                           parameter.value_to_string().c_str());
-              // TODO: (bonney) handle param updates case by case
           }
 
           // parameters that require restart
@@ -152,12 +151,9 @@ void ParticleFilterNode::update()
     initialized_ = true;
   }
 
-  if (!initialized_) return;
-
-  pf_->initialize(map_ptr_);
   pf_->predict(dt);
   pf_->updateWeights(map_ptr_);
-  pf_->resample();
+  pf_->resample(map_ptr_);
   pending_detections_.clear();
 
   publishPointCloud();

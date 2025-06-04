@@ -83,7 +83,7 @@ public:
    * distribution around each particle.
    *
    */
-  void resample();
+  void resample(std::shared_ptr<grid_map::GridMap> map_ptr);
 
   /**
    * @brief updateNoiseDistributions

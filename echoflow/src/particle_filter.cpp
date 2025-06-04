@@ -3,10 +3,10 @@
 NS_HEAD
 
 MultiTargetParticleFilter::MultiTargetParticleFilter(size_t num_particles,
-                                                       double initial_max_speed)
+                                                     double initial_max_speed)
   : num_particles_(num_particles), initial_max_speed_(initial_max_speed)
 {
-  particles_.resize(num_particles);
+  particles_.resize(num_particles_);
   rng_.seed(std::random_device{}());
 }
 
@@ -46,7 +46,7 @@ void MultiTargetParticleFilter::initialize(std::shared_ptr<grid_map::GridMap> ma
 
   // Add new particles at randomly selected valid positions
   // TODO: revisit this section for tracking different sizes of blobs or "ignoring" static blobs
-  for (size_t i = 0; i < 10; ++i) {
+  for (size_t i = 0; i < num_particles_; ++i) {
     const auto& position = valid_positions[rand() % valid_positions.size()];
     Target particle;
     particle.x = position.x();
@@ -58,8 +58,8 @@ void MultiTargetParticleFilter::initialize(std::shared_ptr<grid_map::GridMap> ma
     particles_.push_back(particle);
   }
 
-  // RCLCPP_INFO(rclcpp::get_logger("MultiTargetParticleFilter"),
-  //             "Initialized with %zu particles.", particles_.size());
+  RCLCPP_INFO(rclcpp::get_logger("MultiTargetParticleFilter"),
+              "Initialized with %zu particles.", particles_.size());
 }
 
 void MultiTargetParticleFilter::predict(double dt)
@@ -127,49 +127,70 @@ void MultiTargetParticleFilter::updateWeights(std::shared_ptr<grid_map::GridMap>
   }
 }
 
-void MultiTargetParticleFilter::resample()
+void MultiTargetParticleFilter::resample(std::shared_ptr<grid_map::GridMap> map_ptr)
 {
-  // Filter out particles with speed > min_resample_speed
-  std::vector<Target> filtered_particles;
-  for (const auto& particle : particles_) {   // debugging code to limit velocity
-    if (particle.speed >= min_resample_speed_) {
-      filtered_particles.push_back(particle);
+    const size_t n_total = num_particles_;
+    const size_t n_seed = static_cast<size_t>(0.05 * n_total);  // 5% new particles
+    const size_t n_resample = n_total - n_seed;
+
+    std::vector<Target> new_particles;
+    new_particles.reserve(n_total);
+
+    // --- Step 1: Resample n_resample particles using low-variance method ---
+    std::uniform_real_distribution<double> dist_u(0.0, 1.0);
+    double step = 1.0 / static_cast<double>(n_resample);
+    double r = dist_u(rng_) * step;
+    double c = particles_[0].weight;
+    size_t i = 0;
+
+    for (size_t m = 0; m < n_resample; ++m) {
+        double U = r + m * step;
+        while (U > c && i < particles_.size() - 1) {
+            ++i;
+            c += particles_[i].weight;
+        }
+        Target p = particles_[i];
+        p.weight = 1.0 / n_total;  // Normalize to total
+        new_particles.push_back(p);
     }
-  }
 
-  RCLCPP_DEBUG(rclcpp::get_logger("MultiTargetParticleFilter"), "Resampling %zu particles. %zu passed min_resample_speed_ = %.2f",
-              particles_.size(), filtered_particles.size(), min_resample_speed_);
+    // --- Step 2: Inject n_seed randomly initialized particles ---
+    std::vector<grid_map::Position> valid_positions;
 
-  // If no particles survive the filter, fall back to all particles to avoid failure
-  const auto& source_particles = filtered_particles.empty() ? particles_ : filtered_particles;
+    if (map_ptr && map_ptr->exists("intensity")) {
+        for (grid_map::GridMapIterator it(*map_ptr); !it.isPastEnd(); ++it) {
+            const auto& index = *it;
+            if (!map_ptr->isValid(index, "intensity")) continue;
 
-  if (filtered_particles.empty()) {
-      RCLCPP_DEBUG(rclcpp::get_logger("MultiTargetParticleFilter"), "No particles passed speed threshold; falling back to full particle set.");
-  }
+            double val = map_ptr->at("intensity", index);
+            if (std::isnan(val) || val <= 0.0) continue;
 
-  std::vector<Target> new_particles;
-  new_particles.reserve(source_particles.size());
-
-  std::uniform_real_distribution<double> dist_u(0.0, 1.0); // uniform distribution
-  double step = 1.0 / source_particles.size();
-  double r = dist_u(rng_) * step; // initial offset
-  double c = source_particles[0].weight; // cumulative weight
-  size_t i = 0; // source index
-
-  // TODO: revisit variable names
-  for (size_t m = 0; m < source_particles.size(); ++m) // m resample index
-  {
-    double U = r + m * step; // uniform sample point along [0,1] range used to pick a particle based on weights
-    while (U > c && i < source_particles.size() - 1)
-    {
-      ++i;
-      c += source_particles[i].weight;
+            grid_map::Position position;
+            if (map_ptr->getPosition(index, position)) {
+                valid_positions.push_back(position);
+            }
+        }
     }
-    new_particles.push_back(source_particles[i]);
-    new_particles.back().weight = 1.0 / source_particles.size();
-  }
 
-  particles_ = std::move(new_particles);
+    std::uniform_real_distribution<double> uniform_01(0.0, 1.0);
+
+    for (size_t m = 0; m < n_seed && !valid_positions.empty(); ++m) {
+        const auto& pos = valid_positions[rng_() % valid_positions.size()];
+        Target particle;
+        particle.x = pos.x();
+        particle.y = pos.y();
+        particle.speed = initial_max_speed_ * uniform_01(rng_);
+        particle.heading = 2.0 * M_PI * uniform_01(rng_);
+        particle.yaw_rate = 0.0;
+        particle.weight = 1.0 / n_total;
+        new_particles.push_back(particle);
+    }
+
+    particles_ = std::move(new_particles);
+
+    RCLCPP_DEBUG(rclcpp::get_logger("MultiTargetParticleFilter"),
+                 "%zu particles: %zu resampled, %zu seeded.",
+                 particles_.size(), n_resample, n_seed);
 }
 
 void MultiTargetParticleFilter::updateNoiseDistributions() {
