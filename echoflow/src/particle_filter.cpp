@@ -2,7 +2,9 @@
 
 NS_HEAD
 
-MultiTargetParticleFilter::MultiTargetParticleFilter(size_t num_particles)
+MultiTargetParticleFilter::MultiTargetParticleFilter(size_t num_particles,
+                                                       double initial_max_speed)
+  : num_particles_(num_particles), initial_max_speed_(initial_max_speed)
 {
   particles_.resize(num_particles);
   rng_.seed(std::random_device{}());
@@ -10,6 +12,13 @@ MultiTargetParticleFilter::MultiTargetParticleFilter(size_t num_particles)
 
 void MultiTargetParticleFilter::initialize(std::shared_ptr<grid_map::GridMap> map_ptr)
 {
+
+  RCLCPP_DEBUG(rclcpp::get_logger("MultiTargetParticleFilter"),
+                "ParticleFilter Config: num_particles=%zu, observation_sigma=%.2f, decay=%.2f, "
+                "min_speed=%.2f, noise_std_pos=%.2f, noise_std_yaw=%.2f, noise_std_yaw_rate=%.2f, noise_std_speed=%.2f",
+                num_particles_, observation_sigma_, decay_factor_,
+                min_resample_speed_, noise_std_pos_, noise_std_yaw_, noise_std_yaw_rate_, noise_std_speed_);
+
   if (!map_ptr || !map_ptr->exists("intensity")) {
     RCLCPP_WARN(rclcpp::get_logger("MultiTargetParticleFilter"), "GridMap missing or lacks 'intensity' layer.");
     return;
@@ -42,16 +51,21 @@ void MultiTargetParticleFilter::initialize(std::shared_ptr<grid_map::GridMap> ma
     Target particle;
     particle.x = position.x();
     particle.y = position.y();
-    particle.speed = 20.0 * static_cast<double>(rand()) / RAND_MAX;
+    particle.speed = initial_max_speed_ * static_cast<double>(rand()) / RAND_MAX;
     particle.heading = 2.0 * M_PI * static_cast<double>(rand()) / RAND_MAX;
-    particle.yaw_rate = 0.0 * static_cast<double>(rand()) / RAND_MAX;
+    particle.yaw_rate = 0.0 * static_cast<double>(rand()) / RAND_MAX; // This is ZERO always...
     particle.weight = 1.0;  // Will be normalized later
     particles_.push_back(particle);
   }
+
+  // RCLCPP_INFO(rclcpp::get_logger("MultiTargetParticleFilter"),
+  //             "Initialized with %zu particles.", particles_.size());
 }
 
 void MultiTargetParticleFilter::predict(double dt)
 {
+  RCLCPP_DEBUG(rclcpp::get_logger("MultiTargetParticleFilter"), "Predicting next state for %zu particles with dt = %.3f", particles_.size(), dt);
+
   for (auto& particle : particles_) {
     double velocity = particle.speed + noise_speed_(rng_);
     double yaw = particle.heading + noise_yaw_(rng_);
@@ -74,20 +88,19 @@ void MultiTargetParticleFilter::predict(double dt)
 void MultiTargetParticleFilter::updateWeights(std::shared_ptr<grid_map::GridMap> map_ptr)
 {
   if (!map_ptr || !map_ptr->exists("edt")) {
-    RCLCPP_WARN(rclcpp::get_logger("MultiTargetParticleFilter"), "GridMap does not contain 'edt' layer.");
+    RCLCPP_WARN(rclcpp::get_logger("MultiTargetParticleFilter"), "GridMap does not contain 'edt' layer."); // maybe change to throttle
     return;
   }
 
-  // todo: should these parameters be user-tunable?
-  double sigma = 100.0;
-
-  const double decay_factor = 0.95;  // Retain 50% of previous weight if outside detection < todo: 50%?
+  double sigma = observation_sigma_;
+  const double decay_factor = decay_factor_;
   double total_weight = 0.0;
 
   for (auto& particle : particles_) {
     grid_map::Position position(particle.x, particle.y);
     double new_weight = 0.0;
 
+    // Check if the particle is inside the map
     if (map_ptr->isInside(position)) {
       try {
         double distance = map_ptr->atPosition("edt", position);
@@ -106,6 +119,7 @@ void MultiTargetParticleFilter::updateWeights(std::shared_ptr<grid_map::GridMap>
     total_weight += new_weight;
   }
 
+  // Normalize weights
   if (total_weight > 0.0) {
     for (auto& particle : particles_) {
       particle.weight /= total_weight;
@@ -115,30 +129,37 @@ void MultiTargetParticleFilter::updateWeights(std::shared_ptr<grid_map::GridMap>
 
 void MultiTargetParticleFilter::resample()
 {
-  // Filter out particles with speed < 3 m/s
+  // Filter out particles with speed > min_resample_speed
   std::vector<Target> filtered_particles;
-  // for (const auto& particle : particles_) {   // debugging code to limit velocity
-  //   if (particle.speed >= 3.0) {
-  //     filtered_particles.push_back(particle);
-  //   }
-  // }
+  for (const auto& particle : particles_) {   // debugging code to limit velocity
+    if (particle.speed >= min_resample_speed_) {
+      filtered_particles.push_back(particle);
+    }
+  }
+
+  RCLCPP_DEBUG(rclcpp::get_logger("MultiTargetParticleFilter"), "Resampling %zu particles. %zu passed min_resample_speed_ = %.2f",
+              particles_.size(), filtered_particles.size(), min_resample_speed_);
 
   // If no particles survive the filter, fall back to all particles to avoid failure
   const auto& source_particles = filtered_particles.empty() ? particles_ : filtered_particles;
 
+  if (filtered_particles.empty()) {
+      RCLCPP_DEBUG(rclcpp::get_logger("MultiTargetParticleFilter"), "No particles passed speed threshold; falling back to full particle set.");
+  }
+
   std::vector<Target> new_particles;
   new_particles.reserve(source_particles.size());
 
-  std::uniform_real_distribution<double> dist_u(0.0, 1.0);
+  std::uniform_real_distribution<double> dist_u(0.0, 1.0); // uniform distribution
   double step = 1.0 / source_particles.size();
-  double r = dist_u(rng_) * step;
-  double c = source_particles[0].weight;
-  size_t i = 0;
+  double r = dist_u(rng_) * step; // initial offset
+  double c = source_particles[0].weight; // cumulative weight
+  size_t i = 0; // source index
 
   // TODO: revisit variable names
-  for (size_t m = 0; m < source_particles.size(); ++m)
+  for (size_t m = 0; m < source_particles.size(); ++m) // m resample index
   {
-    double U = r + m * step;
+    double U = r + m * step; // uniform sample point along [0,1] range used to pick a particle based on weights
     while (U > c && i < source_particles.size() - 1)
     {
       ++i;
@@ -149,6 +170,13 @@ void MultiTargetParticleFilter::resample()
   }
 
   particles_ = std::move(new_particles);
+}
+
+void MultiTargetParticleFilter::updateNoiseDistributions() {
+    noise_pos_       = std::normal_distribution<double>(0.0, noise_std_pos_);
+    noise_yaw_       = std::normal_distribution<double>(0.0, noise_std_yaw_);
+    noise_yaw_rate_  = std::normal_distribution<double>(0.0, noise_std_yaw_rate_);
+    noise_speed_     = std::normal_distribution<double>(0.0, noise_std_speed_);
 }
 
 const std::vector<Target>& MultiTargetParticleFilter::getParticles()
