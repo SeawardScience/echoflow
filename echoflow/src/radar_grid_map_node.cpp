@@ -44,7 +44,7 @@ RadarGridMapNode::RadarGridMapNode()
 
   // TODO: wrapping map_ptr function calls in radar gridmap class to make thread safe
   //map_ptr_.reset(new grid_map::GridMap({"intensity"}));
-  map_ptr_.reset(new RadarGridMap({"intensity"}));
+  map_ptr_.reset(new ThreadsafeGridMap({"intensity"}));
   map_ptr_->setFrameId(parameters_.map.frame_id);
   map_ptr_->setGeometry(grid_map::Length(parameters_.map.length, parameters_.map.width), parameters_.map.resolution);
   RCLCPP_INFO(
@@ -174,8 +174,7 @@ void RadarGridMapNode::recenterMap(const grid_map::Position& new_center)
   if (distance > move_threshold)
   {
     // TODO: Multithreading changes
-    // map_ptr_->move(new_center);
-    map_ptr_->moveMap(new_center);
+    map_ptr_->move(new_center);
     RCLCPP_DEBUG(this->get_logger(),
                 "Recentered map by %.2f meters (threshold %.2f meters).",
                 distance, move_threshold);
@@ -257,8 +256,7 @@ void RadarGridMapNode::processMsg(const marine_sensor_msgs::msg::RadarSector::Sh
   // Iterate over all cells in the polygon and clear them
   for (grid_map::PolygonIterator it(*map_ptr_, sector_polygon); !it.isPastEnd(); ++it) {
     // TODO: Multithreading changes
-    //map_ptr_->at("intensity", *it) = NAN;
-    map_ptr_->atCell("intensity", *it) = NAN;
+    map_ptr_->at("intensity", *it) = NAN;
   }
 
 
@@ -284,8 +282,7 @@ void RadarGridMapNode::processMsg(const marine_sensor_msgs::msg::RadarSector::Sh
 
       if (map_ptr_->isInside(pos)) {
         // TODO: multithreading changes
-        //map_ptr_->atPosition("intensity", pos) = echo_intensity;
-        map_ptr_->atMapPosition("intensity", pos) = echo_intensity;
+        map_ptr_->atPosition("intensity", pos) = echo_intensity;
       }
     }
   }

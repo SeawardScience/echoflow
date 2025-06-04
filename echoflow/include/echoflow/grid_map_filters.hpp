@@ -24,7 +24,7 @@ NS_HEAD
  */
 // TODO: multi-threading changes
 //void computeEDTFromIntensity(grid_map::GridMap& map,
-void computeEDTFromIntensity(RadarGridMap& map,
+void computeEDTFromIntensity(ThreadsafeGridMap& map,
                              const std::string& intensity_layer,
                              const std::string& distance_layer);
 

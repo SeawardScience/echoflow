@@ -31,10 +31,10 @@ public:
 
   // TODO: multi-threading changes
   //void initialize(std::shared_ptr<grid_map::GridMap> map_ptr);
-  void initialize(std::shared_ptr<RadarGridMap> map_ptr);
+  void initialize(std::shared_ptr<ThreadsafeGridMap> map_ptr);
   void predict(double dt);
   //void updateWeights(std::shared_ptr<grid_map::GridMap> map_ptr);
-  void updateWeights(std::shared_ptr<RadarGridMap> map_ptr);
+  void updateWeights(std::shared_ptr<ThreadsafeGridMap> map_ptr);
   void resample();
   const std::vector<Target> & getParticles();
 

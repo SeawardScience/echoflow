@@ -36,7 +36,7 @@ public:
 
   // TODO: multi-threading changes
   //std::shared_ptr<grid_map::GridMap> map_ptr_;
-  std::shared_ptr<RadarGridMap> map_ptr_;
+  std::shared_ptr<ThreadsafeGridMap> map_ptr_;
 
 private:
   /**

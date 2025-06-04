@@ -4,7 +4,7 @@ NS_HEAD
 
 // TODO: multi-threading changes
 //void computeEDTFromIntensity(grid_map::GridMap& map, const std::string& intensity_layer, const std::string& distance_layer)
-void computeEDTFromIntensity(RadarGridMap& map, const std::string& intensity_layer, const std::string& distance_layer)
+void computeEDTFromIntensity(ThreadsafeGridMap& map, const std::string& intensity_layer, const std::string& distance_layer)
 {
   if (!map.exists(intensity_layer)) {
     throw std::runtime_error("GridMap does not contain intensity layer");
