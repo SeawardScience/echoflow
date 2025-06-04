@@ -147,6 +147,9 @@ filter:
 max_queue_size: 1000
 ```
 
+### particle_filter Node
+
+TODO
 
 ---
 
@@ -176,6 +179,18 @@ When making contributions, remember:
 - Follow the [Semantic Versioning 2.0](https://semver.org/) model.
 - Ensure all changes maintain deployability of the `master` branch.
 - Keep documentation (README, Doxygen comments) up to date.
+
+
+## Generating Documentation
+
+Documentation is auto-generated using Doxygen. Doxygen can be installed from `apt` with:
+
+`sudo apt install doxygen`
+
+You will also need to install LaTeX, Ghostscript, and dvips in order to compile the math formulas in the documentation (more details in the [Doxygen manual](https://www.doxygen.nl/manual/formulas.html)).
+All necessary packages can be installed by the following:
+
+`sudo apt install texlive texlive-latex-extras`
 
 ---
 

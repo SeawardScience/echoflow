@@ -58,8 +58,8 @@ void MultiTargetParticleFilter::initialize(std::shared_ptr<grid_map::GridMap> ma
     particles_.push_back(particle);
   }
 
-  RCLCPP_INFO(rclcpp::get_logger("MultiTargetParticleFilter"),
-              "Initialized with %zu particles.", particles_.size());
+  // RCLCPP_INFO(rclcpp::get_logger("MultiTargetParticleFilter"),
+  //             "Initialized with %zu particles.", particles_.size());
 }
 
 void MultiTargetParticleFilter::predict(double dt)
