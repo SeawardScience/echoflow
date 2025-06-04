@@ -102,6 +102,7 @@ public:
 
   double observation_sigma_;  // Standard deviation for Gaussian weight function
   double decay_factor_;       // Decay factor for particle weight
+  double seed_fraction_;      // Fraction of particles to be seeded with random positions
   double min_resample_speed_; // Minimum speed for resampling particles
   double noise_std_pos_;      // Standard deviation for position noise
   double noise_std_yaw_;      // Standard deviation for yaw noise

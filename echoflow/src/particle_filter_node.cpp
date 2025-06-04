@@ -10,6 +10,7 @@ void ParticleFilterNode::Parameters::declare(rclcpp::Node * node)
   node->declare_parameter("particle_filter.initial_max_speed", particle_filter.initial_max_speed);
   node->declare_parameter("particle_filter.observation_sigma", particle_filter.observation_sigma);
   node->declare_parameter("particle_filter.decay_factor", particle_filter.decay_factor);
+  node->declare_parameter("particle_filter.seed_fraction", particle_filter.seed_fraction);
   node->declare_parameter("particle_filter.min_resample_speed", particle_filter.min_resample_speed);
   node->declare_parameter("particle_filter.noise_std_pos", particle_filter.noise_std_pos);
   node->declare_parameter("particle_filter.noise_std_yaw", particle_filter.noise_std_yaw);
@@ -31,6 +32,7 @@ void ParticleFilterNode::Parameters::update(rclcpp::Node * node)
   node->get_parameter("particle_filter.initial_max_speed", particle_filter.initial_max_speed);
   node->get_parameter("particle_filter.observation_sigma", particle_filter.observation_sigma);
   node->get_parameter("particle_filter.decay_factor", particle_filter.decay_factor);
+  node->get_parameter("particle_filter.seed_fraction", particle_filter.seed_fraction);
   node->get_parameter("particle_filter.min_resample_speed", particle_filter.min_resample_speed);
   node->get_parameter("particle_filter.noise_std_pos", particle_filter.noise_std_pos);
   node->get_parameter("particle_filter.noise_std_yaw", particle_filter.noise_std_yaw);
@@ -130,6 +132,7 @@ ParticleFilterNode::ParticleFilterNode()
 void ParticleFilterNode::applyParameters() {
     pf_->observation_sigma_ = parameters_.particle_filter.observation_sigma;
     pf_->decay_factor_ = parameters_.particle_filter.decay_factor;
+    pf_->seed_fraction_ = parameters_.particle_filter.seed_fraction;
     pf_->min_resample_speed_ = parameters_.particle_filter.min_resample_speed;
     pf_->noise_std_pos_ = parameters_.particle_filter.noise_std_pos;
     pf_->noise_std_yaw_ = parameters_.particle_filter.noise_std_yaw;

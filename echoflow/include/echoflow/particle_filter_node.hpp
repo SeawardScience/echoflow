@@ -45,8 +45,9 @@ public:
       int num_particles = 100000;
       double update_interval = 0.1;            // seconds
       double initial_max_speed = 20.0;
-      double observation_sigma = 100.0;
-      double decay_factor = 0.95;
+      double observation_sigma = 25.0;
+      double decay_factor = 0.5;               // decay factor for particle weights;
+      double seed_fraction = 0.001;            // fraction of particles to be seeded with random positions
       double min_resample_speed = 3.0;
       double noise_std_pos = 0.1;
       double noise_std_yaw = 0.4;

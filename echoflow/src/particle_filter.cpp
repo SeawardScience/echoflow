@@ -31,16 +31,18 @@ void MultiTargetParticleFilter::initialize(std::shared_ptr<grid_map::GridMap> ma
     return;
   }
 
+  std::uniform_real_distribution<double> uniform_01(0.0, 1.0);
+
   // Add new particles at randomly selected valid positions
   // TODO: revisit this section for tracking different sizes of blobs or "ignoring" static blobs
   for (size_t i = 0; i < num_particles_; ++i) {
-    const auto& position = valid_positions[rand() % valid_positions.size()];
+      const auto& position = valid_positions[rng_() % valid_positions.size()];
     Target particle;
     particle.x = position.x();
     particle.y = position.y();
-    particle.speed = initial_max_speed_ * static_cast<double>(rand()) / RAND_MAX;
-    particle.heading = 2.0 * M_PI * static_cast<double>(rand()) / RAND_MAX;
-    particle.yaw_rate = 0.0 * static_cast<double>(rand()) / RAND_MAX; // This is ZERO always...
+    particle.speed = initial_max_speed_ * uniform_01(rng_);
+    particle.heading = 2.0 * M_PI * uniform_01(rng_);
+    particle.yaw_rate = 0.0 * uniform_01(rng_); // THIS IS ALWAYS ZERO
     particle.weight = 1.0;  // Will be normalized later
     particles_.push_back(particle);
   }
@@ -117,7 +119,7 @@ void MultiTargetParticleFilter::updateWeights(std::shared_ptr<grid_map::GridMap>
 void MultiTargetParticleFilter::resample(std::shared_ptr<grid_map::GridMap> map_ptr)
 {
     const size_t n_total = num_particles_;
-    const size_t n_seed = static_cast<size_t>(0.001 * n_total); // 0.1% of total particles are seeded
+    const size_t n_seed = static_cast<size_t>(seed_fraction_ * n_total); // 0.1% of total particles are seeded
     const size_t n_resample = n_total - n_seed;
 
     std::vector<Target> new_particles;
@@ -146,10 +148,10 @@ void MultiTargetParticleFilter::resample(std::shared_ptr<grid_map::GridMap> map_
     std::uniform_real_distribution<double> uniform_01(0.0, 1.0);
 
     for (size_t m = 0; m < n_seed && !valid_positions.empty(); ++m) {
-        const auto& pos = valid_positions[rng_() % valid_positions.size()];
+        const auto& position = valid_positions[rng_() % valid_positions.size()];
         Target particle;
-        particle.x = pos.x();
-        particle.y = pos.y();
+        particle.x = position.x();
+        particle.y = position.y();
         particle.speed = initial_max_speed_ * uniform_01(rng_);
         particle.heading = 2.0 * M_PI * uniform_01(rng_);
         particle.yaw_rate = 0.0;
