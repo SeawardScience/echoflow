@@ -85,11 +85,19 @@ public:
    */
   void resample(std::shared_ptr<grid_map::GridMap> map_ptr);
 
-
+  /**
+   * @brief Get valid positions from the grid map.
+   *
+   * Returns a vector of positions where the grid map has valid data (i.e., where radar intensity > 0).
+   * This is used for seeding new particles.
+   *
+   * @param map_ptr Shared pointer to GridMap with radar intensity-based targets to track.
+   * @return std::vector<grid_map::Position> Vector of valid positions.
+   */
   std::vector<grid_map::Position> getValidPositionsFromMap(const std::shared_ptr<grid_map::GridMap>& map_ptr);
 
   /**
-   * @brief updateNoiseDistributions
+   * @brief Update the noise distributions for particle motion used in the predict step.
    */
   void updateNoiseDistributions();
 

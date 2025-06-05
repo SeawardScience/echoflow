@@ -13,9 +13,9 @@ MultiTargetParticleFilter::MultiTargetParticleFilter(size_t num_particles,
 void MultiTargetParticleFilter::initialize(std::shared_ptr<grid_map::GridMap> map_ptr)
 {
   RCLCPP_DEBUG(rclcpp::get_logger("MultiTargetParticleFilter"),
-                "ParticleFilter Config: num_particles=%zu, observation_sigma=%.2f, decay=%.2f, "
+                "ParticleFilter Config: num_particles=%zu, observation_sigma=%.2f, decay=%.2f, seed_fraction=%.2f, "
                 "min_speed=%.2f, noise_std_pos=%.2f, noise_std_yaw=%.2f, noise_std_yaw_rate=%.2f, noise_std_speed=%.2f",
-                num_particles_, observation_sigma_, decay_factor_,
+                num_particles_, observation_sigma_, decay_factor_, seed_fraction_,
                 min_resample_speed_, noise_std_pos_, noise_std_yaw_, noise_std_yaw_rate_, noise_std_speed_);
 
   if (!map_ptr || !map_ptr->exists("intensity")) {
