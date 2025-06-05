@@ -74,7 +74,7 @@ void MultiTargetParticleFilter::predict(double dt)
   }
 }
 
-void MultiTargetParticleFilter::updateWeights(std::shared_ptr<grid_map::GridMap> map_ptr)
+void MultiTargetParticleFilter::updateWeights(std::shared_ptr<grid_map::GridMap> map_ptr, std::shared_ptr<grid_map::GridMap> stats_ptr)
 {
   if (!map_ptr || !map_ptr->exists("edt")) {
     RCLCPP_WARN(rclcpp::get_logger("MultiTargetParticleFilter"), "GridMap does not contain 'edt' layer."); // maybe change to throttle
@@ -100,9 +100,25 @@ void MultiTargetParticleFilter::updateWeights(std::shared_ptr<grid_map::GridMap>
     }
 
     // If no valid reading, retain some of the previous weight
-    if (new_weight == 0.0) {
-      new_weight = particle.weight * decay_factor;
+
+    new_weight = new_weight + particle.weight * decay_factor;
+
+
+    // penalize based on density
+
+    if (stats_ptr && stats_ptr->isInside(position)) {
+      try {
+        double density = stats_ptr->atPosition("particles_per_cell", position);
+        if (density > 0.0) {
+          // Penalize overcrowded areas by inversely scaling with density
+          double density_penalty = num_particles_ / density;
+          new_weight *= std::min(1.0, density_penalty);
+        }
+      } catch (const std::out_of_range& e) {
+        // Ignore: use new_weight as-is
+      }
     }
+
 
     particle.weight = new_weight;
     total_weight += new_weight;

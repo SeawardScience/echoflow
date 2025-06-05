@@ -155,7 +155,7 @@ private:
   geometry_msgs::msg::Quaternion headingToQuaternion(float heading);
 
   std::unique_ptr<MultiTargetParticleFilter> pf_;
-  grid_map::GridMap *pf_statistics_;
+  std::shared_ptr<grid_map::GridMap> pf_statistics_;
 
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr cloud_pub_;
   rclcpp::Publisher<geometry_msgs::msg::PoseArray>::SharedPtr cell_heading_field_pub_;

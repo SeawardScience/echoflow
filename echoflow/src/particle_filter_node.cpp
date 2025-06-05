@@ -99,7 +99,7 @@ ParticleFilterNode::ParticleFilterNode()
 
   // Initialize GridMap for keeping track of particle filter statistics
   pf_statistics_pub_ = this->create_publisher<grid_map_msgs::msg::GridMap>("particle_filter_statistics", 10);
-  pf_statistics_ = new grid_map::GridMap({"particles_per_cell",
+  pf_statistics_.reset( new grid_map::GridMap({"particles_per_cell",
                                           "x_position_mean",        // Arithmetic mean of x-position of particles
                                           "x_position_ssdm",        // Sum of squared deviations from mean used for computing variance/stdev
                                           "x_position_std_dev",     // Standard deviation of x-position of particles
@@ -113,7 +113,7 @@ ParticleFilterNode::ParticleFilterNode()
                                           "heading_std_dev",
                                           "heading_sines",          // These layers store the heading converted to Cartesian coordinates
                                           "heading_cosines"         // for calculating the circular mean and standard deviation
-                                          });
+  }));
 
   // Timer for computing and publishing particle filter statistics on user-settable time interval
   pf_statistics_timer_ = create_wall_timer(
@@ -147,7 +147,8 @@ void ParticleFilterNode::update()
   double dt = (now_time - last_update_time_).seconds();
   last_update_time_ = now_time;
 
-  computeEDTFromIntensity(*map_ptr_, "intensity", "edt");
+  filterLargeBlobsFromLayer(*map_ptr_, "intensity", "targets", 100);
+  computeEDTFromIntensity(*map_ptr_, "targets", "edt");
 
   if (!initialized_) {
     pf_->initialize(map_ptr_);
@@ -155,7 +156,7 @@ void ParticleFilterNode::update()
   }
 
   pf_->predict(dt);
-  pf_->updateWeights(map_ptr_);
+  pf_->updateWeights(map_ptr_,pf_statistics_);
   pf_->resample(map_ptr_);
   pending_detections_.clear();
 
@@ -186,6 +187,7 @@ void ParticleFilterNode::computeParticleFilterStatistics()
       float prior_x_position_mean = pf_statistics_->atPosition("x_position_mean", position);
       float prior_y_position_mean = pf_statistics_->atPosition("y_position_mean", position);
       float prior_speed_mean = pf_statistics_->atPosition("speed_mean", position);
+      double n = pf_statistics_->atPosition("particles_per_cell", position);
 
       // Update sequential arithmetic means for x position, y position, particle speed
       pf_statistics_->atPosition("x_position_mean", position) = computeSequentialMean(

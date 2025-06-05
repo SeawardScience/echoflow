@@ -73,7 +73,8 @@ public:
    *
    * @param map_ptr Shared pointer to GridMap with radar intensity-based targets to track.
    */
-  void updateWeights(std::shared_ptr<grid_map::GridMap> map_ptr);
+  void updateWeights(std::shared_ptr<grid_map::GridMap> map_ptr,
+                     std::shared_ptr<grid_map::GridMap> stats_ptr);
 
   /**
    * @brief Resample particles using a uniform distribution around current particles.
