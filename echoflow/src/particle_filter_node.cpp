@@ -81,7 +81,7 @@ ParticleFilterNode::ParticleFilterNode()
           }
 
           parameters_.update(this);
-          applyParameters(); // dynamically update particle filter parameters
+          applyParameters();  // dynamically update particle filter parameters
 
           return result;
       });
@@ -100,7 +100,7 @@ ParticleFilterNode::ParticleFilterNode()
   pf_statistics_pub_ = this->create_publisher<grid_map_msgs::msg::GridMap>("particle_filter_statistics", 10);
   pf_statistics_ = new grid_map::GridMap({"particles_per_cell",
                                           "x_position_mean",        // Arithmetic mean of x-position of particles
-                                          "x_position_ssdm",        // Sum of squared deviations from mean used for computing variance/stdev
+                                          "x_position_ssdm",        // Sum of squared deviations from mean
                                           "x_position_std_dev",     // Standard deviation of x-position of particles
                                           "y_position_mean",
                                           "y_position_ssdm",
@@ -110,8 +110,8 @@ ParticleFilterNode::ParticleFilterNode()
                                           "speed_std_dev",
                                           "heading_mean",
                                           "heading_std_dev",
-                                          "heading_sines",          // These layers store the heading converted to Cartesian coordinates
-                                          "heading_cosines"         // for calculating the circular mean and standard deviation
+                                          "heading_sines",     // Store the heading converted to Cartesian coordinates
+                                          "heading_cosines"    // for calculating circular mean and standard deviation
                                           });
 
   // Timer for computing and publishing particle filter statistics on user-settable time interval
@@ -179,7 +179,6 @@ void ParticleFilterNode::computeParticleFilterStatistics()
   for (const auto& particle : particles) {
     grid_map::Position position(particle.x, particle.y);
     if (pf_statistics_->isInside(position)) {
-
       // Update count of particles per cell
       pf_statistics_->atPosition("particles_per_cell", position)++;
 
@@ -189,30 +188,30 @@ void ParticleFilterNode::computeParticleFilterStatistics()
       float prior_speed_mean = pf_statistics_->atPosition("speed_mean", position);
 
       // Update sequential arithmetic means for x position, y position, particle speed
-      pf_statistics_->atPosition("x_position_mean", position) = computeSequentialMean(
+      pf_statistics_->atPosition("x_position_mean", position) = echoflow::statistics::computeSequentialMean(
                                  particle.x,
                                  pf_statistics_->atPosition("particles_per_cell", position),
                                  pf_statistics_->atPosition("x_position_mean", position));
-      pf_statistics_->atPosition("y_position_mean", position) = computeSequentialMean(
+      pf_statistics_->atPosition("y_position_mean", position) = echoflow::statistics::computeSequentialMean(
                                  particle.y,
                                  pf_statistics_->atPosition("particles_per_cell", position),
                                  pf_statistics_->atPosition("y_position_mean", position));
-      pf_statistics_->atPosition("speed_mean", position) = computeSequentialMean(
+      pf_statistics_->atPosition("speed_mean", position) = echoflow::statistics::computeSequentialMean(
                                  particle.speed,
                                  pf_statistics_->atPosition("particles_per_cell", position),
                                  pf_statistics_->atPosition("speed_mean", position));
 
       // Update sum of squared deviations from mean and standard deviations
       // for x position, y position, particle speed
-      auto [x_std_dev, x_ssdm] = computeSequentialStdDev(particle.x,
-                                                         pf_statistics_->atPosition("particles_per_cell", position),
+      auto [x_std_dev, x_ssdm] = echoflow::statistics::computeSequentialStdDev(particle.x,
+                                                  pf_statistics_->atPosition("particles_per_cell", position),
                                                          prior_x_position_mean,
                                                          pf_statistics_->atPosition("x_position_mean", position),
                                                          pf_statistics_->atPosition("x_position_ssdm", position));
       pf_statistics_->atPosition("x_position_ssdm", position) = x_ssdm;
       pf_statistics_->atPosition("x_position_std_dev", position) = x_std_dev;
 
-      auto [y_std_dev, y_ssdm] = computeSequentialStdDev(particle.y,
+      auto [y_std_dev, y_ssdm] = echoflow::statistics::computeSequentialStdDev(particle.y,
                                                          pf_statistics_->atPosition("particles_per_cell", position),
                                                          prior_y_position_mean,
                                                          pf_statistics_->atPosition("y_position_mean", position),
@@ -220,7 +219,7 @@ void ParticleFilterNode::computeParticleFilterStatistics()
       pf_statistics_->atPosition("y_position_ssdm", position) = y_ssdm;
       pf_statistics_->atPosition("y_position_std_dev", position) = y_std_dev;
 
-      auto [speed_std_dev, speed_ssdm] = computeSequentialStdDev(particle.speed,
+      auto [speed_std_dev, speed_ssdm] = echoflow::statistics::computeSequentialStdDev(particle.speed,
                                                          pf_statistics_->atPosition("particles_per_cell", position),
                                                          prior_speed_mean,
                                                          pf_statistics_->atPosition("speed_mean", position),
@@ -238,16 +237,16 @@ void ParticleFilterNode::computeParticleFilterStatistics()
 
   // Iterate through grid map and compute circular means and standard deviations for heading
   for (grid_map::GridMapIterator iterator(*pf_statistics_); !iterator.isPastEnd(); ++iterator) {
-
     // Only calculate statistics for cells where there are particles
     if (pf_statistics_->at("particles_per_cell", *iterator) > 0) {
+      pf_statistics_->at("heading_mean", *iterator) = echoflow::statistics::computeCircularMean(
+                                                            pf_statistics_->at("heading_sines", *iterator),
+                                                            pf_statistics_->at("heading_cosines", *iterator));
 
-      pf_statistics_->at("heading_mean", *iterator) = computeCircularMean(pf_statistics_->at("heading_sines", *iterator),
-                                                                        pf_statistics_->at("heading_cosines", *iterator));
-
-      pf_statistics_->at("heading_std_dev", *iterator) = computeCircularStdDev(pf_statistics_->at("heading_sines", *iterator),
-                                                                               pf_statistics_->at("heading_cosines", *iterator),
-                                                                               pf_statistics_->at("particles_per_cell", *iterator));
+      pf_statistics_->at("heading_std_dev", *iterator) = echoflow::statistics::computeCircularStdDev(
+                                                            pf_statistics_->at("heading_sines", *iterator),
+                                                            pf_statistics_->at("heading_cosines", *iterator),
+                                                            pf_statistics_->at("particles_per_cell", *iterator));
 
     // Otherwise leave cell with zero value and move on to the next cell
     } else {
@@ -281,7 +280,7 @@ void ParticleFilterNode::publishPointCloud()
           "x", 1, sensor_msgs::msg::PointField::FLOAT32,
           "y", 1, sensor_msgs::msg::PointField::FLOAT32,
           "z", 1, sensor_msgs::msg::PointField::FLOAT32,
-          "heading", 1, sensor_msgs::msg::PointField::FLOAT32, // semantic but heading should probably be bearing, more intuitive
+          "heading", 1, sensor_msgs::msg::PointField::FLOAT32,  // semantic but heading should probably be bearing, more intuitive
           "speed", 1, sensor_msgs::msg::PointField::FLOAT32,
           "yaw_rate", 1, sensor_msgs::msg::PointField::FLOAT32,
           "weight", 1, sensor_msgs::msg::PointField::FLOAT32);
