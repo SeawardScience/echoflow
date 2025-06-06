@@ -16,6 +16,7 @@
 #include <visualization_msgs/msg/marker.hpp>
 #include "grid_map_filters.hpp"
 #include "particle_filter.hpp"
+#include "statistics.hpp"
 
 NS_HEAD
 
@@ -125,7 +126,7 @@ private:
    */
   void publishPointCloud();
 
-  rclcpp::Node::OnSetParametersCallbackHandle::SharedPtr parameter_event_sub_; //!< Handle for parameter event subscription
+  rclcpp::Node::OnSetParametersCallbackHandle::SharedPtr parameter_event_sub_;  //!< Handle for parameter event subscription
   /**
    * @brief Store particle positions and headings in a pose array and publish. Function can be
    * visualized in rviz2 as a PoseArray showing particle headings.
