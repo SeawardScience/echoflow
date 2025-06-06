@@ -81,6 +81,10 @@ void MultiTargetParticleFilter::updateWeights(std::shared_ptr<grid_map::GridMap>
     return;
   }
 
+  RCLCPP_DEBUG(rclcpp::get_logger("MultiTargetParticleFilter"),
+               "Updating weights with observation_sigma=%.3f, decay_factor=%.3f",
+               observation_sigma_, decay_factor_);
+
   double sigma = observation_sigma_;
   const double decay_factor = decay_factor_;
   double total_weight = 0.0;
@@ -186,12 +190,16 @@ std::vector<grid_map::Position> MultiTargetParticleFilter::getValidPositionsFrom
     return valid_positions;
 }
 
-
 void MultiTargetParticleFilter::updateNoiseDistributions() {
     noise_pos_       = std::normal_distribution<double>(0.0, noise_std_pos_);
     noise_yaw_       = std::normal_distribution<double>(0.0, noise_std_yaw_);
     noise_yaw_rate_  = std::normal_distribution<double>(0.0, noise_std_yaw_rate_);
     noise_speed_     = std::normal_distribution<double>(0.0, noise_std_speed_);
+
+    RCLCPP_DEBUG(rclcpp::get_logger("MultiTargetParticleFilter"),
+                 "Updated noise distributions: pos=%.3f, yaw=%.3f, yaw_rate=%.3f, speed=%.3f",
+                 noise_std_pos_, noise_std_yaw_, noise_std_yaw_rate_, noise_std_speed_);
+
 }
 
 const std::vector<Target>& MultiTargetParticleFilter::getParticles()
