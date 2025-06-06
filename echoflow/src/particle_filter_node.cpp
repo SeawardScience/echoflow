@@ -6,10 +6,10 @@ void ParticleFilterNode::Parameters::declare(rclcpp::Node * node)
 {
   node->declare_parameter("particle_filter.num_particles", particle_filter.num_particles);
   node->declare_parameter("particle_filter.update_interval", particle_filter.update_interval);
-
   node->declare_parameter("particle_filter.initial_max_speed", particle_filter.initial_max_speed);
   node->declare_parameter("particle_filter.observation_sigma", particle_filter.observation_sigma);
   node->declare_parameter("particle_filter.decay_factor", particle_filter.decay_factor);
+  node->declare_parameter("particle_filter.seed_fraction", particle_filter.seed_fraction);
   node->declare_parameter("particle_filter.min_resample_speed", particle_filter.min_resample_speed);
   node->declare_parameter("particle_filter.noise_std_pos", particle_filter.noise_std_pos);
   node->declare_parameter("particle_filter.noise_std_yaw", particle_filter.noise_std_yaw);
@@ -27,10 +27,10 @@ void ParticleFilterNode::Parameters::update(rclcpp::Node * node)
 {
   node->get_parameter("particle_filter.num_particles", particle_filter.num_particles);
   node->get_parameter("particle_filter.update_interval", particle_filter.update_interval);
-
   node->get_parameter("particle_filter.initial_max_speed", particle_filter.initial_max_speed);
   node->get_parameter("particle_filter.observation_sigma", particle_filter.observation_sigma);
   node->get_parameter("particle_filter.decay_factor", particle_filter.decay_factor);
+  node->get_parameter("particle_filter.seed_fraction", particle_filter.seed_fraction);
   node->get_parameter("particle_filter.min_resample_speed", particle_filter.min_resample_speed);
   node->get_parameter("particle_filter.noise_std_pos", particle_filter.noise_std_pos);
   node->get_parameter("particle_filter.noise_std_yaw", particle_filter.noise_std_yaw);
@@ -55,7 +55,8 @@ ParticleFilterNode::ParticleFilterNode()
 
   applyParameters();  // set pf parameters initially
 
-  parameter_event_sub_ = this->add_on_set_parameters_callback(
+  // Register a "set parameter" callback (pre-commit) to check and log parameter changes
+  parameters_on_set_callback_ = this->add_on_set_parameters_callback(
       [this](const std::vector<rclcpp::Parameter> &parameters) {
           rcl_interfaces::msg::SetParametersResult result;
           result.successful = true;
@@ -70,7 +71,6 @@ ParticleFilterNode::ParticleFilterNode()
               RCLCPP_INFO(this->get_logger(), "Parameter '%s' changed to '%s'",
                           parameter.get_name().c_str(),
                           parameter.value_to_string().c_str());
-              // TODO: (bonney) handle param updates case by case
           }
 
           // parameters that require restart
@@ -79,11 +79,19 @@ ParticleFilterNode::ParticleFilterNode()
               RCLCPP_WARN(this->get_logger(),
                           "Change to 'num_particles' or 'initial_max_speed' will not take effect until node is restarted.");
           }
-
-          parameters_.update(this);
-          applyParameters(); // dynamically update particle filter parameters
-
           return result;
+      });
+
+  // Register an "on parameter event" callback (post-commit) to apply parameter change
+  parameter_event_handler_ = std::make_shared<rclcpp::ParameterEventHandler>(this);
+  parameter_event_callback_handle_ = parameter_event_handler_->add_parameter_event_callback(
+      [this](const rcl_interfaces::msg::ParameterEvent &event) {
+          // Only respond to local parameter changes
+          if (event.node != this->get_fully_qualified_name()) {
+              return;
+          }
+          parameters_.update(this);
+          applyParameters();
       });
 
   cloud_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("particle_cloud", 10);
@@ -131,6 +139,7 @@ ParticleFilterNode::ParticleFilterNode()
 void ParticleFilterNode::applyParameters() {
     pf_->observation_sigma_ = parameters_.particle_filter.observation_sigma;
     pf_->decay_factor_ = parameters_.particle_filter.decay_factor;
+    pf_->seed_fraction_ = parameters_.particle_filter.seed_fraction;
     pf_->min_resample_speed_ = parameters_.particle_filter.min_resample_speed;
     pf_->noise_std_pos_ = parameters_.particle_filter.noise_std_pos;
     pf_->noise_std_yaw_ = parameters_.particle_filter.noise_std_yaw;
@@ -152,12 +161,9 @@ void ParticleFilterNode::update()
     initialized_ = true;
   }
 
-  if (!initialized_) return;
-
-  pf_->initialize(map_ptr_);
   pf_->predict(dt);
   pf_->updateWeights(map_ptr_);
-  pf_->resample();
+  pf_->resample(map_ptr_);
   pending_detections_.clear();
 
   publishPointCloud();
