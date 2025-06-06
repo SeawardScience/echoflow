@@ -9,6 +9,7 @@ Panels:
         - /TF1/Tree1
         - "/Radar Returns: PointCloud21/Autocompute Value Bounds1"
         - /Radar Occupancy Map1/Position1
+        - /PointCloud21
       Splitter Ratio: 0.6028168797492981
     Tree Height: 700
   - Class: rviz_common/Selection
@@ -28,7 +29,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: "Particle Cloud: PointCloud2"
+    SyncSource: PointCloud2
 Visualization Manager:
   Class: ""
   Displays:
@@ -267,6 +268,40 @@ Visualization Manager:
         Reliability Policy: Reliable
         Value: /aura/perception/sensors/halo_a/cell_heading_field
       Value: true
+    - Alpha: 1
+      Autocompute Intensity Bounds: false
+      Autocompute Value Bounds:
+        Max Value: 10
+        Min Value: -10
+        Value: true
+      Axis: Z
+      Channel Name: x
+      Class: rviz_default_plugins/PointCloud2
+      Color: 255; 255; 255
+      Color Transformer: Intensity
+      Decay Time: 0
+      Enabled: true
+      Invert Rainbow: false
+      Max Color: 255; 255; 255
+      Max Intensity: 6.400000095367432
+      Min Color: 0; 0; 0
+      Min Intensity: 0
+      Name: PointCloud2
+      Position Transformer: XYZ
+      Selectable: true
+      Size (Pixels): 4
+      Size (m): 0.10000000149011612
+      Style: Points
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /particles_per_cell
+      Use Fixed Frame: true
+      Use rainbow: true
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -322,7 +357,7 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: 0.3148864805698395
+      Scale: -0.2642516791820526
       Target Frame: aura/radar
       Value: TopDownOrtho (rviz_default_plugins)
       X: -170.27195739746094

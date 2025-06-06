@@ -2,10 +2,10 @@ grid_map_visualization:
   ros__parameters:
     grid_map_topic: /aura/perception/sensors/halo_a/particle_filter_statistics
 
-    grid_map_visualizations: [occupancy_grid]
+    grid_map_visualizations: [particles_per_cell]
 
-    occupancy_grid:
-        type: occupancy_grid
+    particles_per_cell:
+        type: point_cloud
         params:
           layer: particles_per_cell
           data_min: 0.0

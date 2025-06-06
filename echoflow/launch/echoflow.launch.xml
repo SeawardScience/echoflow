@@ -9,14 +9,21 @@
     <push-ros-namespace namespace="$(var radar1_ns)"/>
 
     <!-- Launch radar to pointcloud node -->
-    <include file="$(find-pkg-share marine_radar_tracker)/launch/marine_radar_to_pointcloud.launch.xml" />
+    <!--<include file="$(find-pkg-share marine_radar_tracker)/launch/marine_radar_to_pointcloud.launch.xml" />-->
 
     <!-- Launch particle filter and radar grid map node -->
-    <node pkg="echoflow" exec="particle_filter_node" name="particle_filter_node">
+    <node pkg="echoflow" exec="particle_filter">
       <param from="$(find-pkg-share echoflow)/config/particle_filter.yaml" />
       <!--<param from="$(find-pkg-share echoflow)/config/radar_grid_map.yaml" />-->
     </node>
+
   </group>
+
+    <node pkg="grid_map_visualization" exec="grid_map_visualization" name="grid_map_visualization" output="screen">
+      <param from="$(find-pkg-share echoflow)/config/grid_map_visualization.yaml" />
+    </node>
+
+
 
   <group>
     <push-ros-namespace namespace="$(var radar2_ns)"/>
@@ -24,7 +31,7 @@
   </group>
 
   <!-- Launch Rviz2 with configuration file -->
-  <node pkg="rviz2" exec="rviz2" name="rviz2" output="screen"
-        args="-d $(find-pkg-share echoflow)/config/echoflow.rviz" />
+  <!--<node pkg="rviz2" exec="rviz2" name="rviz2" output="screen"
+        args="-d $(find-pkg-share echoflow)/config/echoflow.rviz" />-->
 
 </launch>

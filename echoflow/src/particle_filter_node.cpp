@@ -169,9 +169,9 @@ void ParticleFilterNode::computeParticleFilterStatistics()
   const auto& particles = pf_->getParticles();
 
   // Zero out all cells in the particle statistics grid before re-computing statistics
-  for (const auto& layer : pf_statistics_->getLayers()) {
-    (*pf_statistics_)[layer].setConstant(0.0);
-  }
+  //for (const auto& layer : pf_statistics_->getLayers()) {
+  //  (*pf_statistics_)[layer].setConstant(0.0);
+  //}
 
   // Iterate through all particles and update the particle filter statistics grid map
   // Accumulate total particle count per cell, then update the arithmetic means and
@@ -180,27 +180,40 @@ void ParticleFilterNode::computeParticleFilterStatistics()
     grid_map::Position position(particle.x, particle.y);
     if (pf_statistics_->isInside(position)) {
 
-      // Update count of particles per cell
-      pf_statistics_->atPosition("particles_per_cell", position)++;
+      // Prior means for computing mean and standard deviation
+      float prior_x_position_mean;
+      float prior_y_position_mean;
+      float prior_speed_mean;
 
-      // Store prior means for running standard deviation computation
-      float prior_x_position_mean = pf_statistics_->atPosition("x_position_mean", position);
-      float prior_y_position_mean = pf_statistics_->atPosition("y_position_mean", position);
-      float prior_speed_mean = pf_statistics_->atPosition("speed_mean", position);
+      // If the grid value is NaN this is the first particle we've seen in this cell,
+      // so initialize the particle count and prior means to zero.
+      if (std::isnan(pf_statistics_->atPosition("particles_per_cell", position))) {
+        pf_statistics_->atPosition("particles_per_cell", position) = 1;
+        prior_x_position_mean = 0.0;
+        prior_y_position_mean = 0.0;
+        prior_speed_mean = 0.0;
+
+      // Otherwise update the particle count and prior means for the cell
+      } else {
+        pf_statistics_->atPosition("particles_per_cell", position)++;
+        prior_x_position_mean = pf_statistics_->atPosition("x_position_mean", position);
+        prior_y_position_mean = pf_statistics_->atPosition("y_position_mean", position);
+        prior_speed_mean = pf_statistics_->atPosition("speed_mean", position);
+      }
 
       // Update sequential arithmetic means for x position, y position, particle speed
       pf_statistics_->atPosition("x_position_mean", position) = computeSequentialMean(
                                  particle.x,
                                  pf_statistics_->atPosition("particles_per_cell", position),
-                                 pf_statistics_->atPosition("x_position_mean", position));
+                                 prior_x_position_mean);
       pf_statistics_->atPosition("y_position_mean", position) = computeSequentialMean(
                                  particle.y,
                                  pf_statistics_->atPosition("particles_per_cell", position),
-                                 pf_statistics_->atPosition("y_position_mean", position));
+                                 prior_y_position_mean);
       pf_statistics_->atPosition("speed_mean", position) = computeSequentialMean(
                                  particle.speed,
                                  pf_statistics_->atPosition("particles_per_cell", position),
-                                 pf_statistics_->atPosition("speed_mean", position));
+                                 prior_speed_mean);
 
       // Update sum of squared deviations from mean and standard deviations
       // for x position, y position, particle speed
@@ -243,13 +256,13 @@ void ParticleFilterNode::computeParticleFilterStatistics()
     if (pf_statistics_->at("particles_per_cell", *iterator) > 0) {
 
       pf_statistics_->at("heading_mean", *iterator) = computeCircularMean(pf_statistics_->at("heading_sines", *iterator),
-                                                                        pf_statistics_->at("heading_cosines", *iterator));
+                                                                          pf_statistics_->at("heading_cosines", *iterator));
 
       pf_statistics_->at("heading_std_dev", *iterator) = computeCircularStdDev(pf_statistics_->at("heading_sines", *iterator),
                                                                                pf_statistics_->at("heading_cosines", *iterator),
                                                                                pf_statistics_->at("particles_per_cell", *iterator));
 
-    // Otherwise leave cell with zero value and move on to the next cell
+    // Otherwise leave cell with NaN value and move on to the next cell
     } else {
       continue;
     }
