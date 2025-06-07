@@ -72,7 +72,7 @@ ParticleFilterNode::ParticleFilterNode()
               RCLCPP_INFO(this->get_logger(), "Parameter '%s' changed to '%s'",
                           parameter.get_name().c_str(),
                           parameter.value_to_string().c_str());
-              // TODO: (bonney) handle param updates case by case
+              // TODO(bonney): handle param updates case by case
           }
 
           // parameters that require restart

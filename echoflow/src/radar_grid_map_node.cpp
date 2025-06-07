@@ -24,7 +24,6 @@ void RadarGridMapNode::Parameters::update(rclcpp::Node * node)
   node->get_parameter("map.pub_interval", map.pub_interval);
   node->get_parameter("max_queue_size", max_queue_size);
   node->get_parameter("filter.near_clutter_range", filter.near_clutter_range);
-
 }
 
 RadarGridMapNode::RadarGridMapNode()
@@ -54,7 +53,8 @@ RadarGridMapNode::RadarGridMapNode()
       map_ptr_->getLength().x(), map_ptr_->getLength().y(),
       map_ptr_->getSize()(0), map_ptr_->getSize()(1));
 
-  costmap_timer_ = this->create_wall_timer(std::chrono::milliseconds(int(parameters_.map.pub_interval * 1000)),
+  costmap_timer_ = this->create_wall_timer(std::chrono::milliseconds(
+                          static_cast<int>(parameters_.map.pub_interval * 1000)),
                           std::bind(&RadarGridMapNode::publishCostmap, this));
 
   queue_timer_ = this->create_wall_timer(
@@ -93,11 +93,9 @@ void RadarGridMapNode::addToQueue(const marine_sensor_msgs::msg::RadarSector::Sh
             rclcpp::Time(msg->header.stamp),
             tf2::durationFromSec(0.01)))
     {
-      tf_ready_ = true; // ✅ TFs are now ready
+      tf_ready_ = true;  // ✅ TFs are now ready
       RCLCPP_INFO(this->get_logger(), "TFs are now available. Radar messages will be buffered normally.");
-    }
-    else
-    {
+    } else {
       // ❌ Still no TF — drop this message
       RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 5000,
                            "Dropping radar sector at time %u.%u: TF not yet available from %s to %s.",
@@ -131,7 +129,7 @@ void RadarGridMapNode::processQueue()
 {
   while (!radar_sector_queue_.empty())
   {
-    auto msg = radar_sector_queue_.front(); // Peek at the first message
+    auto msg = radar_sector_queue_.front();  // Peek at the first message
 
     // Check if transform is available without throwing exceptions
     if (!m_tf_buffer->canTransform(
@@ -160,8 +158,8 @@ void RadarGridMapNode::processQueue()
                  msg->header.stamp.nanosec,
                  radar_sector_queue_.size());
 
-    processMsg(msg);               // Process the message
-    radar_sector_queue_.pop_front(); // Remove from queue
+    processMsg(msg);                  // Process the message
+    radar_sector_queue_.pop_front();  // Remove from queue
   }
 }
 
@@ -240,13 +238,13 @@ void RadarGridMapNode::processMsg(const marine_sensor_msgs::msg::RadarSector::Sh
     double angle = msg->angle_start + i * msg->angle_increment + yaw;  // << corrected!
     double c = std::cos(angle);
     double s = std::sin(angle);
-    float range_increment = (msg->range_max - msg->range_min) / float(msg->intensities[i].echoes.size());
+    float range_increment = (msg->range_max - msg->range_min) / static_cast<float>(msg->intensities[i].echoes.size());
 
     for (size_t j = 0; j < msg->intensities[i].echoes.size(); j++)
     {
       float echo_intensity = msg->intensities[i].echoes[j];
       if (echo_intensity <= 0.0f)
-        continue; // skip empty returns
+        continue;  // skip empty returns
 
       float range = msg->range_min + j * range_increment;
       if (range <= parameters_.filter.near_clutter_range)
@@ -257,8 +255,7 @@ void RadarGridMapNode::processMsg(const marine_sensor_msgs::msg::RadarSector::Sh
 
       grid_map::Position pos(map_x, map_y);
 
-      if (map_ptr_->isInside(pos))
-      {
+      if (map_ptr_->isInside(pos)) {
         map_ptr_->atPosition("intensity", pos) = echo_intensity;
       }
     }
@@ -269,17 +266,14 @@ void RadarGridMapNode::recenterMap(const grid_map::Position& new_center)
 {
   grid_map::Position old_center = map_ptr_->getPosition();
   double distance = (new_center - old_center).norm();
-  double move_threshold = 10.0 * parameters_.map.resolution; // 10x cell size
+  double move_threshold = 10.0 * parameters_.map.resolution;  // 10x cell size
 
-  if (distance > move_threshold)
-  {
+  if (distance > move_threshold) {
     map_ptr_->move(new_center);
     RCLCPP_DEBUG(this->get_logger(),
                 "Recentered map by %.2f meters (threshold %.2f meters).",
                 distance, move_threshold);
-  }
-  else
-  {
+  } else {
     RCLCPP_DEBUG(this->get_logger(),
                  "Map recenter skipped. Distance %.2f meters < threshold %.2f meters.",
                  distance, move_threshold);

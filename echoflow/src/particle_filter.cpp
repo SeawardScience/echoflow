@@ -14,7 +14,6 @@ MultiTargetParticleFilter::MultiTargetParticleFilter(size_t num_particles,
 
 void MultiTargetParticleFilter::initialize(std::shared_ptr<grid_map::GridMap> map_ptr)
 {
-
   RCLCPP_DEBUG(rclcpp::get_logger("MultiTargetParticleFilter"),
                 "ParticleFilter Config: num_particles=%zu, observation_sigma=%.2f, decay=%.2f, "
                 "min_speed=%.2f, noise_std_pos=%.2f, noise_std_yaw=%.2f, noise_std_yaw_rate=%.2f, noise_std_speed=%.2f",
@@ -47,7 +46,6 @@ void MultiTargetParticleFilter::initialize(std::shared_ptr<grid_map::GridMap> ma
   }
 
   // Add new particles at randomly selected valid positions
-  // TODO: revisit this section for tracking different sizes of blobs or "ignoring" static blobs
   for (size_t i = 0; i < 10; ++i) {
     const auto& position = valid_positions[rand() % valid_positions.size()];
     Target particle;
@@ -55,8 +53,8 @@ void MultiTargetParticleFilter::initialize(std::shared_ptr<grid_map::GridMap> ma
     particle.y = position.y();
     particle.speed = initial_max_speed_ * static_cast<double>(rand()) / RAND_MAX;
     particle.heading = 2.0 * M_PI * static_cast<double>(rand()) / RAND_MAX;
-    particle.yaw_rate = 0.0 * static_cast<double>(rand()) / RAND_MAX; // This is ZERO always...
-    particle.weight = 1.0;  // Will be normalized later
+    particle.yaw_rate = 0.0 * static_cast<double>(rand()) / RAND_MAX;  // This is ZERO always...
+    particle.weight = 1.0;   // Will be normalized later
     particles_.push_back(particle);
   }
 
@@ -66,7 +64,8 @@ void MultiTargetParticleFilter::initialize(std::shared_ptr<grid_map::GridMap> ma
 
 void MultiTargetParticleFilter::predict(double dt)
 {
-  RCLCPP_DEBUG(rclcpp::get_logger("MultiTargetParticleFilter"), "Predicting next state for %zu particles with dt = %.3f", particles_.size(), dt);
+  RCLCPP_DEBUG(rclcpp::get_logger("MultiTargetParticleFilter"),
+               "Predicting next state for %zu particles with dt = %.3f", particles_.size(), dt);
 
   for (auto& particle : particles_) {
     double velocity = particle.speed + noise_speed_(rng_);
@@ -90,7 +89,8 @@ void MultiTargetParticleFilter::predict(double dt)
 void MultiTargetParticleFilter::updateWeights(std::shared_ptr<grid_map::GridMap> map_ptr)
 {
   if (!map_ptr || !map_ptr->exists("edt")) {
-    RCLCPP_WARN(rclcpp::get_logger("MultiTargetParticleFilter"), "GridMap does not contain 'edt' layer."); // maybe change to throttle
+    RCLCPP_WARN(rclcpp::get_logger("MultiTargetParticleFilter"),   // maybe change to throttle
+                "GridMap does not contain 'edt' layer.");
     return;
   }
 
@@ -139,33 +139,35 @@ void MultiTargetParticleFilter::resample()
     }
   }
 
-  RCLCPP_DEBUG(rclcpp::get_logger("MultiTargetParticleFilter"), "Resampling %zu particles. %zu passed min_resample_speed_ = %.2f",
-              particles_.size(), filtered_particles.size(), min_resample_speed_);
+  RCLCPP_DEBUG(rclcpp::get_logger("MultiTargetParticleFilter"),
+               "Resampling %zu particles. %zu passed min_resample_speed_ = %.2f",
+               particles_.size(), filtered_particles.size(), min_resample_speed_);
 
   // If no particles survive the filter, fall back to all particles to avoid failure
   const auto& source_particles = filtered_particles.empty() ? particles_ : filtered_particles;
 
   if (filtered_particles.empty()) {
-      RCLCPP_DEBUG(rclcpp::get_logger("MultiTargetParticleFilter"), "No particles passed speed threshold; falling back to full particle set.");
+      RCLCPP_DEBUG(rclcpp::get_logger("MultiTargetParticleFilter"),
+                   "No particles passed speed threshold; falling back to full particle set.");
   }
 
   std::vector<Target> new_particles;
   new_particles.reserve(source_particles.size());
 
-  std::uniform_real_distribution<double> dist_u(0.0, 1.0); // uniform distribution
+  std::uniform_real_distribution<double> dist_u(0.0, 1.0);  // uniform distribution
   double step = 1.0 / source_particles.size();
-  double r = dist_u(rng_) * step; // initial offset
-  double c = source_particles[0].weight; // cumulative weight
-  size_t i = 0; // source index
+  double initial_offset = dist_u(rng_) * step;  // initial offset
+  double cumulative_weight = source_particles[0].weight;  // cumulative weight
+  size_t i = 0;  // source index
 
-  // TODO: revisit variable names
-  for (size_t m = 0; m < source_particles.size(); ++m) // m resample index
+  for (size_t m_resample_idx = 0; m_resample_idx < source_particles.size(); ++m_resample_idx)  // m resample index
   {
-    double U = r + m * step; // uniform sample point along [0,1] range used to pick a particle based on weights
-    while (U > c && i < source_particles.size() - 1)
+    // Uniform sample point along [0,1] range used to pick a particle based on weights
+    double uniform_sample_point = initial_offset + m_resample_idx * step;
+    while (uniform_sample_point > cumulative_weight && i < source_particles.size() - 1)
     {
       ++i;
-      c += source_particles[i].weight;
+      cumulative_weight += source_particles[i].weight;
     }
     new_particles.push_back(source_particles[i]);
     new_particles.back().weight = 1.0 / source_particles.size();
