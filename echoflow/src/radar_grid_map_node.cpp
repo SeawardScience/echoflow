@@ -1,3 +1,5 @@
+/** Copyright © 2015 Seaward Science. */
+
 #include "radar_grid_map_node.hpp"
 
 NS_HEAD

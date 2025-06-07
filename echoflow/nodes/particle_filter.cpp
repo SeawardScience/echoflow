@@ -1,3 +1,5 @@
+/** Copyright © 2015 Seaward Science. */
+
 #include "particle_filter_node.hpp"
 #include "radar_grid_map_node.hpp"
 

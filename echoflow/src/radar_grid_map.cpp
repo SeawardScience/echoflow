@@ -1,9 +1,11 @@
+/** Copyright © 2015 Seaward Science. */
+
 #include "radar_grid_map.hpp"
 
 
 RadarGridMap::RadarGridMap(const std::vector<std::string>& layers) : grid_map::GridMap(layers)
 {
-    
+
 }
 
 RadarGridMap::RadarGridMap() : grid_map::GridMap()
@@ -23,6 +25,6 @@ bool RadarGridMap::setCellAtPosition()
     addToBuffer();
 }
 
-void RadarGridMap::addToBuffer() 
+void RadarGridMap::addToBuffer()
 {
 }

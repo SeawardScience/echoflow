@@ -1,3 +1,5 @@
+/** Copyright © 2015 Seaward Science. */
+
 #include "grid_map_filters.hpp"
 
 NS_HEAD

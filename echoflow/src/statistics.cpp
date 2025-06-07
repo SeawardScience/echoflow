@@ -1,3 +1,5 @@
+/** Copyright © 2015 Seaward Science. */
+
 #include "statistics.hpp"
 
 NS_HEAD
