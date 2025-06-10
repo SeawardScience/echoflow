@@ -118,6 +118,8 @@ public:
   double noise_std_yaw_rate_; // Standard deviation for yaw rate noise
   double noise_std_speed_;    // Standard deviation for speed noise
 
+  void addResampleNoise(Target &p);
+
 private:
   std::vector<Target> particles_;
   std::default_random_engine rng_;

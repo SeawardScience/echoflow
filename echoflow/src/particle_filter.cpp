@@ -74,58 +74,53 @@ void MultiTargetParticleFilter::predict(double dt)
   }
 }
 
-void MultiTargetParticleFilter::updateWeights(std::shared_ptr<grid_map::GridMap> map_ptr, std::shared_ptr<grid_map::GridMap> stats_ptr)
+void MultiTargetParticleFilter::updateWeights(std::shared_ptr<grid_map::GridMap> map_ptr,
+                                              std::shared_ptr<grid_map::GridMap> stats_ptr)
 {
   if (!map_ptr || !map_ptr->exists("edt")) {
-    RCLCPP_WARN(rclcpp::get_logger("MultiTargetParticleFilter"), "GridMap does not contain 'edt' layer."); // maybe change to throttle
+    RCLCPP_WARN(rclcpp::get_logger("MultiTargetParticleFilter"),
+                "GridMap does not contain 'edt' layer.");
     return;
   }
 
   RCLCPP_DEBUG(rclcpp::get_logger("MultiTargetParticleFilter"),
-               "Updating weights with observation_sigma=%.3f, decay_factor=%.3f",
+               "Updating weights with observation_sigma=%.3f, smoothing_alpha=%.3f",
                observation_sigma_, decay_factor_);
 
-  double sigma = observation_sigma_;
-  const double decay_factor = decay_factor_;
+  const double sigma = observation_sigma_;
+  const double alpha = decay_factor_;  // renamed meaning: smoothing parameter
   double total_weight = 0.0;
 
   for (auto& particle : particles_) {
     grid_map::Position position(particle.x, particle.y);
-    double new_weight = 0.0;
+    double obs_weight = 0.0;
 
-    // Check if the particle is inside the map
     if (map_ptr->isInside(position)) {
       try {
         double distance = map_ptr->atPosition("edt", position);
-        new_weight = std::exp(- (distance * distance) / (2.0 * sigma * sigma));;
+        obs_weight = std::exp(- (distance * distance) / (2.0 * sigma * sigma));
       } catch (const std::out_of_range& e) {
-        // fall through to decay
+        // Leave obs_weight = 0.0
       }
     }
 
-    // If no valid reading, retain some of the previous weight
+    // // Penalize overcrowded areas
+    // if (stats_ptr && stats_ptr->isInside(position)) {
+    //   try {
+    //     double density = stats_ptr->atPosition("particles_per_cell", position);
+    //     if (density > 0.0) {
+    //       double density_penalty = num_particles_ / density;
+    //       obs_weight *= std::min(1.0, density_penalty);
+    //     }
+    //   } catch (const std::out_of_range& e) {
+    //     // Use obs_weight as-is
+    //   }
+    // }
 
-    new_weight = new_weight + particle.weight * decay_factor;
-
-
-    // penalize based on density
-
-    if (stats_ptr && stats_ptr->isInside(position)) {
-      try {
-        double density = stats_ptr->atPosition("particles_per_cell", position);
-        if (density > 0.0) {
-          // Penalize overcrowded areas by inversely scaling with density
-          double density_penalty = num_particles_ / density;
-          new_weight *= std::min(1.0, density_penalty);
-        }
-      } catch (const std::out_of_range& e) {
-        // Ignore: use new_weight as-is
-      }
-    }
-
-
-    particle.weight = new_weight;
-    total_weight += new_weight;
+    // // Smooth weight update using exponential moving average
+    // particle.weight = (1.0 - alpha) * particle.weight + alpha * obs_weight;
+    particle.weight = obs_weight;
+    total_weight += particle.weight;
   }
 
   // Normalize weights
@@ -135,6 +130,27 @@ void MultiTargetParticleFilter::updateWeights(std::shared_ptr<grid_map::GridMap>
     }
   }
 }
+
+
+
+void MultiTargetParticleFilter::addResampleNoise(Target& p)
+{
+  p.x += noise_pos_(rng_);
+  p.y += noise_pos_(rng_);
+
+  p.heading += noise_yaw_(rng_);
+  // Wrap heading to [0, 2π)
+  p.heading = std::fmod(p.heading, 2.0 * M_PI);
+  if (p.heading < 0.0)
+    p.heading += 2.0 * M_PI;
+
+  p.speed += noise_speed_(rng_);
+  // Ensure speed is non-negative
+  p.speed = std::max(0.0, p.speed);
+
+  //p.yaw_rate += noise_yaw_rate_(rng_);
+}
+
 
 void MultiTargetParticleFilter::resample(std::shared_ptr<grid_map::GridMap> map_ptr)
 {
@@ -159,11 +175,7 @@ void MultiTargetParticleFilter::resample(std::shared_ptr<grid_map::GridMap> map_
             c += particles_[i].weight;
         }
         Target p = particles_[i];
-        p.x += noise_pos_(rng_);
-        p.y += noise_pos_(rng_);
-        p.heading += noise_yaw_(rng_);
-        p.speed += noise_speed_(rng_);
-        p.yaw_rate += noise_yaw_rate_(rng_);
+        addResampleNoise(p);
         p.weight = 1.0 / n_total;
         new_particles.push_back(p);
     }
@@ -197,9 +209,9 @@ std::vector<grid_map::Position> MultiTargetParticleFilter::getValidPositionsFrom
 
     for (grid_map::GridMapIterator it(*map_ptr); !it.isPastEnd(); ++it) {
         const auto& index = *it;
-        if (!map_ptr->isValid(index, "intensity")) continue;
+        if (!map_ptr->isValid(index, "targets")) continue;
 
-        double val = map_ptr->at("intensity", index);
+        double val = map_ptr->at("targets", index);
         if (std::isnan(val) || val <= 0.0) continue;
 
         grid_map::Position position;
@@ -217,7 +229,7 @@ void MultiTargetParticleFilter::updateNoiseDistributions() {
     noise_yaw_rate_  = std::normal_distribution<double>(0.0, noise_std_yaw_rate_);
     noise_speed_     = std::normal_distribution<double>(0.0, noise_std_speed_);
 
-    RCLCPP_DEBUG(rclcpp::get_logger("MultiTargetParticleFilter"),
+    RCLCPP_INFO(rclcpp::get_logger("MultiTargetParticleFilter"),
                  "Updated noise distributions: pos=%.3f, yaw=%.3f, yaw_rate=%.3f, speed=%.3f",
                  noise_std_pos_, noise_std_yaw_, noise_std_yaw_rate_, noise_std_speed_);
 

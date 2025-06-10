@@ -161,13 +161,15 @@ void ParticleFilterNode::update()
     pf_->initialize(map_ptr_);
     initialized_ = true;
   }
-
+  pf_->resample(map_ptr_);
   pf_->predict(dt);
   pf_->updateWeights(map_ptr_,pf_statistics_);
-  pf_->resample(map_ptr_);
-  pending_detections_.clear();
-
   publishPointCloud();
+
+
+  //pending_detections_.clear();
+
+
 }
 
 void ParticleFilterNode::computeParticleFilterStatistics()

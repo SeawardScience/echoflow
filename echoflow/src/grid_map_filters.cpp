@@ -87,6 +87,9 @@ float computeSequentialMean(float new_observation, float num_samples, float prio
   if (num_samples < 1) {
     throw std::invalid_argument("Invalid number of particles.");
   }
+  if (num_samples == 1) {
+    return new_observation;
+  }
   return prior_mean + ((new_observation - prior_mean) / num_samples);
 }
 

@@ -43,23 +43,23 @@ public:
   {
     struct {
       int num_particles = 100000;
-      double update_interval = 1.0;            // seconds
+      double update_interval = 0.2;            // seconds
       double initial_max_speed = 20.0;
-      double observation_sigma = 25.0;
-      double decay_factor = 0.5;               // decay factor for particle weights;
+      double observation_sigma = 50.0;
+      double decay_factor = 0.99;               // decay factor for particle weights;
       double seed_fraction = 0.001;            // fraction of particles to be seeded with random positions
       double min_resample_speed = 3.0;
       double noise_std_pos = 0.1;
-      double noise_std_yaw = 0.4;
-      double noise_std_yaw_rate = 1.0;
-      double noise_std_speed = 4.0;
+      double noise_std_yaw = 0.05;
+      double noise_std_yaw_rate = 0.0;
+      double noise_std_speed = .2;
     } particle_filter;
 
     struct {
       std::string frameId = "map";
-      double length = 1500.0;
-      double width = 1500.0;
-      double resolution = 50.0;
+      double length = 2500.0;
+      double width = 2500.0;
+      double resolution = 25.0;
       double pub_interval = 1.0;               // seconds
     } particle_filter_statistics;
 
@@ -72,7 +72,7 @@ public:
 
     /**
      * @brief Updates all node parameters.
-     *
+     *c
      * @param node Pointer to the ROS2 node for parameter update.
      */
     void update(rclcpp::Node * node);
@@ -168,7 +168,7 @@ private:
   std::shared_ptr<rclcpp::ParameterEventHandler> parameter_event_handler_;            //!< Parameter event handler for listening to parameter changes.
   rclcpp::ParameterEventCallbackHandle::SharedPtr parameter_event_callback_handle_;   //!< Handle for the parameter event callback. This callback is triggered *after* parameter changes have been successfully applied to the node.
 
-  std::vector<Detection> pending_detections_;
+  //std::vector<Detection> pending_detections_;
 
   bool initialized_ = false;
   rclcpp::Time last_update_time_;
