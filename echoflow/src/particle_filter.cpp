@@ -155,7 +155,12 @@ void MultiTargetParticleFilter::resample(std::shared_ptr<grid_map::GridMap> map_
             c += particles_[i].weight;
         }
         Target p = particles_[i];
-        p.weight = 1.0 / n_total;  // Normalize to total
+        p.x += noise_pos_(rng_);
+        p.y += noise_pos_(rng_);
+        p.heading += noise_yaw_(rng_);
+        p.speed += noise_speed_(rng_);
+        p.yaw_rate += noise_yaw_rate_(rng_);
+        p.weight = 1.0 / n_total;
         new_particles.push_back(p);
     }
 
