@@ -6,7 +6,6 @@ void ParticleFilterNode::Parameters::declare(rclcpp::Node * node)
 {
   node->declare_parameter("particle_filter.num_particles", particle_filter.num_particles);
   node->declare_parameter("particle_filter.update_interval", particle_filter.update_interval);
-
   node->declare_parameter("particle_filter.initial_max_speed", particle_filter.initial_max_speed);
   node->declare_parameter("particle_filter.observation_sigma", particle_filter.observation_sigma);
   node->declare_parameter("particle_filter.decay_factor", particle_filter.decay_factor);
@@ -28,7 +27,6 @@ void ParticleFilterNode::Parameters::update(rclcpp::Node * node)
 {
   node->get_parameter("particle_filter.num_particles", particle_filter.num_particles);
   node->get_parameter("particle_filter.update_interval", particle_filter.update_interval);
-
   node->get_parameter("particle_filter.initial_max_speed", particle_filter.initial_max_speed);
   node->get_parameter("particle_filter.observation_sigma", particle_filter.observation_sigma);
   node->get_parameter("particle_filter.decay_factor", particle_filter.decay_factor);
@@ -57,7 +55,8 @@ ParticleFilterNode::ParticleFilterNode()
 
   applyParameters();  // set pf parameters initially
 
-  parameter_event_sub_ = this->add_on_set_parameters_callback(
+  // Register a "set parameter" callback (pre-commit) to check and log parameter changes
+  parameters_on_set_callback_ = this->add_on_set_parameters_callback(
       [this](const std::vector<rclcpp::Parameter> &parameters) {
           rcl_interfaces::msg::SetParametersResult result;
           result.successful = true;
@@ -80,11 +79,19 @@ ParticleFilterNode::ParticleFilterNode()
               RCLCPP_WARN(this->get_logger(),
                           "Change to 'num_particles' or 'initial_max_speed' will not take effect until node is restarted.");
           }
-
-          parameters_.update(this);
-          applyParameters(); // dynamically update particle filter parameters
-
           return result;
+      });
+
+  // Register an "on parameter event" callback (post-commit) to apply parameter change
+  parameter_event_handler_ = std::make_shared<rclcpp::ParameterEventHandler>(this);
+  parameter_event_callback_handle_ = parameter_event_handler_->add_parameter_event_callback(
+      [this](const rcl_interfaces::msg::ParameterEvent &event) {
+          // Only respond to local parameter changes
+          if (event.node != this->get_fully_qualified_name()) {
+              return;
+          }
+          parameters_.update(this);
+          applyParameters();
       });
 
   cloud_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("particle_cloud", 10);
