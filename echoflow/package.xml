@@ -10,6 +10,7 @@
   <buildtool_depend>ament_cmake</buildtool_depend>
   <depend>eigen</depend>
   <depend>grid_map_core</depend>
+  <depend>grid_map_costmap_2d</depend>
   <depend>grid_map_ros</depend>
   <depend>grid_map_msgs</depend>
   <depend>marine_sensor_msgs</depend>

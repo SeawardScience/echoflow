@@ -18,7 +18,7 @@ void setupParam(std::string * variable, rclcpp::Node *node , std::string topic, 
 
 void RadarGridMapNode::Parameters::init(rclcpp::Node *node)
 {
-  setupParam(&map.frame_id, node, "map.frameId", map.frame_id);
+  setupParam(&map.frame_id, node, "map.frame_id", map.frame_id);
   setupParam(&map.length, node, "map.length", map.length);
   setupParam(&map.width, node, "map.width", map.width);
   setupParam(&map.resolution, node, "map.resolution", map.resolution);
