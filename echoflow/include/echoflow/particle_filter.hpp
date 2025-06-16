@@ -22,6 +22,7 @@ struct Target {
   double speed;     // m/s
   double yaw_rate;  // rad/s
   double weight;    // per-particle weight
+  double obs_likelihood;
 };
 
 /**

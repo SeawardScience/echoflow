@@ -46,7 +46,7 @@ public:
       double update_interval = 0.2;            // seconds
       double initial_max_speed = 20.0;
       double observation_sigma = 50.0;
-      double decay_factor = 0.99;               // decay factor for particle weights;
+      double decay_factor = 0.95;               // decay factor for particle weights;
       double seed_fraction = 0.001;            // fraction of particles to be seeded with random positions
       double min_resample_speed = 3.0;
       double noise_std_pos = 0.1;

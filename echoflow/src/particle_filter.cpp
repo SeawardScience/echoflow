@@ -93,12 +93,12 @@ void MultiTargetParticleFilter::updateWeights(std::shared_ptr<grid_map::GridMap>
 
   for (auto& particle : particles_) {
     grid_map::Position position(particle.x, particle.y);
-    double obs_weight = 0.0;
+    double obs_likelihood = 1e-6; // small baseline to prevent zero weights
 
     if (map_ptr->isInside(position)) {
       try {
         double distance = map_ptr->atPosition("edt", position);
-        obs_weight = std::exp(- (distance * distance) / (2.0 * sigma * sigma));
+        obs_likelihood = std::exp(- (distance * distance) / (2.0 * sigma * sigma));
       } catch (const std::out_of_range& e) {
         // Leave obs_weight = 0.0
       }
@@ -117,7 +117,12 @@ void MultiTargetParticleFilter::updateWeights(std::shared_ptr<grid_map::GridMap>
     //   }
     // }
 
-    particle.weight = obs_weight;
+    if(particle.obs_likelihood < obs_likelihood){
+      particle.obs_likelihood = obs_likelihood;
+    }else{
+      particle.obs_likelihood *= decay_factor_;
+    }
+    particle.weight = std::max(particle.obs_likelihood, 1e-8);
     total_weight += particle.weight;
   }
 
