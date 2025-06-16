@@ -134,8 +134,6 @@ void MultiTargetParticleFilter::updateWeights(std::shared_ptr<grid_map::GridMap>
   }
 }
 
-
-
 void MultiTargetParticleFilter::addResampleNoise(Target& p)
 {
   p.x += noise_pos_(rng_);
@@ -154,8 +152,8 @@ void MultiTargetParticleFilter::addResampleNoise(Target& p)
   //p.yaw_rate += noise_yaw_rate_(rng_);
 }
 
-
-void MultiTargetParticleFilter::resample(std::shared_ptr<grid_map::GridMap> map_ptr)
+void MultiTargetParticleFilter::resample(std::shared_ptr<grid_map::GridMap> map_ptr,
+                                         std::shared_ptr<grid_map::GridMap> stats_ptr)
 {
   const size_t n_total = num_particles_;
   const size_t n_seed = static_cast<size_t>(seed_fraction_ * n_total); // 0.1% of total particles are seeded
@@ -185,24 +183,21 @@ void MultiTargetParticleFilter::resample(std::shared_ptr<grid_map::GridMap> map_
 
   // Step 2: Inject n_seed randomly initialized particles
   std::vector<grid_map::Position> valid_positions = getValidPositionsFromMap(map_ptr);
-  std::uniform_real_distribution<double> uniform_01(0.0, 1.0);
-
-  for (size_t m = 0; m < n_seed && !valid_positions.empty(); ++m) {
-    const auto& position = valid_positions[rng_() % valid_positions.size()];
-    Target particle;
-    particle.x = position.x();
-    particle.y = position.y();
-    particle.speed = initial_max_speed_ * uniform_01(rng_);
-    particle.heading = 2.0 * M_PI * uniform_01(rng_);
-    particle.yaw_rate = 0.0;
-    particle.weight = 1.0 / n_total;
-    new_particles.push_back(particle);
+  // seed the rest
+  if (stats_ptr) {
+      seedWeighted(valid_positions, n_seed, stats_ptr, new_particles);
+      RCLCPP_DEBUG(rclcpp::get_logger("MultiTargetParticleFilter"),
+                   "Seeding %zu particles weighted by density.", n_seed);
+  } else {
+      seedUniform(valid_positions, n_seed, new_particles);
+      RCLCPP_DEBUG(rclcpp::get_logger("MultiTargetParticleFilter"),
+                   "Seeding %zu particles uniformly.", n_seed);
   }
 
   particles_ = std::move(new_particles);
 
   RCLCPP_DEBUG(rclcpp::get_logger("MultiTargetParticleFilter"),
-               "%zu particles: %zu resampled, %zu seeded.",
+               "%zu particles: %zu resampled, %zu seeded",
                particles_.size(), n_resample, n_seed);
 }
 
@@ -226,6 +221,61 @@ std::vector<grid_map::Position> MultiTargetParticleFilter::getValidPositionsFrom
   return valid_positions;
 }
 
+void MultiTargetParticleFilter::seedUniform(
+    const std::vector<grid_map::Position>& valid_positions,
+    size_t n_seed,
+    std::vector<Target>& output_particles)
+{
+    std::uniform_real_distribution<double> uniform_01(0.0, 1.0);
+    for (size_t m = 0; m < n_seed && !valid_positions.empty(); ++m) {
+        const auto& position = valid_positions[rng_() % valid_positions.size()];
+        Target particle;
+        particle.x = position.x();
+        particle.y = position.y();
+        particle.speed = initial_max_speed_ * uniform_01(rng_);
+        particle.heading = 2.0 * M_PI * uniform_01(rng_);
+        particle.yaw_rate = 0.0;
+        particle.weight = 1.0 / static_cast<double>(num_particles_);
+        output_particles.push_back(particle);
+    }
+}
+
+void MultiTargetParticleFilter::seedWeighted(
+    const std::vector<grid_map::Position>& valid_positions,
+    size_t n_seed,
+    const std::shared_ptr<grid_map::GridMap>& stats_ptr,
+    std::vector<Target>& output_particles)
+{
+    // build weight vector using particles per cell
+    std::vector<double> weights;
+    weights.reserve(valid_positions.size());
+    constexpr double eps = 1e-3;
+    for (auto& pos : valid_positions) {
+        double density = 0.0;
+        if (stats_ptr->isInside(pos)) {
+            density = stats_ptr->atPosition("particles_per_cell", pos); // lookup local density at valid pos
+        }
+        weights.push_back(1.0 / (density + eps)); // inverse density as weight, avoid divide by zero w/ eps
+    }
+
+    // discrete distributoin based on weihgts
+    std::discrete_distribution<size_t> sampler(weights.begin(), weights.end()); // cumulative distribution so higher weights more likely to be chosen
+    std::uniform_real_distribution<double> uniform_01(0.0, 1.0);
+
+    for (size_t m = 0; m < n_seed && !valid_positions.empty(); ++m) {
+        size_t idx = sampler(rng_);
+        const auto& position = valid_positions[idx];
+        Target particle;
+        particle.x = position.x();
+        particle.y = position.y();
+        particle.speed = initial_max_speed_ * uniform_01(rng_);
+        particle.heading = 2.0 * M_PI * uniform_01(rng_);
+        particle.yaw_rate = 0.0;
+        particle.weight = 1.0 / static_cast<double>(num_particles_);
+        output_particles.push_back(particle);
+    }
+}
+
 void MultiTargetParticleFilter::updateNoiseDistributions() {
   noise_pos_       = std::normal_distribution<double>(0.0, noise_std_pos_);
   noise_yaw_       = std::normal_distribution<double>(0.0, noise_std_yaw_);
@@ -235,7 +285,6 @@ void MultiTargetParticleFilter::updateNoiseDistributions() {
   RCLCPP_INFO(rclcpp::get_logger("MultiTargetParticleFilter"),
               "Updated noise distributions: pos=%.3f, yaw=%.3f, yaw_rate=%.3f, speed=%.3f",
               noise_std_pos_, noise_std_yaw_, noise_std_yaw_rate_, noise_std_speed_);
-
 }
 
 const std::vector<Target>& MultiTargetParticleFilter::getParticles()
