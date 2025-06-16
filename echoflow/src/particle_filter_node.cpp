@@ -15,12 +15,14 @@ void ParticleFilterNode::Parameters::declare(rclcpp::Node * node)
   node->declare_parameter("particle_filter.noise_std_yaw", particle_filter.noise_std_yaw);
   node->declare_parameter("particle_filter.noise_std_yaw_rate", particle_filter.noise_std_yaw_rate);
   node->declare_parameter("particle_filter.noise_std_speed", particle_filter.noise_std_speed);
+  node->declare_parameter("particle_filter.maximum_target_size", particle_filter.maximum_target_size);
 
   node->declare_parameter("particle_filter_statistics.frameId", particle_filter_statistics.frameId);
   node->declare_parameter("particle_filter_statistics.length", particle_filter_statistics.length);
   node->declare_parameter("particle_filter_statistics.width", particle_filter_statistics.width);
   node->declare_parameter("particle_filter_statistics.resolution", particle_filter_statistics.resolution);
   node->declare_parameter("particle_filter_statistics.pub_interval", particle_filter_statistics.pub_interval);
+
 }
 
 void ParticleFilterNode::Parameters::update(rclcpp::Node * node)
@@ -36,6 +38,7 @@ void ParticleFilterNode::Parameters::update(rclcpp::Node * node)
   node->get_parameter("particle_filter.noise_std_yaw", particle_filter.noise_std_yaw);
   node->get_parameter("particle_filter.noise_std_yaw_rate", particle_filter.noise_std_yaw_rate);
   node->get_parameter("particle_filter.noise_std_speed", particle_filter.noise_std_speed);
+  node->get_parameter("particle_filter.maximum_target_size", particle_filter.maximum_target_size);
 
   node->get_parameter("particle_filter_statistics.frameId", particle_filter_statistics.frameId);
   node->get_parameter("particle_filter_statistics.length", particle_filter_statistics.length);
@@ -154,7 +157,7 @@ void ParticleFilterNode::update()
   double dt = (now_time - last_update_time_).seconds();
   last_update_time_ = now_time;
 
-  filterLargeBlobsFromLayer(*map_ptr_, "intensity", "targets", 100);
+  filterLargeBlobsFromLayer(*map_ptr_, "intensity", "targets", parameters_.particle_filter.maximum_target_size);
   computeEDTFromIntensity(*map_ptr_, "targets", "edt");
 
   if (!initialized_) {

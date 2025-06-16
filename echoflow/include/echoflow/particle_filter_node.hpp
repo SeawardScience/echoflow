@@ -53,6 +53,7 @@ public:
       double noise_std_yaw = 0.05;
       double noise_std_yaw_rate = 0.0;
       double noise_std_speed = .2;
+      double maximum_target_size = 200.0;
     } particle_filter;
 
     struct {

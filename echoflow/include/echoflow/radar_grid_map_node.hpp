@@ -48,7 +48,7 @@ public:
     } map;
 
     struct {
-      float near_clutter_range = 0.0; ///< Maximum range in meters for near-field clutter filtering.
+      float near_clutter_range = 100.0; ///< Maximum range in meters for near-field clutter filtering.
     } filter;
 
     int max_queue_size = 1000; ///< Maximum number of radar messages to buffer.
