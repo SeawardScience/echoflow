@@ -114,13 +114,13 @@ void MultiTargetParticleFilter::updateWeights(std::shared_ptr<grid_map::GridMap>
     particle.weight = std::max(particle.obs_likelihood, 1e-8);
 
 
-    double density_threshold = 2500.0;  // user-defined midpoint where penalty = 0.5
+    double density_threshold = 500.0;  // user-defined midpoint where penalty = 0.5
     double steepness = 5.0/density_threshold;         // controls the steepness of the curve
 
     // Penalize overcrowded areas using a logistic decay
     if (stats_ptr && stats_ptr->isInside(position)) {
       try {
-        double density = stats_ptr->atPosition("particles_per_cell", position,grid_map::InterpolationMethods::INTER_LINEAR);
+        double density = stats_ptr->atPosition("particles_per_cell", position,grid_map::InterpolationMethods::INTER_NEAREST);
         if (density > 0.0) {
           // Logistic penalty: penalty ≈ 1.0 when density << threshold, ≈ 0.0 when density >> threshold
           double x = density - density_threshold;
