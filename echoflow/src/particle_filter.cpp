@@ -44,6 +44,7 @@ void MultiTargetParticleFilter::initialize(std::shared_ptr<grid_map::GridMap> ma
     particle.heading = 2.0 * M_PI * uniform_01(rng_);
     particle.yaw_rate = 0.0 * uniform_01(rng_); // THIS IS ALWAYS ZERO
     particle.weight = 1.0;  // Will be normalized later
+    particle.age = 0.0; // Initialize age to zero
     particles_.push_back(particle);
   }
 
@@ -71,6 +72,7 @@ void MultiTargetParticleFilter::predict(double dt)
 
     particle.heading += omega * dt;
     particle.heading = std::fmod(particle.heading + 2 * M_PI, 2 * M_PI);
+    particle.age += dt; // Increment particle age
   }
 }
 
@@ -178,6 +180,7 @@ void MultiTargetParticleFilter::resample(std::shared_ptr<grid_map::GridMap> map_
     Target p = particles_[i];
     addResampleNoise(p);
     p.weight = 1.0 / n_total;
+    p.age = particles_[i].age; // Preserve age from original particle
     new_particles.push_back(p);
   }
 
@@ -236,6 +239,7 @@ void MultiTargetParticleFilter::seedUniform(
         particle.heading = 2.0 * M_PI * uniform_01(rng_);
         particle.yaw_rate = 0.0;
         particle.weight = 1.0 / static_cast<double>(num_particles_);
+        particle.age = 0.0; // Seed age at zero
         output_particles.push_back(particle);
     }
 }
@@ -272,6 +276,7 @@ void MultiTargetParticleFilter::seedWeighted(
         particle.heading = 2.0 * M_PI * uniform_01(rng_);
         particle.yaw_rate = 0.0;
         particle.weight = 1.0 / static_cast<double>(num_particles_);
+        particle.age = 0.0; // Seed age at zero
         output_particles.push_back(particle);
     }
 }

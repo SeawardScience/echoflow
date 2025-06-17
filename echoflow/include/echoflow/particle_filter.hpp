@@ -12,7 +12,7 @@
 NS_HEAD
 
 /**
- * @brief Struct for holding the properties of a particle (position, heading, speed, weight).
+ * @brief Struct for holding the properties of a particle (position, heading, speed, weight, obs_likelihood, age).
  *
  */
 struct Target {
@@ -23,6 +23,7 @@ struct Target {
   double yaw_rate;  // rad/s
   double weight;    // per-particle weight
   double obs_likelihood;
+  double age;       // Age of the particle in seconds
 };
 
 /**
