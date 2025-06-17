@@ -7,7 +7,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/core/core.hpp>
 #include "package_defs.hpp"
-#include "radar_grid_map.hpp"
+#include "threadsafe_grid_map.hpp"
 
 NS_HEAD
 

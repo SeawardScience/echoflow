@@ -14,7 +14,7 @@
 #include <tf2_ros/transform_listener.h>
 #include <tf2_ros/buffer.h>
 #include "package_defs.hpp"
-#include "radar_grid_map.hpp"
+#include "threadsafe_grid_map.hpp"
 
 using std::placeholders::_1;
 using namespace std::chrono_literals;

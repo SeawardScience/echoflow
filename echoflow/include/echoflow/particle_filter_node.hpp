@@ -13,7 +13,7 @@
 #include <visualization_msgs/msg/marker.hpp>
 #include "grid_map_filters.hpp"
 #include "particle_filter.hpp"
-#include "radar_grid_map.hpp"
+#include "threadsafe_grid_map.hpp"
 
 NS_HEAD
 

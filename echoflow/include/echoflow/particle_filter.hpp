@@ -6,7 +6,7 @@
 #include <vector>
 #include <grid_map_ros/grid_map_ros.hpp>
 #include "package_defs.hpp"
-#include "radar_grid_map.hpp"
+#include "threadsafe_grid_map.hpp"
 
 
 NS_HEAD

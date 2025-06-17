@@ -1,4 +1,4 @@
-#include "radar_grid_map.hpp"
+#include "threadsafe_grid_map.hpp"
 
 NS_HEAD
 
@@ -10,6 +10,10 @@ ThreadsafeGridMap::ThreadsafeGridMap() : grid_map::GridMap()
 {
 }
 
+void ThreadsafeGridMap::add(const std::string& layer, const double value)
+{
+// todo
+}
 
 float& ThreadsafeGridMap::at(const std::string& layer, const grid_map::Index& index)
 {
@@ -23,17 +27,39 @@ float& ThreadsafeGridMap::atPosition(const std::string& layer, const grid_map::P
   return this->atPosition(layer, position);
 }
 
+bool ThreadsafeGridMap::exists(const std::string& layer) const
+{
+  return this->exists(layer);
+}
+
 const grid_map::Position& ThreadsafeGridMap::getPosition() const
 {
   //std::unique_lock<std::mutex> lock(mtx_);
   return this->getPosition();
 }
 
+bool ThreadsafeGridMap::getPosition(const grid_map::Index& index, grid_map::Position& position) const
+{
+
+}
+
+double ThreadsafeGridMap::getResolution() const
+{
+  //std::unique_lock<std::mutex> lock(mtx_);
+  return this->getResolution();
+}
+
 bool ThreadsafeGridMap::isInside(const grid_map::Position& position) const
 {
-  grid_map::Length& length = this->getLength();
-  grid_map::Position& position = getPosition();
-  return grid_map::checkIfPositionWithinMap(position, length, getPosition());
+  //grid_map::Length& length = this->getLength();
+  //grid_map::Position& position = getPosition();
+  //return grid_map::checkIfPositionWithinMap(position, length, getPosition());
+  return true;
+}
+
+bool isValid(const grid_map::Index& index, const std::string& layer) const
+{
+
 }
 
 bool ThreadsafeGridMap::move(const grid_map::Position& position)

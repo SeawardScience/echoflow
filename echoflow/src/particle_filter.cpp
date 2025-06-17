@@ -23,8 +23,7 @@ void MultiTargetParticleFilter::initialize(std::shared_ptr<ThreadsafeGridMap> ma
     if (!map_ptr->isValid(index, "intensity")) continue;
 
     // TODO: multi-threading changes
-    //double val = map_ptr->at("intensity", index);
-    double val = map_ptr->atCell("intensity", index);
+    double val = map_ptr->at("intensity", index);
     if (std::isnan(val) || val <= 0.0) continue;
 
     grid_map::Position pos;

@@ -28,6 +28,8 @@ public:
    */
   ThreadsafeGridMap();
 
+  void add(const std::string& layer, const double value = NAN);
+
   /**
    * @brief Locking function to access cell data at given map index.
    *
@@ -46,6 +48,8 @@ public:
    */
   float& atPosition(const std::string& layer, const grid_map::Position& position);
 
+  bool exists(const std::string& layer) const;
+
   /**
    * @brief Locking function to get the 2D position of the grid map in the grid map frame.
    *
@@ -53,7 +57,13 @@ public:
    */
   const grid_map::Position& getPosition() const;
 
+  bool getPosition(const grid_map::Index& index, grid_map::Position& position) const;
+
+  double getResolution() const;
+
   bool isInside(const grid_map::Position& position) const;
+
+  bool isValid(const grid_map::Index& index, const std::string& layer) const;
 
   /**
    * @brief Locking function to re-center map on the given position.

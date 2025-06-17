@@ -3,7 +3,6 @@
 NS_HEAD
 
 // TODO: multi-threading changes
-//void computeEDTFromIntensity(grid_map::GridMap& map, const std::string& intensity_layer, const std::string& distance_layer)
 void computeEDTFromIntensity(ThreadsafeGridMap& map, const std::string& intensity_layer, const std::string& distance_layer)
 {
   if (!map.exists(intensity_layer)) {
@@ -35,8 +34,7 @@ void computeEDTFromIntensity(ThreadsafeGridMap& map, const std::string& intensit
   for (grid_map::GridMapIterator it(map); !it.isPastEnd(); ++it) {
     const grid_map::Index img_idx(it.getUnwrappedIndex());
     // TODO: multi-threading changes
-    //map.at(distance_layer, *it) = distance_image.at<float>(img_idx(0), img_idx(1));
-    map.atCell(distance_layer, *it) = distance_image.at<float>(img_idx(0), img_idx(1));
+    map.at(distance_layer, *it) = distance_image.at<float>(img_idx(0), img_idx(1));
   }
 }
 
