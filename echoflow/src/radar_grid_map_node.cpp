@@ -4,7 +4,7 @@ NS_HEAD
 
 void RadarGridMapNode::Parameters::declare(rclcpp::Node * node)
 {
-  node->declare_parameter("map.frameId", map.frame_id);
+  node->declare_parameter("map.frame_id", map.frame_id);
   node->declare_parameter("map.length", map.length);
   node->declare_parameter("map.width", map.width);
   node->declare_parameter("map.resolution", map.resolution);
@@ -15,7 +15,7 @@ void RadarGridMapNode::Parameters::declare(rclcpp::Node * node)
 
 void RadarGridMapNode::Parameters::update(rclcpp::Node * node)
 {
-  node->get_parameter("map.frameId", map.frame_id);
+  node->get_parameter("map.frame_id", map.frame_id);
   node->get_parameter("map.length", map.length);
   node->get_parameter("map.width", map.width);
   node->get_parameter("map.resolution", map.resolution);

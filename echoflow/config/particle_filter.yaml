@@ -12,7 +12,7 @@
       noise_std_yaw_rate: 1.0
       noise_std_speed: 4.0
     particle_filter_statistics:
-      frameId: map
+      frame_id: map
       length: 1500.0
       width: 1500.0
       resolution: 1.0

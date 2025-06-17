@@ -55,7 +55,7 @@ public:
     } particle_filter;
 
     struct {
-      std::string frameId = "map";
+      std::string frame_id = "map";
       double length = 1500.0;
       double width = 1500.0;
       double resolution = 50.0;
