@@ -4,7 +4,7 @@ NS_HEAD
 
 void RadarGridMapNode::Parameters::declare(rclcpp::Node * node)
 {
-  node->declare_parameter("map.frameId", map.frame_id);
+  node->declare_parameter("map.frame_id", map.frame_id);
   node->declare_parameter("map.length", map.length);
   node->declare_parameter("map.width", map.width);
   node->declare_parameter("map.resolution", map.resolution);
@@ -15,7 +15,7 @@ void RadarGridMapNode::Parameters::declare(rclcpp::Node * node)
 
 void RadarGridMapNode::Parameters::update(rclcpp::Node * node)
 {
-  node->get_parameter("map.frameId", map.frame_id);
+  node->get_parameter("map.frame_id", map.frame_id);
   node->get_parameter("map.length", map.length);
   node->get_parameter("map.width", map.width);
   node->get_parameter("map.resolution", map.resolution);
@@ -43,7 +43,7 @@ RadarGridMapNode::RadarGridMapNode()
   m_tf_buffer = std::make_shared<tf2_ros::Buffer>(this->get_clock());
   m_tf_listener = std::make_shared<tf2_ros::TransformListener>(*m_tf_buffer);
 
-  map_ptr_.reset(new grid_map::GridMap({"intensity"}));
+  map_ptr_.reset(new grid_map::GridMap({"intensity","process_time"}));
   map_ptr_->setFrameId(parameters_.map.frame_id);
   map_ptr_->setGeometry(grid_map::Length(parameters_.map.length, parameters_.map.width), parameters_.map.resolution);
   RCLCPP_INFO(
@@ -231,6 +231,7 @@ void RadarGridMapNode::processMsg(const marine_sensor_msgs::msg::RadarSector::Sh
   for (grid_map::PolygonIterator it(*map_ptr_, sector_polygon); !it.isPastEnd(); ++it)
   {
     map_ptr_->at("intensity", *it) = NAN;
+    map_ptr_->at("process_time", *it) = msg->header.stamp.sec + msg->header.stamp.nanosec * 1e-9;
   }
 
   for (size_t i = 0; i < msg->intensities.size(); i++)

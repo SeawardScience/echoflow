@@ -12,7 +12,7 @@
 NS_HEAD
 
 /**
- * @brief Struct for holding the properties of a particle (position, heading, speed, weight).
+ * @brief Struct for holding the properties of a particle (position, heading, speed, weight, obs_likelihood, age).
  *
  */
 struct Target {
@@ -22,6 +22,8 @@ struct Target {
   double speed;     // m/s
   double yaw_rate;  // rad/s
   double weight;    // per-particle weight
+  double obs_likelihood;
+  double age;       // Age of the particle in seconds
 };
 
 /**
@@ -72,8 +74,10 @@ public:
    * weight of all particles.
    *
    * @param map_ptr Shared pointer to GridMap with radar intensity-based targets to track.
+   * @param stats_ptr Shared pointer to GridMap with particle statistics.
    */
-  void updateWeights(std::shared_ptr<grid_map::GridMap> map_ptr);
+  void updateWeights(std::shared_ptr<grid_map::GridMap> map_ptr,
+                     std::shared_ptr<grid_map::GridMap> stats_ptr);
 
   /**
    * @brief Resample particles using a uniform distribution around current particles.
@@ -82,11 +86,51 @@ public:
    * the filter falls back to all particles. Surviving particles are re-sampled using a uniform
    * distribution around each particle.
    *
+   * @param map_ptr Shared pointer to GridMap with radar intensity-based targets to track.
+   * @param stats_ptr Shared pointer to GridMap with particle statistics.
    */
-  void resample();
+  void resample(std::shared_ptr<grid_map::GridMap> map_ptr,
+                std::shared_ptr<grid_map::GridMap> stats_ptr);
 
   /**
-   * @brief updateNoiseDistributions
+   * @brief Get valid positions from the grid map.
+   *
+   * Returns a vector of positions where the grid map has valid data (i.e., where radar intensity > 0).
+   * This is used for seeding new particles.
+   *
+   * @param map_ptr Shared pointer to GridMap with radar intensity-based targets to track.
+   * @return std::vector<grid_map::Position> Vector of valid positions.
+   */
+  std::vector<grid_map::Position> getValidPositionsFromMap(const std::shared_ptr<grid_map::GridMap>& map_ptr);
+
+  /**
+   * @brief Seeds particles uniformly from a list of valid positions in the grid map.
+   *
+   * @param valid_positions List of valid positions from the grid map where particles can be seeded.
+   * @param n_seed Number of particles to seed.
+   * @param output_particles Vector to store the seeded particles.
+   */
+  void seedUniform(const std::vector<grid_map::Position>& valid_positions,
+                   size_t n_seed,
+                   std::vector<Target>& output_particles);
+
+  /**
+   * @brief Seed particles weighted by grid map particle density.
+   *
+   * Preferentially seeds particles in areas of lower density using an inverse weight function for particle density.
+   *
+   * @param valid_positions List of valid positions from the grid map where particles can be seeded.
+   * @param n_seed Number of particles to seed.
+   * @param stats_ptr Shared pointer to the grid map containing statistics for particle density.
+   * @param output_particles Vector to store the seeded particles.
+   */
+  void seedWeighted(const std::vector<grid_map::Position>& valid_positions,
+                    size_t n_seed,
+                    const std::shared_ptr<grid_map::GridMap>& stats_ptr,
+                    std::vector<Target>& output_particles);
+
+  /**
+   * @brief Update the noise distributions for particle motion used in the predict step.
    */
   void updateNoiseDistributions();
 
@@ -99,11 +143,14 @@ public:
 
   double observation_sigma_;  // Standard deviation for Gaussian weight function
   double decay_factor_;       // Decay factor for particle weight
+  double seed_fraction_;      // Fraction of particles to be seeded with random positions
   double min_resample_speed_; // Minimum speed for resampling particles
   double noise_std_pos_;      // Standard deviation for position noise
   double noise_std_yaw_;      // Standard deviation for yaw noise
   double noise_std_yaw_rate_; // Standard deviation for yaw rate noise
   double noise_std_speed_;    // Standard deviation for speed noise
+
+  void addResampleNoise(Target &p);
 
 private:
   std::vector<Target> particles_;

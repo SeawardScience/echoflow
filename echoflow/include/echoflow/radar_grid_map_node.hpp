@@ -41,14 +41,14 @@ public:
   {
     struct {
       std::string frame_id = "map";    ///< The fixed frame for the output grid map.
-      float length = 1500.0;           ///< Length of the grid map in meters.
-      float width = 1500.0;            ///< Width of the grid map in meters.
+      float length = 2500.0;           ///< Length of the grid map in meters.
+      float width = 2500.0;            ///< Width of the grid map in meters.
       float resolution = 10.0;         ///< map cell resolution in meters.
       float pub_interval = 0.1;        ///< map publication interval in seconds.
     } map;
 
     struct {
-      float near_clutter_range = 0.0; ///< Maximum range in meters for near-field clutter filtering.
+      float near_clutter_range = 30.0; ///< Maximum range in meters for near-field clutter filtering.
     } filter;
 
     int max_queue_size = 1000; ///< Maximum number of radar messages to buffer.

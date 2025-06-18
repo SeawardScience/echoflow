@@ -43,23 +43,25 @@ public:
   {
     struct {
       int num_particles = 100000;
-      double update_interval = 0.1;            // seconds
+      double update_interval = 0.2;            // seconds
       double initial_max_speed = 20.0;
-      double observation_sigma = 100.0;
-      double decay_factor = 0.95;
+      double observation_sigma = 50.0;
+      double decay_factor = 0.95;               // decay factor for particle weights;
+      double seed_fraction = 0.001;            // fraction of particles to be seeded with random positions
       double min_resample_speed = 3.0;
       double noise_std_pos = 0.1;
-      double noise_std_yaw = 0.4;
-      double noise_std_yaw_rate = 1.0;
-      double noise_std_speed = 4.0;
+      double noise_std_yaw = 0.05;
+      double noise_std_yaw_rate = 0.0;
+      double noise_std_speed = .2;
+      double maximum_target_size = 200.0;
     } particle_filter;
 
     struct {
-      std::string frameId = "map";
-      double length = 1500.0;
-      double width = 1500.0;
-      double resolution = 50.0;
-      double pub_interval = 1.0;               // seconds
+      std::string frame_id = "map";
+      double length = 2500.0;
+      double width = 2500.0;
+      double resolution = 25.0;
+      double pub_interval = 0.5;               // seconds
     } particle_filter_statistics;
 
     /**
@@ -71,7 +73,7 @@ public:
 
     /**
      * @brief Updates all node parameters.
-     *
+     *c
      * @param node Pointer to the ROS2 node for parameter update.
      */
     void update(rclcpp::Node * node);
@@ -125,7 +127,6 @@ private:
    */
   void publishPointCloud();
 
-  rclcpp::Node::OnSetParametersCallbackHandle::SharedPtr parameter_event_sub_; //!< Handle for parameter event subscription
   /**
    * @brief Store particle positions and headings in a pose array and publish. Function can be
    * visualized in rviz2 as a PoseArray showing particle headings.
@@ -154,7 +155,7 @@ private:
   geometry_msgs::msg::Quaternion headingToQuaternion(float heading);
 
   std::unique_ptr<MultiTargetParticleFilter> pf_;
-  grid_map::GridMap *pf_statistics_;
+  std::shared_ptr<grid_map::GridMap> pf_statistics_;
 
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr cloud_pub_;
   rclcpp::Publisher<geometry_msgs::msg::PoseArray>::SharedPtr cell_heading_field_pub_;
@@ -164,7 +165,11 @@ private:
   rclcpp::TimerBase::SharedPtr timer_;
   rclcpp::TimerBase::SharedPtr pf_statistics_timer_;
 
-  std::vector<Detection> pending_detections_;
+  rclcpp::Node::OnSetParametersCallbackHandle::SharedPtr parameters_on_set_callback_; //!< Handle for the on-set parameters callback. This callback is triggered *before* parameters are applied to the node.
+  std::shared_ptr<rclcpp::ParameterEventHandler> parameter_event_handler_;            //!< Parameter event handler for listening to parameter changes.
+  rclcpp::ParameterEventCallbackHandle::SharedPtr parameter_event_callback_handle_;   //!< Handle for the parameter event callback. This callback is triggered *after* parameter changes have been successfully applied to the node.
+
+  //std::vector<Detection> pending_detections_;
 
   bool initialized_ = false;
   rclcpp::Time last_update_time_;

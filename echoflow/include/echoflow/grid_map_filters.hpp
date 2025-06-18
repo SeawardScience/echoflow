@@ -31,6 +31,11 @@ void computeEDTFromIntensity(grid_map::GridMap& map,
                              const std::string& intensity_layer,
                              const std::string& distance_layer);
 
+void filterLargeBlobsFromLayer(grid_map::GridMap& map,
+                               const std::string& input_layer,
+                               const std::string& output_layer,
+                               double max_blob_area);
+
 /**
  * @brief Compute the arithmetic mean of a sample given a new observation.
  *
