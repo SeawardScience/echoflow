@@ -3,7 +3,7 @@
     filter:
       near_clutter_range: 0.0
     map:
-      frameId: map
+      frame_id: map
       length: 1500.0              # meters
       width: 1500.0               # meters
       resolution: 1.0

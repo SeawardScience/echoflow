@@ -16,7 +16,7 @@ void ParticleFilterNode::Parameters::declare(rclcpp::Node * node)
   node->declare_parameter("particle_filter.noise_std_yaw_rate", particle_filter.noise_std_yaw_rate);
   node->declare_parameter("particle_filter.noise_std_speed", particle_filter.noise_std_speed);
 
-  node->declare_parameter("particle_filter_statistics.frameId", particle_filter_statistics.frameId);
+  node->declare_parameter("particle_filter_statistics.frame_id", particle_filter_statistics.frame_id);
   node->declare_parameter("particle_filter_statistics.length", particle_filter_statistics.length);
   node->declare_parameter("particle_filter_statistics.width", particle_filter_statistics.width);
   node->declare_parameter("particle_filter_statistics.resolution", particle_filter_statistics.resolution);
@@ -37,7 +37,7 @@ void ParticleFilterNode::Parameters::update(rclcpp::Node * node)
   node->get_parameter("particle_filter.noise_std_yaw_rate", particle_filter.noise_std_yaw_rate);
   node->get_parameter("particle_filter.noise_std_speed", particle_filter.noise_std_speed);
 
-  node->get_parameter("particle_filter_statistics.frameId", particle_filter_statistics.frameId);
+  node->get_parameter("particle_filter_statistics.frame_id", particle_filter_statistics.frame_id);
   node->get_parameter("particle_filter_statistics.length", particle_filter_statistics.length);
   node->get_parameter("particle_filter_statistics.width", particle_filter_statistics.width);
   node->get_parameter("particle_filter_statistics.resolution", particle_filter_statistics.resolution);
@@ -123,7 +123,7 @@ ParticleFilterNode::ParticleFilterNode()
   pf_statistics_->setGeometry(grid_map::Length(parameters_.particle_filter_statistics.length,
                                                parameters_.particle_filter_statistics.width),
                               parameters_.particle_filter_statistics.resolution);
-  pf_statistics_->setFrameId(parameters_.particle_filter_statistics.frameId);
+  pf_statistics_->setFrameId(parameters_.particle_filter_statistics.frame_id);
 
   last_update_time_ = now();
 }
