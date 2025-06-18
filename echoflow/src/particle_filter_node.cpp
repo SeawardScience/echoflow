@@ -351,15 +351,19 @@ void ParticleFilterNode::publishCellHeadingField()
   geometry_msgs::msg::Pose pose;
   geometry_msgs::msg::Quaternion quaternion;
   for (grid_map::GridMapIterator iterator(*pf_statistics_); !iterator.isPastEnd(); ++iterator) {
-    pose.position.x = pf_statistics_->at("x_position_mean", *iterator);
-    pose.position.y = pf_statistics_->at("y_position_mean", *iterator);
-    pose.position.z = 0.0f;
-    quaternion = headingToQuaternion(pf_statistics_->at("heading_mean", *iterator));
-    pose.orientation.x = quaternion.x;
-    pose.orientation.y = quaternion.y;
-    pose.orientation.z = quaternion.z;
-    pose.orientation.w = quaternion.w;
-    heading_field.poses.push_back(pose);
+    if (std::isnan(pf_statistics_->at("particles_per_cell", *iterator))) {
+      continue;
+    } else {
+      pose.position.x = pf_statistics_->at("x_position_mean", *iterator);
+      pose.position.y = pf_statistics_->at("y_position_mean", *iterator);
+      pose.position.z = 0.0f;
+      quaternion = headingToQuaternion(pf_statistics_->at("heading_mean", *iterator));
+      pose.orientation.x = quaternion.x;
+      pose.orientation.y = quaternion.y;
+      pose.orientation.z = quaternion.z;
+      pose.orientation.w = quaternion.w;
+      heading_field.poses.push_back(pose);
+    }
   }
 
   cell_heading_field_pub_->publish(heading_field);
