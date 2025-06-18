@@ -17,8 +17,8 @@ void ParticleFilterNode::Parameters::declare(rclcpp::Node * node)
   node->declare_parameter("particle_filter.noise_std_speed", particle_filter.noise_std_speed);
 
   node->declare_parameter("particle_filter_statistics.frame_id", particle_filter_statistics.frame_id);
-  node->declare_parameter("particle_filter_statistics.length", particle_filter_statistics.length);
-  node->declare_parameter("particle_filter_statistics.width", particle_filter_statistics.width);
+  node->declare_parameter("map.length", particle_filter_statistics.length);
+  node->declare_parameter("map.width", particle_filter_statistics.width);
   node->declare_parameter("particle_filter_statistics.resolution", particle_filter_statistics.resolution);
   node->declare_parameter("particle_filter_statistics.pub_interval", particle_filter_statistics.pub_interval);
 }
@@ -38,8 +38,8 @@ void ParticleFilterNode::Parameters::update(rclcpp::Node * node)
   node->get_parameter("particle_filter.noise_std_speed", particle_filter.noise_std_speed);
 
   node->get_parameter("particle_filter_statistics.frame_id", particle_filter_statistics.frame_id);
-  node->get_parameter("particle_filter_statistics.length", particle_filter_statistics.length);
-  node->get_parameter("particle_filter_statistics.width", particle_filter_statistics.width);
+  node->get_parameter("map.length", particle_filter_statistics.length);
+  node->get_parameter("map.width", particle_filter_statistics.width);
   node->get_parameter("particle_filter_statistics.resolution", particle_filter_statistics.resolution);
   node->get_parameter("particle_filter_statistics.pub_interval", particle_filter_statistics.pub_interval);
 }

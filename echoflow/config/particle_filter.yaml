@@ -13,7 +13,14 @@
       noise_std_speed: 4.0
     particle_filter_statistics:
       frame_id: map
-      length: 1500.0
-      width: 1500.0
       resolution: 1.0
       pub_interval: 1.0       # seconds
+    filter:
+      near_clutter_range: 0.0
+    map:
+      frame_id: map
+      length: 2000.0              # meters
+      width: 2000.0               # meters
+      resolution: 1.0
+      pub_interval: 0.1           # seconds
+    max_queue_size: 1000
