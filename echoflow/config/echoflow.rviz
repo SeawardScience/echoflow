@@ -5,8 +5,8 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /TF1/Tree1
-        - "/Radar Returns: PointCloud21/Autocompute Value Bounds1"
         - /Radar Occupancy Map1/Position1
+        - /Particle Filter Statistics1
         - /Bearing Vectors1/Status1
       Splitter Ratio: 0.630476176738739
     Tree Height: 1164
@@ -106,44 +106,10 @@ Visualization Manager:
       Reference Frame: aura/radar
       Value: true
     - Alpha: 1
-      Autocompute Intensity Bounds: false
-      Autocompute Value Bounds:
-        Max Value: -40
-        Min Value: -28.113300323486328
-        Value: false
-      Axis: Z
-      Channel Name: intensity
-      Class: rviz_default_plugins/PointCloud2
-      Color: 255; 255; 255
-      Color Transformer: Intensity
-      Decay Time: 1200
-      Enabled: false
-      Invert Rainbow: false
-      Max Color: 255; 244; 98
-      Max Intensity: 132
-      Min Color: 109; 70; 5
-      Min Intensity: 16
-      Name: "Radar Returns: PointCloud2"
-      Position Transformer: XYZ
-      Selectable: true
-      Size (Pixels): 3
-      Size (m): 0.009999999776482582
-      Style: Points
-      Topic:
-        Depth: 1
-        Durability Policy: Volatile
-        Filter size: 1
-        History Policy: Keep All
-        Reliability Policy: Reliable
-        Value: /aura/perception/sensors/halo_a/pointcloud
-      Use Fixed Frame: true
-      Use rainbow: false
-      Value: false
-    - Alpha: 1
       Autocompute Intensity Bounds: true
       Class: grid_map_rviz_plugin/GridMap
       Color: 200; 200; 200
-      Color Layer: targets
+      Color Layer: edt
       Color Transformer: IntensityLayer
       Enabled: false
       Height Layer: edt
@@ -234,7 +200,7 @@ Visualization Manager:
       Max Color: 255; 255; 255
       Max Intensity: 15
       Min Color: 0; 0; 0
-      Min Intensity: 1.5
+      Min Intensity: 0
       Name: Particle Filter Statistics
       Show Grid Lines: false
       Topic:
@@ -322,11 +288,11 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: 0.8341312408447266
+      Scale: 0.6681783199310303
       Target Frame: aura/radar
       Value: TopDownOrtho (rviz_default_plugins)
-      X: 81.67506408691406
-      Y: 202.86318969726562
+      X: 63.85221862792969
+      Y: -89.46346282958984
     Saved: ~
 Window Geometry:
   Displays:
