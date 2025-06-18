@@ -57,11 +57,11 @@ public:
     } particle_filter;
 
     struct {
-      std::string frameId = "map";
+      std::string frame_id = "map";
       double length = 2500.0;
       double width = 2500.0;
       double resolution = 25.0;
-      double pub_interval = 1.0;               // seconds
+      double pub_interval = 0.5;               // seconds
     } particle_filter_statistics;
 
     /**

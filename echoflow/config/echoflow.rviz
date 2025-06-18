@@ -6,12 +6,8 @@ Panels:
       Expanded:
         - /TF1/Tree1
         - "/Radar Returns: PointCloud21/Autocompute Value Bounds1"
-        - /Radar Occupancy Map1
         - /Radar Occupancy Map1/Position1
-        - "/Particle Cloud: PointCloud21"
-        - /Particle Filter Statistics1
-        - /PoseArray1
-        - /PoseArray1/Status1
+        - /Bearing Vectors1/Status1
       Splitter Ratio: 0.630476176738739
     Tree Height: 1164
   - Class: rviz_common/Selection
@@ -205,9 +201,9 @@ Visualization Manager:
       Enabled: false
       Invert Rainbow: true
       Max Color: 255; 255; 255
-      Max Intensity: 15
+      Max Intensity: 23.348905563354492
       Min Color: 0; 0; 0
-      Min Intensity: 2
+      Min Intensity: 0
       Name: "Particle Cloud: PointCloud2"
       Position Transformer: XYZ
       Selectable: true
@@ -224,7 +220,7 @@ Visualization Manager:
       Use Fixed Frame: true
       Use rainbow: true
       Value: false
-    - Alpha: 0.30000001192092896
+    - Alpha: 0.5
       Autocompute Intensity Bounds: false
       Class: grid_map_rviz_plugin/GridMap
       Color: 200; 200; 200
@@ -238,7 +234,7 @@ Visualization Manager:
       Max Color: 255; 255; 255
       Max Intensity: 10
       Min Color: 0; 0; 0
-      Min Intensity: 0
+      Min Intensity: 1.5
       Name: Particle Filter Statistics
       Show Grid Lines: false
       Topic:
@@ -259,10 +255,10 @@ Visualization Manager:
       Enabled: true
       Head Length: 10
       Head Radius: 10
-      Name: PoseArray
+      Name: Bearing Vectors
       Shaft Length: 20
       Shaft Radius: 5
-      Shape: Arrow (3D)
+      Shape: Arrow (Flat)
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -326,11 +322,11 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: 0.9883085489273071
+      Scale: 0.9646087288856506
       Target Frame: aura/radar
       Value: TopDownOrtho (rviz_default_plugins)
-      X: -2.748171329498291
-      Y: -0.03369928151369095
+      X: -78.625732421875
+      Y: -421.22833251953125
     Saved: ~
 Window Geometry:
   Displays:

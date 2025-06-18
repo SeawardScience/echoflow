@@ -17,9 +17,9 @@ void ParticleFilterNode::Parameters::declare(rclcpp::Node * node)
   node->declare_parameter("particle_filter.noise_std_speed", particle_filter.noise_std_speed);
   node->declare_parameter("particle_filter.maximum_target_size", particle_filter.maximum_target_size);
 
-  node->declare_parameter("particle_filter_statistics.frameId", particle_filter_statistics.frameId);
-  node->declare_parameter("particle_filter_statistics.length", particle_filter_statistics.length);
-  node->declare_parameter("particle_filter_statistics.width", particle_filter_statistics.width);
+  node->declare_parameter("particle_filter_statistics.frame_id", particle_filter_statistics.frame_id);
+  node->declare_parameter("map.length", particle_filter_statistics.length);
+  node->declare_parameter("map.width", particle_filter_statistics.width);
   node->declare_parameter("particle_filter_statistics.resolution", particle_filter_statistics.resolution);
   node->declare_parameter("particle_filter_statistics.pub_interval", particle_filter_statistics.pub_interval);
 
@@ -40,9 +40,9 @@ void ParticleFilterNode::Parameters::update(rclcpp::Node * node)
   node->get_parameter("particle_filter.noise_std_speed", particle_filter.noise_std_speed);
   node->get_parameter("particle_filter.maximum_target_size", particle_filter.maximum_target_size);
 
-  node->get_parameter("particle_filter_statistics.frameId", particle_filter_statistics.frameId);
-  node->get_parameter("particle_filter_statistics.length", particle_filter_statistics.length);
-  node->get_parameter("particle_filter_statistics.width", particle_filter_statistics.width);
+  node->get_parameter("particle_filter_statistics.frame_id", particle_filter_statistics.frame_id);
+  node->get_parameter("map.length", particle_filter_statistics.length);
+  node->get_parameter("map.width", particle_filter_statistics.width);
   node->get_parameter("particle_filter_statistics.resolution", particle_filter_statistics.resolution);
   node->get_parameter("particle_filter_statistics.pub_interval", particle_filter_statistics.pub_interval);
 }
@@ -134,7 +134,7 @@ ParticleFilterNode::ParticleFilterNode()
   pf_statistics_->setGeometry(grid_map::Length(parameters_.particle_filter_statistics.length,
                                                parameters_.particle_filter_statistics.width),
                               parameters_.particle_filter_statistics.resolution);
-  pf_statistics_->setFrameId(parameters_.particle_filter_statistics.frameId);
+  pf_statistics_->setFrameId(parameters_.particle_filter_statistics.frame_id);
 
   last_update_time_ = now();
 }
@@ -177,40 +177,47 @@ void ParticleFilterNode::computeParticleFilterStatistics()
   pf_statistics_->clearAll();
   const auto& particles = pf_->getParticles();
 
-  // Zero out all cells in the particle statistics grid before re-computing statistics
-  for (const auto& layer : pf_statistics_->getLayers()) {
-    (*pf_statistics_)[layer].setConstant(0.0);
-  }
-
-  // Iterate through all particles and update the particle filter statistics grid map
-  // Accumulate total particle count per cell, then update the arithmetic means and
-  // standard deviations. Also convert headings from polar to Cartesian coordinates and store
+  // Initialize all cells containing particles to zero
   for (const auto& particle : particles) {
     grid_map::Position position(particle.x, particle.y);
     if (pf_statistics_->isInside(position)) {
+      if (std::isnan(pf_statistics_->atPosition("particles_per_cell", position))) {
+        for (const auto& layer : pf_statistics_->getLayers()) {
+          pf_statistics_->atPosition(layer, position) = 0.0;
+        }
+      }
+    }
+  }
 
-      // Update count of particles per cell
+  // Prior means for computing mean and standard deviation
+  float prior_x_position_mean = 0.0;
+  float prior_y_position_mean = 0.0;
+  float prior_speed_mean = 0.0;
+
+  // Iterate through all particles and update the particle filter statistics grid map
+  // Accumulate total particle count per cell, then update the means and standard deviations for all particle parameters.
+  for (const auto& particle : particles) {
+    grid_map::Position position(particle.x, particle.y);
+    if (pf_statistics_->isInside(position)) {
+      // Update the particle count and prior means for this cell
       pf_statistics_->atPosition("particles_per_cell", position)++;
-
-      // Store prior means for running standard deviation computation
-      float prior_x_position_mean = pf_statistics_->atPosition("x_position_mean", position);
-      float prior_y_position_mean = pf_statistics_->atPosition("y_position_mean", position);
-      float prior_speed_mean = pf_statistics_->atPosition("speed_mean", position);
-      double n = pf_statistics_->atPosition("particles_per_cell", position);
+      prior_x_position_mean = pf_statistics_->atPosition("x_position_mean", position);
+      prior_y_position_mean = pf_statistics_->atPosition("y_position_mean", position);
+      prior_speed_mean = pf_statistics_->atPosition("speed_mean", position);
 
       // Update sequential arithmetic means for x position, y position, particle speed
       pf_statistics_->atPosition("x_position_mean", position) = computeSequentialMean(
                                  particle.x,
                                  pf_statistics_->atPosition("particles_per_cell", position),
-                                 pf_statistics_->atPosition("x_position_mean", position));
+                                 prior_x_position_mean);
       pf_statistics_->atPosition("y_position_mean", position) = computeSequentialMean(
                                  particle.y,
                                  pf_statistics_->atPosition("particles_per_cell", position),
-                                 pf_statistics_->atPosition("y_position_mean", position));
+                                 prior_y_position_mean);
       pf_statistics_->atPosition("speed_mean", position) = computeSequentialMean(
                                  particle.speed,
                                  pf_statistics_->atPosition("particles_per_cell", position),
-                                 pf_statistics_->atPosition("speed_mean", position));
+                                 prior_speed_mean);
 
       // Update sum of squared deviations from mean and standard deviations
       // for x position, y position, particle speed
@@ -253,13 +260,13 @@ void ParticleFilterNode::computeParticleFilterStatistics()
     if (pf_statistics_->at("particles_per_cell", *iterator) > 0) {
 
       pf_statistics_->at("heading_mean", *iterator) = computeCircularMean(pf_statistics_->at("heading_sines", *iterator),
-                                                                        pf_statistics_->at("heading_cosines", *iterator));
+                                                                          pf_statistics_->at("heading_cosines", *iterator));
 
       pf_statistics_->at("heading_std_dev", *iterator) = computeCircularStdDev(pf_statistics_->at("heading_sines", *iterator),
                                                                                pf_statistics_->at("heading_cosines", *iterator),
                                                                                pf_statistics_->at("particles_per_cell", *iterator));
 
-    // Otherwise leave cell with zero value and move on to the next cell
+    // Otherwise leave cell with NaN value and move on to the next cell
     } else {
       continue;
     }
@@ -356,15 +363,19 @@ void ParticleFilterNode::publishCellHeadingField()
   geometry_msgs::msg::Pose pose;
   geometry_msgs::msg::Quaternion quaternion;
   for (grid_map::GridMapIterator iterator(*pf_statistics_); !iterator.isPastEnd(); ++iterator) {
-    pose.position.x = pf_statistics_->at("x_position_mean", *iterator);
-    pose.position.y = pf_statistics_->at("y_position_mean", *iterator);
-    pose.position.z = 0.0f;
-    quaternion = headingToQuaternion(pf_statistics_->at("heading_mean", *iterator));
-    pose.orientation.x = quaternion.x;
-    pose.orientation.y = quaternion.y;
-    pose.orientation.z = quaternion.z;
-    pose.orientation.w = quaternion.w;
-    heading_field.poses.push_back(pose);
+    if (std::isnan(pf_statistics_->at("particles_per_cell", *iterator))) {
+      continue;
+    } else {
+      pose.position.x = pf_statistics_->at("x_position_mean", *iterator);
+      pose.position.y = pf_statistics_->at("y_position_mean", *iterator);
+      pose.position.z = 0.0f;
+      quaternion = headingToQuaternion(pf_statistics_->at("heading_mean", *iterator));
+      pose.orientation.x = quaternion.x;
+      pose.orientation.y = quaternion.y;
+      pose.orientation.z = quaternion.z;
+      pose.orientation.w = quaternion.w;
+      heading_field.poses.push_back(pose);
+    }
   }
 
   cell_heading_field_pub_->publish(heading_field);

@@ -267,7 +267,10 @@ void MultiTargetParticleFilter::seedWeighted(
     for (auto& pos : valid_positions) {
         double density = 0.0;
         if (stats_ptr->isInside(pos)) {
-            density = stats_ptr->atPosition("particles_per_cell", pos); // lookup local density at valid pos
+          density = stats_ptr->atPosition("particles_per_cell", pos); // lookup local density at valid pos
+          if (std::isnan(density)) {
+            density = 0.0;
+          }
         }
         weights.push_back(1.0 / (density + eps)); // inverse density as weight, avoid divide by zero w/ eps
     }
