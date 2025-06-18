@@ -12,7 +12,7 @@
 NS_HEAD
 
 /**
- * @brief Struct for holding the properties of a particle (position, heading, speed, weight).
+ * @brief Struct for holding the properties of a particle (position, heading, speed, weight, obs_likelihood, age).
  *
  */
 struct Target {
@@ -23,6 +23,7 @@ struct Target {
   double yaw_rate;  // rad/s
   double weight;    // per-particle weight
   double obs_likelihood;
+  double age;       // Age of the particle in seconds
 };
 
 /**
@@ -73,6 +74,7 @@ public:
    * weight of all particles.
    *
    * @param map_ptr Shared pointer to GridMap with radar intensity-based targets to track.
+   * @param stats_ptr Shared pointer to GridMap with particle statistics.
    */
   void updateWeights(std::shared_ptr<grid_map::GridMap> map_ptr,
                      std::shared_ptr<grid_map::GridMap> stats_ptr);
@@ -84,8 +86,11 @@ public:
    * the filter falls back to all particles. Surviving particles are re-sampled using a uniform
    * distribution around each particle.
    *
+   * @param map_ptr Shared pointer to GridMap with radar intensity-based targets to track.
+   * @param stats_ptr Shared pointer to GridMap with particle statistics.
    */
-  void resample(std::shared_ptr<grid_map::GridMap> map_ptr);
+  void resample(std::shared_ptr<grid_map::GridMap> map_ptr,
+                std::shared_ptr<grid_map::GridMap> stats_ptr);
 
   /**
    * @brief Get valid positions from the grid map.
@@ -97,6 +102,32 @@ public:
    * @return std::vector<grid_map::Position> Vector of valid positions.
    */
   std::vector<grid_map::Position> getValidPositionsFromMap(const std::shared_ptr<grid_map::GridMap>& map_ptr);
+
+  /**
+   * @brief Seeds particles uniformly from a list of valid positions in the grid map.
+   *
+   * @param valid_positions List of valid positions from the grid map where particles can be seeded.
+   * @param n_seed Number of particles to seed.
+   * @param output_particles Vector to store the seeded particles.
+   */
+  void seedUniform(const std::vector<grid_map::Position>& valid_positions,
+                   size_t n_seed,
+                   std::vector<Target>& output_particles);
+
+  /**
+   * @brief Seed particles weighted by grid map particle density.
+   *
+   * Preferentially seeds particles in areas of lower density using an inverse weight function for particle density.
+   *
+   * @param valid_positions List of valid positions from the grid map where particles can be seeded.
+   * @param n_seed Number of particles to seed.
+   * @param stats_ptr Shared pointer to the grid map containing statistics for particle density.
+   * @param output_particles Vector to store the seeded particles.
+   */
+  void seedWeighted(const std::vector<grid_map::Position>& valid_positions,
+                    size_t n_seed,
+                    const std::shared_ptr<grid_map::GridMap>& stats_ptr,
+                    std::vector<Target>& output_particles);
 
   /**
    * @brief Update the noise distributions for particle motion used in the predict step.

@@ -164,15 +164,12 @@ void ParticleFilterNode::update()
     pf_->initialize(map_ptr_);
     initialized_ = true;
   }
-  pf_->resample(map_ptr_);
+  pf_->resample(map_ptr_, pf_statistics_);
   pf_->predict(dt);
   pf_->updateWeights(map_ptr_,pf_statistics_);
   publishPointCloud();
 
-
   //pending_detections_.clear();
-
-
 }
 
 void ParticleFilterNode::computeParticleFilterStatistics()
@@ -290,14 +287,15 @@ void ParticleFilterNode::publishPointCloud()
 
   sensor_msgs::PointCloud2Modifier modifier(cloud);
   modifier.setPointCloud2Fields(
-          7,  // number of fields
+          8,  // number of fields
           "x", 1, sensor_msgs::msg::PointField::FLOAT32,
           "y", 1, sensor_msgs::msg::PointField::FLOAT32,
           "z", 1, sensor_msgs::msg::PointField::FLOAT32,
           "heading", 1, sensor_msgs::msg::PointField::FLOAT32, // semantic but heading should probably be bearing, more intuitive
           "speed", 1, sensor_msgs::msg::PointField::FLOAT32,
           "yaw_rate", 1, sensor_msgs::msg::PointField::FLOAT32,
-          "weight", 1, sensor_msgs::msg::PointField::FLOAT32);
+          "weight", 1, sensor_msgs::msg::PointField::FLOAT32,
+          "age", 1, sensor_msgs::msg::PointField::FLOAT32);
   modifier.resize(particles.size());
 
   sensor_msgs::PointCloud2Iterator<float> iter_x(cloud, "x");
@@ -307,6 +305,7 @@ void ParticleFilterNode::publishPointCloud()
   sensor_msgs::PointCloud2Iterator<float> iter_speed(cloud, "speed");
   sensor_msgs::PointCloud2Iterator<float> iter_yaw_rate(cloud, "yaw_rate");
   sensor_msgs::PointCloud2Iterator<float> iter_weight(cloud, "weight");
+  sensor_msgs::PointCloud2Iterator<float> iter_age(cloud, "age");
 
   for (const auto& particle : particles) {
     *iter_x = static_cast<float>(particle.x);
@@ -316,8 +315,9 @@ void ParticleFilterNode::publishPointCloud()
     *iter_speed = static_cast<float>(particle.speed);
     *iter_yaw_rate = static_cast<float>(particle.yaw_rate);
     *iter_weight = static_cast<float>(particle.weight);
+    *iter_age = static_cast<float>(particle.age);
     ++iter_x; ++iter_y; ++iter_z;
-    ++iter_heading; ++iter_speed; ++iter_yaw_rate; ++iter_weight;
+    ++iter_heading; ++iter_speed; ++iter_yaw_rate; ++iter_weight; ++iter_age;
   }
 
   cloud_pub_->publish(cloud);
