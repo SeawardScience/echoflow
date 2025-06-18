@@ -168,38 +168,33 @@ void ParticleFilterNode::computeParticleFilterStatistics()
   pf_statistics_->clearAll();
   const auto& particles = pf_->getParticles();
 
-  // Zero out all cells in the particle statistics grid before re-computing statistics
-  //for (const auto& layer : pf_statistics_->getLayers()) {
-  //  (*pf_statistics_)[layer].setConstant(0.0);
-  //}
-
-  // Iterate through all particles and update the particle filter statistics grid map
-  // Accumulate total particle count per cell, then update the arithmetic means and
-  // standard deviations. Also convert headings from polar to Cartesian coordinates and store
+  // Initialize all cells containing particles to zero
   for (const auto& particle : particles) {
     grid_map::Position position(particle.x, particle.y);
     if (pf_statistics_->isInside(position)) {
-
-      // Prior means for computing mean and standard deviation
-      float prior_x_position_mean;
-      float prior_y_position_mean;
-      float prior_speed_mean;
-
-      // If the grid value is NaN this is the first particle we've seen in this cell,
-      // so initialize the particle count and prior means to zero.
       if (std::isnan(pf_statistics_->atPosition("particles_per_cell", position))) {
-        pf_statistics_->atPosition("particles_per_cell", position) = 1;
-        prior_x_position_mean = 0.0;
-        prior_y_position_mean = 0.0;
-        prior_speed_mean = 0.0;
-
-      // Otherwise update the particle count and prior means for the cell
-      } else {
-        pf_statistics_->atPosition("particles_per_cell", position)++;
-        prior_x_position_mean = pf_statistics_->atPosition("x_position_mean", position);
-        prior_y_position_mean = pf_statistics_->atPosition("y_position_mean", position);
-        prior_speed_mean = pf_statistics_->atPosition("speed_mean", position);
+        for (const auto& layer : pf_statistics_->getLayers()) {
+          pf_statistics_->atPosition(layer, position) = 0.0;
+        }
       }
+    }
+  }
+
+  // Prior means for computing mean and standard deviation
+  float prior_x_position_mean = 0.0;
+  float prior_y_position_mean = 0.0;
+  float prior_speed_mean = 0.0;
+
+  // Iterate through all particles and update the particle filter statistics grid map
+  // Accumulate total particle count per cell, then update the means and standard deviations for all particle parameters.
+  for (const auto& particle : particles) {
+    grid_map::Position position(particle.x, particle.y);
+    if (pf_statistics_->isInside(position)) {
+      // Update the particle count and prior means for this cell
+      pf_statistics_->atPosition("particles_per_cell", position)++;
+      prior_x_position_mean = pf_statistics_->atPosition("x_position_mean", position);
+      prior_y_position_mean = pf_statistics_->atPosition("y_position_mean", position);
+      prior_speed_mean = pf_statistics_->atPosition("speed_mean", position);
 
       // Update sequential arithmetic means for x position, y position, particle speed
       pf_statistics_->atPosition("x_position_mean", position) = computeSequentialMean(
