@@ -23,10 +23,10 @@ NS_HEAD
  * @brief Node that uses a particle filter to track targets in a 2D grid map of marine radar data.
  *
  * This node shares a pointer to a grid map with the radar_grid_map_node and spawns particles on areas
- * of the map with valid radar returns in order to track the position and heading of moving radar targets.
+ * of the map with valid radar returns in order to track the position and bearing of moving radar targets.
  *
  * The node publishes a pointcloud of particles and a grid map with aggregated statistics on the particles
- * (number of particles per cell, average and standard deviation of x-position, y-position, heading and velocity).
+ * (number of particles per cell, average and standard deviation of x-position, y-position, bearing and velocity).
  */
 class ParticleFilterNode : public rclcpp::Node
 {
@@ -36,32 +36,38 @@ public:
    */
   ParticleFilterNode();
 
-  /**
-   * @brief Struct to hold ROS2 parameters.
-   */
+  /*!
+ * \brief All configurable parameters for the particle filter node.
+ */
   struct Parameters
   {
+    /*!
+   * \brief Parameters controlling the behavior of the particle filter.
+   */
     struct {
-      int num_particles = 100000;
-      double update_interval = 0.2;            // seconds
-      double initial_max_speed = 20.0;
-      double observation_sigma = 50.0;
-      double decay_factor = 0.95;               // decay factor for particle weights;
-      double seed_fraction = 0.001;            // fraction of particles to be seeded with random positions
-      double min_resample_speed = 3.0;
-      double noise_std_pos = 0.1;
-      double noise_std_yaw = 0.05;
-      double noise_std_yaw_rate = 0.0;
-      double noise_std_speed = .2;
-      double maximum_target_size = 200.0;
+      int num_particles = 100000;  //!< Total number of particles used in the filter.
+      double update_interval = 0.2;  //!< Time (in seconds) between particle weight updates.
+      double initial_max_speed = 20.0;  //!< Maximum speed (m/s) assigned to particles during initialization.
+      double observation_sigma = 50.0;  //!< Standard deviation (m) of the observation likelihood model.
+      double weight_decay_half_life = 3.0;  //!< Half-life (in seconds) for exponential decay of particle weights. Lower values cause weights to fade more quickly over time.  Generally, this should be on the order of the radar sweep time.
+      double seed_fraction = 0.001;  //!< Fraction of particles (per second) that are reseeded with random poses on each resample step.  Inrease this value to more quickly lock on to newly detected targets.
+      double noise_std_pos = 0.1;  //!< Standard deviation (m) of positional noise added during resampling.
+      double noise_std_yaw = 0.05;  //!< Standard deviation (radians) of yaw angle noise added during resampling.
+      double noise_std_yaw_rate = 0.0;  //!< Standard deviation (radians/sec) of yaw rate noise added during resampling.
+      double noise_std_speed = 0.2;  //!< Standard deviation (m/s) of speed noise added during resampling.
+      double maximum_target_size = 200.0;  //!< Maximum physical size (in meters) for a trackable target blob. Used to reduce computational load on large targets like shorelines.
+      double density_feedback_factor = 0.8;  //!< the density (particles/m^2) at which the weight of a particle will be reduced by half.  Lower this value if you have issues with particles too aggressively clustering on single targets.
     } particle_filter;
 
+    /*!
+   * \brief Parameters defining the statistical grid map used for monitoring particle behavior.
+   */
     struct {
-      std::string frame_id = "map";
-      double length = 2500.0;
-      double width = 2500.0;
-      double resolution = 25.0;
-      double pub_interval = 0.5;               // seconds
+      std::string frame_id = "map";  //!< Coordinate frame in which the particle statistics map is published.
+      double length = 2500.0;  //!< Length (in meters) of the grid map.
+      double width = 2500.0;  //!< Width (in meters) of the grid map.
+      double resolution = 25.0;  //!< Resolution of each grid cell (in meters).
+      double pub_interval = 0.5;  //!< Time interval (in seconds) between publishing the statistics map.
     } particle_filter_statistics;
 
     /**
@@ -88,7 +94,7 @@ private:
   /**
    * @brief Main particle filter update function.
    *
-   * Updates the particle filter by predicting the next particle position and heading,
+   * Updates the particle filter by predicting the next particle position and bearing,
    * udpating particle weights, and resampling particles. Also computes aggregated statistics
    * on the particles in the point cloud.
    *
@@ -112,7 +118,7 @@ private:
    *    * Number of particles
    *    * Average x-position of particles (mean and standard deviation)
    *    * Average y-position of particles (mean and standard deviation)
-   *    * Average heading of particles (circular mean and circular standard deviation)
+   *    * Average bearing of particles (circular mean and circular standard deviation)
    *    * Average velocity of particles (mean and standard deviation)
    *
    * Publishes: grid_map_msgs::msg::GridMap topic containing particle filter statistics as
@@ -131,9 +137,9 @@ private:
    * @brief Store particle positions and headings in a pose array and publish. Function can be
    * visualized in rviz2 as a PoseArray showing particle headings.
    *
-   * Note: The PoseArray message displays a unit vector with the given position and heading.
+   * Note: The PoseArray message displays a unit vector with the given position and bearing.
    * It does not scale the vector according to the particle speed, so this has been
-   * termed "particle heading field" instead of "particle velocity field".
+   * termed "particle bearing field" instead of "particle velocity field".
    *
    * Publishes: geometry_msgs::msg::PoseArray topic of all particles and headings.
    */
@@ -146,13 +152,13 @@ private:
   void publishCellHeadingField();
 
   /**
-   * @brief Helper function to convert heading into "2D" quaternion, i.e. quaternion representing
+   * @brief Helper function to convert bearing into "2D" quaternion, i.e. quaternion representing
    * rotation around Z-axis.
    *
-   * @param heading Heading to convert to quaternion.
-   * @return geometry_msgs::msg::Quaternion quaternion representation of given heading.
+   * @param bearing Bearing to convert to quaternion.
+   * @return geometry_msgs::msg::Quaternion quaternion representation of given bearing.
    */
-  geometry_msgs::msg::Quaternion headingToQuaternion(float heading);
+  geometry_msgs::msg::Quaternion headingToQuaternion(float bearing);
 
   std::unique_ptr<MultiTargetParticleFilter> pf_;
   std::shared_ptr<grid_map::GridMap> pf_statistics_;

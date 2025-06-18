@@ -162,7 +162,7 @@ Visualization Manager:
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /aura/perception/sensors/halo_a/radar_grid_map
+        Value: /aura/perception/sensors/halo_b/radar_grid_map
       Use Rainbow: true
       Value: false
     - Alpha: 0.699999988079071
@@ -232,7 +232,7 @@ Visualization Manager:
       History Length: 1
       Invert Rainbow: false
       Max Color: 255; 255; 255
-      Max Intensity: 10
+      Max Intensity: 15
       Min Color: 0; 0; 0
       Min Intensity: 1.5
       Name: Particle Filter Statistics
@@ -322,11 +322,11 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: 0.9646087288856506
+      Scale: 0.8341312408447266
       Target Frame: aura/radar
       Value: TopDownOrtho (rviz_default_plugins)
-      X: -78.625732421875
-      Y: -421.22833251953125
+      X: 81.67506408691406
+      Y: 202.86318969726562
     Saved: ~
 Window Geometry:
   Displays:

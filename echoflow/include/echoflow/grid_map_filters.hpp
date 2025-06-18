@@ -116,9 +116,9 @@ std::tuple<float, float> computeSequentialStdDev(float new_observation,
  *
  * \f$\overline{\alpha} = \textrm{arg}\biggl(\sum_\limits{j=1}^{n} e^{i\cdot\alpha_j} \biggr)\f$
  *
- * In order to store the Cartesian coordinates of each heading as a real float without an imaginary component,
+ * In order to store the Cartesian coordinates of each bearing as a real float without an imaginary component,
  * we instead use the arctan2 formulation to compute the mean resultant angle back to polar coordinates for
- * to obtain the mean heading, as follows:
+ * to obtain the mean bearing, as follows:
  *
  * \f$\overline{\alpha} = \textrm{atan2}\biggl(\sum\limits_{j=1}^{n} \sin \alpha_j,
  *                                             \sum_\limits{j=1}^{n} \cos \alpha_j \biggr)\f$

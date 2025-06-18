@@ -8,14 +8,16 @@ void ParticleFilterNode::Parameters::declare(rclcpp::Node * node)
   node->declare_parameter("particle_filter.update_interval", particle_filter.update_interval);
   node->declare_parameter("particle_filter.initial_max_speed", particle_filter.initial_max_speed);
   node->declare_parameter("particle_filter.observation_sigma", particle_filter.observation_sigma);
-  node->declare_parameter("particle_filter.decay_factor", particle_filter.decay_factor);
+  node->declare_parameter("particle_filter.weight_decay_half_life", particle_filter.weight_decay_half_life);
   node->declare_parameter("particle_filter.seed_fraction", particle_filter.seed_fraction);
-  node->declare_parameter("particle_filter.min_resample_speed", particle_filter.min_resample_speed);
   node->declare_parameter("particle_filter.noise_std_pos", particle_filter.noise_std_pos);
   node->declare_parameter("particle_filter.noise_std_yaw", particle_filter.noise_std_yaw);
   node->declare_parameter("particle_filter.noise_std_yaw_rate", particle_filter.noise_std_yaw_rate);
   node->declare_parameter("particle_filter.noise_std_speed", particle_filter.noise_std_speed);
   node->declare_parameter("particle_filter.maximum_target_size", particle_filter.maximum_target_size);
+  node->declare_parameter("particle_filter.density_feedback_factor", particle_filter.density_feedback_factor);
+
+
 
   node->declare_parameter("particle_filter_statistics.frame_id", particle_filter_statistics.frame_id);
   node->declare_parameter("map.length", particle_filter_statistics.length);
@@ -31,14 +33,16 @@ void ParticleFilterNode::Parameters::update(rclcpp::Node * node)
   node->get_parameter("particle_filter.update_interval", particle_filter.update_interval);
   node->get_parameter("particle_filter.initial_max_speed", particle_filter.initial_max_speed);
   node->get_parameter("particle_filter.observation_sigma", particle_filter.observation_sigma);
-  node->get_parameter("particle_filter.decay_factor", particle_filter.decay_factor);
+  node->get_parameter("particle_filter.weight_decay_half_life", particle_filter.weight_decay_half_life);
   node->get_parameter("particle_filter.seed_fraction", particle_filter.seed_fraction);
-  node->get_parameter("particle_filter.min_resample_speed", particle_filter.min_resample_speed);
   node->get_parameter("particle_filter.noise_std_pos", particle_filter.noise_std_pos);
   node->get_parameter("particle_filter.noise_std_yaw", particle_filter.noise_std_yaw);
   node->get_parameter("particle_filter.noise_std_yaw_rate", particle_filter.noise_std_yaw_rate);
   node->get_parameter("particle_filter.noise_std_speed", particle_filter.noise_std_speed);
   node->get_parameter("particle_filter.maximum_target_size", particle_filter.maximum_target_size);
+  node->get_parameter("particle_filter.density_feedback_factor", particle_filter.density_feedback_factor);
+
+
 
   node->get_parameter("particle_filter_statistics.frame_id", particle_filter_statistics.frame_id);
   node->get_parameter("map.length", particle_filter_statistics.length);
@@ -121,7 +125,7 @@ ParticleFilterNode::ParticleFilterNode()
                                           "speed_std_dev",
                                           "heading_mean",
                                           "heading_std_dev",
-                                          "heading_sines",          // These layers store the heading converted to Cartesian coordinates
+                                          "heading_sines",          // These layers store the bearing converted to Cartesian coordinates
                                           "heading_cosines"         // for calculating the circular mean and standard deviation
   }));
 
@@ -141,13 +145,13 @@ ParticleFilterNode::ParticleFilterNode()
 
 void ParticleFilterNode::applyParameters() {
     pf_->observation_sigma_ = parameters_.particle_filter.observation_sigma;
-    pf_->decay_factor_ = parameters_.particle_filter.decay_factor;
+    pf_->weight_decay_half_life_ = parameters_.particle_filter.weight_decay_half_life;
     pf_->seed_fraction_ = parameters_.particle_filter.seed_fraction;
-    pf_->min_resample_speed_ = parameters_.particle_filter.min_resample_speed;
     pf_->noise_std_pos_ = parameters_.particle_filter.noise_std_pos;
     pf_->noise_std_yaw_ = parameters_.particle_filter.noise_std_yaw;
     pf_->noise_std_yaw_rate_ = parameters_.particle_filter.noise_std_yaw_rate;
     pf_->noise_std_speed_ = parameters_.particle_filter.noise_std_speed;
+    pf_->density_feedback_factor_ = parameters_.particle_filter.density_feedback_factor;
     pf_->updateNoiseDistributions();
 }
 
@@ -164,9 +168,9 @@ void ParticleFilterNode::update()
     pf_->initialize(map_ptr_);
     initialized_ = true;
   }
-  pf_->resample(map_ptr_, pf_statistics_);
+  pf_->resample(map_ptr_, pf_statistics_,dt);
   pf_->predict(dt);
-  pf_->updateWeights(map_ptr_,pf_statistics_);
+  pf_->updateWeights(map_ptr_,pf_statistics_,dt);
   publishPointCloud();
 
   //pending_detections_.clear();
@@ -245,15 +249,15 @@ void ParticleFilterNode::computeParticleFilterStatistics()
       pf_statistics_->atPosition("speed_ssdm", position) = speed_ssdm;
       pf_statistics_->atPosition("speed_std_dev", position) = speed_std_dev;
 
-      // Sum heading sines and cosines for each cell
-      // This is effectively converting a heading in polar coordinates to Cartesian coordinates
+      // Sum bearing sines and cosines for each cell
+      // This is effectively converting a bearing in polar coordinates to Cartesian coordinates
       // in order to compute the arithmetic mean of the headings
-      pf_statistics_->atPosition("heading_sines", position) += sin(particle.heading);
-      pf_statistics_->atPosition("heading_cosines", position) += cos(particle.heading);
+      pf_statistics_->atPosition("heading_sines", position) += sin(particle.bearing);
+      pf_statistics_->atPosition("heading_cosines", position) += cos(particle.bearing);
     }
   }
 
-  // Iterate through grid map and compute circular means and standard deviations for heading
+  // Iterate through grid map and compute circular means and standard deviations for bearing
   for (grid_map::GridMapIterator iterator(*pf_statistics_); !iterator.isPastEnd(); ++iterator) {
 
     // Only calculate statistics for cells where there are particles
@@ -298,7 +302,7 @@ void ParticleFilterNode::publishPointCloud()
           "x", 1, sensor_msgs::msg::PointField::FLOAT32,
           "y", 1, sensor_msgs::msg::PointField::FLOAT32,
           "z", 1, sensor_msgs::msg::PointField::FLOAT32,
-          "heading", 1, sensor_msgs::msg::PointField::FLOAT32, // semantic but heading should probably be bearing, more intuitive
+          "bearing", 1, sensor_msgs::msg::PointField::FLOAT32, // semantic but bearing should probably be bearing, more intuitive
           "speed", 1, sensor_msgs::msg::PointField::FLOAT32,
           "yaw_rate", 1, sensor_msgs::msg::PointField::FLOAT32,
           "weight", 1, sensor_msgs::msg::PointField::FLOAT32,
@@ -308,7 +312,7 @@ void ParticleFilterNode::publishPointCloud()
   sensor_msgs::PointCloud2Iterator<float> iter_x(cloud, "x");
   sensor_msgs::PointCloud2Iterator<float> iter_y(cloud, "y");
   sensor_msgs::PointCloud2Iterator<float> iter_z(cloud, "z");
-  sensor_msgs::PointCloud2Iterator<float> iter_heading(cloud, "heading");
+  sensor_msgs::PointCloud2Iterator<float> iter_heading(cloud, "bearing");
   sensor_msgs::PointCloud2Iterator<float> iter_speed(cloud, "speed");
   sensor_msgs::PointCloud2Iterator<float> iter_yaw_rate(cloud, "yaw_rate");
   sensor_msgs::PointCloud2Iterator<float> iter_weight(cloud, "weight");
@@ -318,7 +322,7 @@ void ParticleFilterNode::publishPointCloud()
     *iter_x = static_cast<float>(particle.x);
     *iter_y = static_cast<float>(particle.y);
     *iter_z = 0.0f;
-    *iter_heading = static_cast<float>(particle.heading);
+    *iter_heading = static_cast<float>(particle.bearing);
     *iter_speed = static_cast<float>(particle.speed);
     *iter_yaw_rate = static_cast<float>(particle.yaw_rate);
     *iter_weight = static_cast<float>(particle.weight);
@@ -343,7 +347,7 @@ void ParticleFilterNode::publishParticleHeadingField()
     pose.position.x = particle.x;
     pose.position.y = particle.y;
     pose.position.z = 0.0f;
-    quaternion = headingToQuaternion(particle.heading);
+    quaternion = headingToQuaternion(particle.bearing);
     pose.orientation.x = quaternion.x;
     pose.orientation.y = quaternion.y;
     pose.orientation.z = quaternion.z;
@@ -381,13 +385,13 @@ void ParticleFilterNode::publishCellHeadingField()
   cell_heading_field_pub_->publish(heading_field);
 }
 
-geometry_msgs::msg::Quaternion ParticleFilterNode::headingToQuaternion(float heading)
+geometry_msgs::msg::Quaternion ParticleFilterNode::headingToQuaternion(float bearing)
 {
   geometry_msgs::msg::Quaternion quaternion;
   quaternion.x = 0.0f;
   quaternion.y = 0.0f;
-  quaternion.z = sin(heading / 2);
-  quaternion.w = cos(heading / 2);
+  quaternion.z = sin(bearing / 2);
+  quaternion.w = cos(bearing / 2);
   return quaternion;
 }
 

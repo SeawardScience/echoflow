@@ -12,13 +12,13 @@
 NS_HEAD
 
 /**
- * @brief Struct for holding the properties of a particle (position, heading, speed, weight, obs_likelihood, age).
+ * @brief Struct for holding the properties of a particle (position, bearing, speed, weight, obs_likelihood, age).
  *
  */
 struct Target {
   double x;
   double y;
-  double heading;   // radians
+  double bearing;   // radians
   double speed;     // m/s
   double yaw_rate;  // rad/s
   double weight;    // per-particle weight
@@ -59,7 +59,7 @@ public:
   void initialize(std::shared_ptr<grid_map::GridMap> map_ptr);
 
   /**
-   * @brief Predict the new (x,y) position and heading of each particle.
+   * @brief Predict the new (x,y) position and bearing of each particle.
    *
    * @param dt Time interval (delta t) from last particle filter update step.
    */
@@ -77,7 +77,8 @@ public:
    * @param stats_ptr Shared pointer to GridMap with particle statistics.
    */
   void updateWeights(std::shared_ptr<grid_map::GridMap> map_ptr,
-                     std::shared_ptr<grid_map::GridMap> stats_ptr);
+                     std::shared_ptr<grid_map::GridMap> stats_ptr,
+                     double dt);
 
   /**
    * @brief Resample particles using a uniform distribution around current particles.
@@ -90,7 +91,8 @@ public:
    * @param stats_ptr Shared pointer to GridMap with particle statistics.
    */
   void resample(std::shared_ptr<grid_map::GridMap> map_ptr,
-                std::shared_ptr<grid_map::GridMap> stats_ptr);
+                std::shared_ptr<grid_map::GridMap> stats_ptr,
+                double dt);
 
   /**
    * @brief Get valid positions from the grid map.
@@ -142,13 +144,13 @@ public:
   const std::vector<Target> & getParticles();
 
   double observation_sigma_;  // Standard deviation for Gaussian weight function
-  double decay_factor_;       // Decay factor for particle weight
+  double weight_decay_half_life_;
   double seed_fraction_;      // Fraction of particles to be seeded with random positions
-  double min_resample_speed_; // Minimum speed for resampling particles
   double noise_std_pos_;      // Standard deviation for position noise
   double noise_std_yaw_;      // Standard deviation for yaw noise
   double noise_std_yaw_rate_; // Standard deviation for yaw rate noise
   double noise_std_speed_;    // Standard deviation for speed noise
+  double density_feedback_factor_;   // the density (particles/m^2) at which the weight of a particle will be reduced by half
 
   void addResampleNoise(Target &p);
 
@@ -160,8 +162,8 @@ private:
   double initial_max_speed_;  // Initial maximum speed of particles
 
   std::normal_distribution<double> noise_pos_{0.0, noise_std_pos_};        // Gaussian noise distribution for particle position.
-  std::normal_distribution<double> noise_yaw_{0.0, noise_std_yaw_};        // Gaussian noise distribution for particle heading.
-  std::normal_distribution<double> noise_yaw_rate_{0.0, noise_std_yaw_rate_};   // Gaussian noise distribution for heading change rate.
+  std::normal_distribution<double> noise_yaw_{0.0, noise_std_yaw_};        // Gaussian noise distribution for particle bearing.
+  std::normal_distribution<double> noise_yaw_rate_{0.0, noise_std_yaw_rate_};   // Gaussian noise distribution for bearing change rate.
   std::normal_distribution<double> noise_speed_{0.0, noise_std_speed_};      // Gaussian noise distribution for particle speed.
 };
 

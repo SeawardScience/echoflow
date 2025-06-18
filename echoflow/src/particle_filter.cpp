@@ -15,8 +15,8 @@ void MultiTargetParticleFilter::initialize(std::shared_ptr<grid_map::GridMap> ma
   RCLCPP_DEBUG(rclcpp::get_logger("MultiTargetParticleFilter"),
                "ParticleFilter Config: num_particles=%zu, observation_sigma=%.2f, decay=%.2f, seed_fraction=%.2f, "
                "min_speed=%.2f, noise_std_pos=%.2f, noise_std_yaw=%.2f, noise_std_yaw_rate=%.2f, noise_std_speed=%.2f",
-               num_particles_, observation_sigma_, decay_factor_, seed_fraction_,
-               min_resample_speed_, noise_std_pos_, noise_std_yaw_, noise_std_yaw_rate_, noise_std_speed_);
+               num_particles_, observation_sigma_, weight_decay_half_life_, seed_fraction_,
+                noise_std_pos_, noise_std_yaw_, noise_std_yaw_rate_, noise_std_speed_);
 
   if (!map_ptr || !map_ptr->exists("intensity")) {
     RCLCPP_WARN(rclcpp::get_logger("MultiTargetParticleFilter"), "GridMap missing or lacks 'intensity' layer.");
@@ -41,7 +41,7 @@ void MultiTargetParticleFilter::initialize(std::shared_ptr<grid_map::GridMap> ma
     particle.x = position.x();
     particle.y = position.y();
     particle.speed = initial_max_speed_ * uniform_01(rng_);
-    particle.heading = 2.0 * M_PI * uniform_01(rng_);
+    particle.bearing = 2.0 * M_PI * uniform_01(rng_);
     particle.yaw_rate = 0.0 * uniform_01(rng_); // THIS IS ALWAYS ZERO
     particle.weight = 1.0;  // Will be normalized later
     particle.age = 0.0; // Initialize age to zero
@@ -58,7 +58,7 @@ void MultiTargetParticleFilter::predict(double dt)
 
   for (auto& particle : particles_) {
     double velocity = particle.speed + noise_speed_(rng_);
-    double yaw = particle.heading + noise_yaw_(rng_);
+    double yaw = particle.bearing + noise_yaw_(rng_);
     double omega = particle.yaw_rate + noise_yaw_rate_(rng_);
 
     if (std::abs(omega) > 1e-3) {
@@ -70,14 +70,15 @@ void MultiTargetParticleFilter::predict(double dt)
       particle.y += velocity * std::sin(yaw) * dt + noise_pos_(rng_);
     }
 
-    particle.heading += omega * dt;
-    particle.heading = std::fmod(particle.heading + 2 * M_PI, 2 * M_PI);
+    particle.bearing += omega * dt;
+    particle.bearing = std::fmod(particle.bearing + 2 * M_PI, 2 * M_PI);
     particle.age += dt; // Increment particle age
   }
 }
 
 void MultiTargetParticleFilter::updateWeights(std::shared_ptr<grid_map::GridMap> map_ptr,
-                                              std::shared_ptr<grid_map::GridMap> stats_ptr)
+                                              std::shared_ptr<grid_map::GridMap> stats_ptr,
+                                              double dt)
 {
   if (!map_ptr || !map_ptr->exists("edt")) {
     RCLCPP_WARN(rclcpp::get_logger("MultiTargetParticleFilter"),
@@ -87,11 +88,11 @@ void MultiTargetParticleFilter::updateWeights(std::shared_ptr<grid_map::GridMap>
 
   RCLCPP_DEBUG(rclcpp::get_logger("MultiTargetParticleFilter"),
                "Updating weights with observation_sigma=%.3f, smoothing_alpha=%.3f",
-               observation_sigma_, decay_factor_);
+               observation_sigma_, weight_decay_half_life_);
 
   const double sigma = observation_sigma_;
-  const double alpha = decay_factor_;  // renamed meaning: smoothing parameter
   double total_weight = 0.0;
+  double half_life_decay = std::exp(-std::log(2.0) * dt / weight_decay_half_life_);
 
   for (auto& particle : particles_) {
     grid_map::Position position(particle.x, particle.y);
@@ -109,21 +110,21 @@ void MultiTargetParticleFilter::updateWeights(std::shared_ptr<grid_map::GridMap>
     if(particle.obs_likelihood < obs_likelihood){
       particle.obs_likelihood = obs_likelihood;
     }else{
-      particle.obs_likelihood *= decay_factor_;
+      particle.obs_likelihood *= half_life_decay;
     }
     particle.weight = std::max(particle.obs_likelihood, 1e-8);
 
-
-    double density_threshold = 500.0;  // user-defined midpoint where penalty = 0.5
-    double steepness = 5.0/density_threshold;         // controls the steepness of the curve
+    auto cell_size = stats_ptr->getResolution();
+    auto cell_area = cell_size * cell_size;
+    double steepness = 5.0/density_feedback_factor_;         // controls the steepness of the curve
 
     // Penalize overcrowded areas using a logistic decay
     if (stats_ptr && stats_ptr->isInside(position)) {
       try {
-        double density = stats_ptr->atPosition("particles_per_cell", position,grid_map::InterpolationMethods::INTER_NEAREST);
+        double density = stats_ptr->atPosition("particles_per_cell", position,grid_map::InterpolationMethods::INTER_NEAREST)/cell_area;
         if (density > 0.0) {
           // Logistic penalty: penalty ≈ 1.0 when density << threshold, ≈ 0.0 when density >> threshold
-          double x = density - density_threshold;
+          double x = density - density_feedback_factor_;
           double density_penalty = 1.0 / (1.0 + std::exp(steepness * x));
           particle.weight *= density_penalty;
         }
@@ -151,11 +152,11 @@ void MultiTargetParticleFilter::addResampleNoise(Target& p)
   p.x += noise_pos_(rng_);
   p.y += noise_pos_(rng_);
 
-  p.heading += noise_yaw_(rng_);
-  // Wrap heading to [0, 2π)
-  p.heading = std::fmod(p.heading, 2.0 * M_PI);
-  if (p.heading < 0.0)
-    p.heading += 2.0 * M_PI;
+  p.bearing += noise_yaw_(rng_);
+  // Wrap bearing to [0, 2π)
+  p.bearing = std::fmod(p.bearing, 2.0 * M_PI);
+  if (p.bearing < 0.0)
+    p.bearing += 2.0 * M_PI;
 
   p.speed += noise_speed_(rng_);
   // Ensure speed is non-negative
@@ -165,10 +166,11 @@ void MultiTargetParticleFilter::addResampleNoise(Target& p)
 }
 
 void MultiTargetParticleFilter::resample(std::shared_ptr<grid_map::GridMap> map_ptr,
-                                         std::shared_ptr<grid_map::GridMap> stats_ptr)
+                                         std::shared_ptr<grid_map::GridMap> stats_ptr,
+                                         double dt)
 {
   const size_t n_total = num_particles_;
-  const size_t n_seed = static_cast<size_t>(seed_fraction_ * n_total); // 0.1% of total particles are seeded
+  const size_t n_seed = seed_fraction_ * dt * static_cast<double>(n_total);
   const size_t n_resample = n_total - n_seed;
 
   std::vector<Target> new_particles;
@@ -246,7 +248,7 @@ void MultiTargetParticleFilter::seedUniform(
         particle.x = position.x();
         particle.y = position.y();
         particle.speed = initial_max_speed_ * uniform_01(rng_);
-        particle.heading = 2.0 * M_PI * uniform_01(rng_);
+        particle.bearing = 2.0 * M_PI * uniform_01(rng_);
         particle.yaw_rate = 0.0;
         particle.weight = 1.0 / static_cast<double>(num_particles_);
         particle.age = 0.0; // Seed age at zero
@@ -286,7 +288,7 @@ void MultiTargetParticleFilter::seedWeighted(
         particle.x = position.x();
         particle.y = position.y();
         particle.speed = initial_max_speed_ * uniform_01(rng_);
-        particle.heading = 2.0 * M_PI * uniform_01(rng_);
+        particle.bearing = 2.0 * M_PI * uniform_01(rng_);
         particle.yaw_rate = 0.0;
         particle.weight = 1.0 / static_cast<double>(num_particles_);
         particle.age = 0.0; // Seed age at zero
