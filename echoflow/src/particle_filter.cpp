@@ -96,17 +96,18 @@ void MultiTargetParticleFilter::updateWeights(std::shared_ptr<grid_map::GridMap>
   double total_weight = 0.0;
   double half_life_decay = std::exp(-std::log(2.0) * dt / weight_decay_half_life_);
 
+  auto cell_size = stats_ptr->getResolution();
+  auto cell_area = cell_size * cell_size;
+  double steepness = 5.0/density_feedback_factor_;         // controls the steepness of the curve
+  const double inv2sig2 = 1.0 / (2.0 * sigma * sigma);
+
   for (auto& particle : particles_) {
     grid_map::Position position(particle.x, particle.y);
     double obs_likelihood = 1e-6; // small baseline to prevent zero weights
 
     if (map_ptr->isInside(position)) {
-      try {
-        double distance = map_ptr->atPosition("edt", position);
-        obs_likelihood = std::exp(- (distance * distance) / (2.0 * sigma * sigma));
-      } catch (const std::out_of_range& e) {
-        // Leave obs_weight = 0.0
-      }
+      double distance = map_ptr->atPosition("edt", position);
+      obs_likelihood = std::exp(- distance*distance * inv2sig2);
     }
 
     if(particle.obs_likelihood < obs_likelihood){
@@ -116,22 +117,14 @@ void MultiTargetParticleFilter::updateWeights(std::shared_ptr<grid_map::GridMap>
     }
     particle.weight = std::max(particle.obs_likelihood, 1e-8);
 
-    auto cell_size = stats_ptr->getResolution();
-    auto cell_area = cell_size * cell_size;
-    double steepness = 5.0/density_feedback_factor_;         // controls the steepness of the curve
-
     // Penalize overcrowded areas using a logistic decay
     if (stats_ptr && stats_ptr->isInside(position)) {
-      try {
-        double density = stats_ptr->atPosition("particles_per_cell", position,grid_map::InterpolationMethods::INTER_NEAREST)/cell_area;
-        if (density > 0.0) {
-          // Logistic penalty: penalty ≈ 1.0 when density << threshold, ≈ 0.0 when density >> threshold
-          double x = density - density_feedback_factor_;
-          double density_penalty = 1.0 / (1.0 + std::exp(steepness * x));
-          particle.weight *= density_penalty;
-        }
-      } catch (const std::out_of_range& e) {
-        // Use obs_weight as-is
+      double density = stats_ptr->atPosition("particles_per_cell", position,grid_map::InterpolationMethods::INTER_NEAREST)/cell_area;
+      if (density > 0.0) {
+        // Logistic penalty: penalty ≈ 1.0 when density << threshold, ≈ 0.0 when density >> threshold
+        double x = density - density_feedback_factor_;
+        double density_penalty = 1.0 / (1.0 + std::exp(steepness * x));
+        particle.weight *= density_penalty;
       }
     }
 
