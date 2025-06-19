@@ -2,7 +2,7 @@
   ros__parameters:
     particle_filter:
       num_particles: 100000
-      update_interval: 0.1    # seconds
+      update_interval: 0.1        # seconds
       initial_max_speed: 20.0
       observation_sigma: 100.0
       decay_factor: 0.95
@@ -14,7 +14,7 @@
     particle_filter_statistics:
       frame_id: map
       resolution: 1.0
-      pub_interval: 1.0       # seconds
+      pub_interval: 1.0           # seconds
     filter:
       near_clutter_range: 0.0
     map:
