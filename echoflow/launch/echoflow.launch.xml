@@ -13,15 +13,23 @@
     <!--<include file="$(find-pkg-share marine_radar_tracker)/launch/marine_radar_to_pointcloud.launch.xml" />-->
 
     <!-- Launch flow tracker node -->
-    <node pkg="echoflow" exec="flow_tracker">
+    <!--<node pkg="echoflow" exec="flow_tracker">
       <param from="$(find-pkg-share echoflow)/config/flow_tracker.yaml" />
-    </node>
+    </node>-->
 
   </group>
 
   <!-- Radar 2 nodes group -->
   <group>
     <push-ros-namespace namespace="$(var radar2_ns)"/>
+
+    <!-- Launch radar to pointcloud node -->
+    <!--<include file="$(find-pkg-share marine_radar_tracker)/launch/marine_radar_to_pointcloud.launch.xml" />-->
+
+    <!-- Launch flow tracker node -->
+    <node pkg="echoflow" exec="flow_tracker">
+      <!--<param from="$(find-pkg-share echoflow)/config/flow_tracker.yaml" />-->
+    </node>
 
   </group>
 

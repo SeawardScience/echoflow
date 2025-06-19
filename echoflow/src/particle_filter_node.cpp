@@ -19,8 +19,6 @@ void ParticleFilterNode::Parameters::declare(rclcpp::Node * node)
   node->declare_parameter("particle_filter.maximum_target_size", particle_filter.maximum_target_size);
   node->declare_parameter("particle_filter.density_feedback_factor", particle_filter.density_feedback_factor);
 
-
-
   node->declare_parameter("particle_filter_statistics.frame_id", particle_filter_statistics.frame_id);
   node->declare_parameter("map.length", particle_filter_statistics.length);
   node->declare_parameter("map.width", particle_filter_statistics.width);
@@ -42,8 +40,6 @@ void ParticleFilterNode::Parameters::update(rclcpp::Node * node)
   node->get_parameter("particle_filter.noise_std_speed", particle_filter.noise_std_speed);
   node->get_parameter("particle_filter.maximum_target_size", particle_filter.maximum_target_size);
   node->get_parameter("particle_filter.density_feedback_factor", particle_filter.density_feedback_factor);
-
-
 
   node->get_parameter("particle_filter_statistics.frame_id", particle_filter_statistics.frame_id);
   node->get_parameter("map.length", particle_filter_statistics.length);

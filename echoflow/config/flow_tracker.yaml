@@ -5,12 +5,13 @@
       update_interval: 0.1        # seconds
       initial_max_speed: 20.0
       observation_sigma: 100.0
-      decay_factor: 0.95
-      min_resample_speed: 3.0
+      weight_decay_half_life: 3.0
+      seed_fraction: 0.001
       noise_std_position: 0.1
       noise_std_yaw: 0.4
       noise_std_yaw_rate: 1.0
       noise_std_speed: 4.0
+      maximum_target_size: 200.0
     particle_filter_statistics:
       frame_id: map
       resolution: 1.0
