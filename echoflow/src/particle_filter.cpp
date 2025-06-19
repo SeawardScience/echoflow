@@ -99,7 +99,7 @@ void MultiTargetParticleFilter::updateWeights(std::shared_ptr<grid_map::GridMap>
 
   auto cell_size = stats_ptr->getResolution();
   auto cell_area = cell_size * cell_size;
-  double steepness = 5.0/density_feedback_factor_;         // controls the steepness of the curve
+  double steepness = 5.0 / density_feedback_factor_;         // controls the steepness of the curve
   const double inv2sig2 = 1.0 / (2.0 * sigma * sigma);
 
   for (auto& particle : particles_) {
@@ -173,22 +173,21 @@ void MultiTargetParticleFilter::resample(std::shared_ptr<grid_map::GridMap> map_
   // Step 1: Resample n_resample particles
   std::uniform_real_distribution<double> dist_u(0.0, 1.0);
   double step = 1.0 / static_cast<double>(n_resample);
-  double r = dist_u(rng_) * step;
-  double c = particles_[0].weight;
+  double initial_offset = dist_u(rng_) * step;
+  double cumulative_weight = particles_[0].weight;
   size_t i = 0;
 
-  // TODO VARIABLE NAMES
-  for (size_t m = 0; m < n_resample; ++m) {
-    double U = r + m * step;
-    while (U > c && i < particles_.size() - 1) {
+  for (size_t resample_idx = 0; resample_idx < n_resample; ++resample_idx) {
+    double uniform_sample_point = initial_offset + resample_idx * step;
+    while (uniform_sample_point > cumulative_weight && i < particles_.size() - 1) {
       ++i;
-      c += particles_[i].weight;
+      cumulative_weight += particles_[i].weight;
     }
-    Target p = particles_[i];
-    addResampleNoise(p);
-    p.weight = 1.0 / n_total;
-    p.age = particles_[i].age;  // Preserve age from original particle
-    new_particles.push_back(p);
+    Target particle = particles_[i];
+    addResampleNoise(particle);
+    particle.weight = 1.0 / n_total;
+    particle.age = particles_[i].age;  // Preserve age from original particle
+    new_particles.push_back(particle);
   }
 
   // Step 2: Inject n_seed randomly initialized particles
