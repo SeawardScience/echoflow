@@ -1,28 +1,26 @@
 /**:
   ros__parameters:
     particle_filter:
-      num_particles: 10000
-      update_interval: 0.1        # seconds
-      initial_max_speed: 25.0
-      observation_sigma: 100.0
-      weight_decay_half_life: 3.5
-      seed_fraction: 0.002
-      noise_std_position: 0.2
-      noise_std_yaw: 0.4
-      noise_std_yaw_rate: 1.0
-      noise_std_speed: 4.0
+      density_feedback_factor: 0.8
+      initial_max_speed: 20.0
       maximum_target_size: 200.0
-      density_feedback_factor: 1.0
+      noise_std_position: 0.1
+      noise_std_speed: 0.2
+      noise_std_yaw: 0.05
+      noise_std_yaw_rate: 0.0
+      num_particles: 100000
+      observation_sigma: 50.0
+      seed_fraction: 0.001
+      update_interval: 0.2
+      weight_decay_half_life: 3.0
     particle_filter_statistics:
       frame_id: map
-      resolution: 1.0
-      pub_interval: 1.0           # seconds
-    filter:
-      near_clutter_range: 0.0
+      pub_interval: 0.5
+      resolution: 25.0
     map:
       frame_id: map
-      length: 1500.0              # meters
-      width: 1500.0               # meters
-      resolution: 1.0
-      pub_interval: 0.1           # seconds
+      length: 2500.0
+      pub_interval: 0.2
+      resolution: 10.0
+      width: 2500.0
     max_queue_size: 1000
