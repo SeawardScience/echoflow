@@ -102,8 +102,8 @@ ParticleFilterNode::ParticleFilterNode()
       });
 
   cloud_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("particle_cloud", 10);
-  cell_heading_field_pub_ = this->create_publisher<geometry_msgs::msg::PoseArray>("cell_heading_field", 10);
-  particle_heading_field_pub_ = this->create_publisher<geometry_msgs::msg::PoseArray>("particle_heading_field", 10);
+  cell_vector_field_pub_ = this->create_publisher<geometry_msgs::msg::PoseArray>("cell_vector_field", 10);
+  particle_vector_field_pub_ = this->create_publisher<geometry_msgs::msg::PoseArray>("particle_vector_field", 10);
 
   // Timer for particle filter update function
   timer_ = create_wall_timer(
@@ -123,10 +123,10 @@ ParticleFilterNode::ParticleFilterNode()
                                           "speed_mean",
                                           "speed_ssdm",
                                           "speed_std_dev",
-                                          "heading_mean",
-                                          "heading_std_dev",
-                                          "heading_sines",          // These layers store the bearing converted to Cartesian coordinates
-                                          "heading_cosines"         // for calculating the circular mean and standard deviation
+                                          "course_mean",
+                                          "course_std_dev",
+                                          "course_sines",          // These layers store the particle course converted to Cartesian coordinates
+                                          "course_cosines"         // for calculating the circular mean and standard deviation
   }));
 
   // Timer for computing and publishing particle filter statistics on user-settable time interval
@@ -249,25 +249,25 @@ void ParticleFilterNode::computeParticleFilterStatistics()
       pf_statistics_->atPosition("speed_ssdm", position) = speed_ssdm;
       pf_statistics_->atPosition("speed_std_dev", position) = speed_std_dev;
 
-      // Sum bearing sines and cosines for each cell
-      // This is effectively converting a bearing in polar coordinates to Cartesian coordinates
-      // in order to compute the arithmetic mean of the headings
-      pf_statistics_->atPosition("heading_sines", position) += sin(particle.bearing);
-      pf_statistics_->atPosition("heading_cosines", position) += cos(particle.bearing);
+      // Sum course angle sines and cosines for each cell
+      // This is effectively converting a course angle in polar coordinates to Cartesian coordinates
+      // in order to compute the arithmetic mean of the course angles
+      pf_statistics_->atPosition("course_sines", position) += sin(particle.course);
+      pf_statistics_->atPosition("course_cosines", position) += cos(particle.course);
     }
   }
 
-  // Iterate through grid map and compute circular means and standard deviations for bearing
+  // Iterate through grid map and compute circular means and standard deviations for course angle
   for (grid_map::GridMapIterator iterator(*pf_statistics_); !iterator.isPastEnd(); ++iterator) {
 
     // Only calculate statistics for cells where there are particles
     if (pf_statistics_->at("particles_per_cell", *iterator) > 0) {
 
-      pf_statistics_->at("heading_mean", *iterator) = computeCircularMean(pf_statistics_->at("heading_sines", *iterator),
-                                                                          pf_statistics_->at("heading_cosines", *iterator));
+      pf_statistics_->at("course_mean", *iterator) = computeCircularMean(pf_statistics_->at("course_sines", *iterator),
+                                                                          pf_statistics_->at("course_cosines", *iterator));
 
-      pf_statistics_->at("heading_std_dev", *iterator) = computeCircularStdDev(pf_statistics_->at("heading_sines", *iterator),
-                                                                               pf_statistics_->at("heading_cosines", *iterator),
+      pf_statistics_->at("course_std_dev", *iterator) = computeCircularStdDev(pf_statistics_->at("course_sines", *iterator),
+                                                                               pf_statistics_->at("course_cosines", *iterator),
                                                                                pf_statistics_->at("particles_per_cell", *iterator));
 
     // Otherwise leave cell with NaN value and move on to the next cell
@@ -283,8 +283,8 @@ void ParticleFilterNode::computeParticleFilterStatistics()
   message = grid_map::GridMapRosConverter::toMessage(*pf_statistics_);
   pf_statistics_pub_->publish(std::move(message));
 
-  publishParticleHeadingField();
-  publishCellHeadingField();
+  publishParticleVectorField();
+  publishCellVectorField();
 }
 
 void ParticleFilterNode::publishPointCloud()
@@ -302,7 +302,7 @@ void ParticleFilterNode::publishPointCloud()
           "x", 1, sensor_msgs::msg::PointField::FLOAT32,
           "y", 1, sensor_msgs::msg::PointField::FLOAT32,
           "z", 1, sensor_msgs::msg::PointField::FLOAT32,
-          "bearing", 1, sensor_msgs::msg::PointField::FLOAT32, // semantic but bearing should probably be bearing, more intuitive
+          "course", 1, sensor_msgs::msg::PointField::FLOAT32,
           "speed", 1, sensor_msgs::msg::PointField::FLOAT32,
           "yaw_rate", 1, sensor_msgs::msg::PointField::FLOAT32,
           "weight", 1, sensor_msgs::msg::PointField::FLOAT32,
@@ -312,7 +312,7 @@ void ParticleFilterNode::publishPointCloud()
   sensor_msgs::PointCloud2Iterator<float> iter_x(cloud, "x");
   sensor_msgs::PointCloud2Iterator<float> iter_y(cloud, "y");
   sensor_msgs::PointCloud2Iterator<float> iter_z(cloud, "z");
-  sensor_msgs::PointCloud2Iterator<float> iter_heading(cloud, "bearing");
+  sensor_msgs::PointCloud2Iterator<float> iter_course(cloud, "course");
   sensor_msgs::PointCloud2Iterator<float> iter_speed(cloud, "speed");
   sensor_msgs::PointCloud2Iterator<float> iter_yaw_rate(cloud, "yaw_rate");
   sensor_msgs::PointCloud2Iterator<float> iter_weight(cloud, "weight");
@@ -322,24 +322,24 @@ void ParticleFilterNode::publishPointCloud()
     *iter_x = static_cast<float>(particle.x);
     *iter_y = static_cast<float>(particle.y);
     *iter_z = 0.0f;
-    *iter_heading = static_cast<float>(particle.bearing);
+    *iter_course = static_cast<float>(particle.course);
     *iter_speed = static_cast<float>(particle.speed);
     *iter_yaw_rate = static_cast<float>(particle.yaw_rate);
     *iter_weight = static_cast<float>(particle.weight);
     *iter_age = static_cast<float>(particle.age);
     ++iter_x; ++iter_y; ++iter_z;
-    ++iter_heading; ++iter_speed; ++iter_yaw_rate; ++iter_weight; ++iter_age;
+    ++iter_course; ++iter_speed; ++iter_yaw_rate; ++iter_weight; ++iter_age;
   }
 
   cloud_pub_->publish(cloud);
 }
 
-void ParticleFilterNode::publishParticleHeadingField()
+void ParticleFilterNode::publishParticleVectorField()
 {
   const auto& particles = pf_->getParticles();
-  geometry_msgs::msg::PoseArray heading_field;
-  heading_field.header.frame_id = "map";
-  heading_field.header.stamp = this->get_clock()->now();
+  geometry_msgs::msg::PoseArray vector_field;
+  vector_field.header.frame_id = "map";
+  vector_field.header.stamp = this->get_clock()->now();
 
   geometry_msgs::msg::Pose pose;
   geometry_msgs::msg::Quaternion quaternion;
@@ -347,22 +347,22 @@ void ParticleFilterNode::publishParticleHeadingField()
     pose.position.x = particle.x;
     pose.position.y = particle.y;
     pose.position.z = 0.0f;
-    quaternion = headingToQuaternion(particle.bearing);
+    quaternion = angleToYawQuaternion(particle.course);
     pose.orientation.x = quaternion.x;
     pose.orientation.y = quaternion.y;
     pose.orientation.z = quaternion.z;
     pose.orientation.w = quaternion.w;
-    heading_field.poses.push_back(pose);
+    vector_field.poses.push_back(pose);
   }
 
-  particle_heading_field_pub_->publish(heading_field);
+  particle_vector_field_pub_->publish(vector_field);
 }
 
-void ParticleFilterNode::publishCellHeadingField()
+void ParticleFilterNode::publishCellVectorField()
 {
-  geometry_msgs::msg::PoseArray heading_field;
-  heading_field.header.frame_id = "map";
-  heading_field.header.stamp = this->get_clock()->now();
+  geometry_msgs::msg::PoseArray vector_field;
+  vector_field.header.frame_id = "map";
+  vector_field.header.stamp = this->get_clock()->now();
 
   geometry_msgs::msg::Pose pose;
   geometry_msgs::msg::Quaternion quaternion;
@@ -373,25 +373,25 @@ void ParticleFilterNode::publishCellHeadingField()
       pose.position.x = pf_statistics_->at("x_position_mean", *iterator);
       pose.position.y = pf_statistics_->at("y_position_mean", *iterator);
       pose.position.z = 0.0f;
-      quaternion = headingToQuaternion(pf_statistics_->at("heading_mean", *iterator));
+      quaternion = angleToYawQuaternion(pf_statistics_->at("course_mean", *iterator));
       pose.orientation.x = quaternion.x;
       pose.orientation.y = quaternion.y;
       pose.orientation.z = quaternion.z;
       pose.orientation.w = quaternion.w;
-      heading_field.poses.push_back(pose);
+      vector_field.poses.push_back(pose);
     }
   }
 
-  cell_heading_field_pub_->publish(heading_field);
+  cell_vector_field_pub_->publish(vector_field);
 }
 
-geometry_msgs::msg::Quaternion ParticleFilterNode::headingToQuaternion(float bearing)
+geometry_msgs::msg::Quaternion ParticleFilterNode::angleToYawQuaternion(float angle)
 {
   geometry_msgs::msg::Quaternion quaternion;
   quaternion.x = 0.0f;
   quaternion.y = 0.0f;
-  quaternion.z = sin(bearing / 2);
-  quaternion.w = cos(bearing / 2);
+  quaternion.z = sin(angle / 2);
+  quaternion.w = cos(angle / 2);
   return quaternion;
 }
 

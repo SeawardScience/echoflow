@@ -6,7 +6,7 @@ Panels:
       Expanded:
         - /TF1/Tree1
         - /Radar Occupancy Map1/Position1
-      Splitter Ratio: 0.8220338821411133
+      Splitter Ratio: 0.8135592937469482
     Tree Height: 668
   - Class: rviz_common/Selection
     Name: Selection
@@ -228,7 +228,7 @@ Visualization Manager:
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /aura/perception/sensors/halo_b/cell_heading_field
+        Value: /aura/perception/sensors/halo_b/cell_vector_field
       Value: true
   Enabled: true
   Global Options:

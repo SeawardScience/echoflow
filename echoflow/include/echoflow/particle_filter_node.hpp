@@ -23,10 +23,11 @@ NS_HEAD
  * @brief Node that uses a particle filter to track targets in a 2D grid map of marine radar data.
  *
  * This node shares a pointer to a grid map with the radar_grid_map_node and spawns particles on areas
- * of the map with valid radar returns in order to track the position and bearing of moving radar targets.
+ * of the map with valid radar returns in order to track the position and course of moving radar targets.
  *
  * The node publishes a pointcloud of particles and a grid map with aggregated statistics on the particles
- * (number of particles per cell, average and standard deviation of x-position, y-position, bearing and velocity).
+ * (number of particles per cell, mean and standard deviation of particle age, x-position, y-position,
+ * course and velocity).
  */
 class ParticleFilterNode : public rclcpp::Node
 {
@@ -94,7 +95,7 @@ private:
   /**
    * @brief Main particle filter update function.
    *
-   * Updates the particle filter by predicting the next particle position and bearing,
+   * Updates the particle filter by predicting the next particle position and course,
    * udpating particle weights, and resampling particles. Also computes aggregated statistics
    * on the particles in the point cloud.
    *
@@ -118,7 +119,7 @@ private:
    *    * Number of particles
    *    * Average x-position of particles (mean and standard deviation)
    *    * Average y-position of particles (mean and standard deviation)
-   *    * Average bearing of particles (circular mean and circular standard deviation)
+   *    * Average course of particles (circular mean and circular standard deviation)
    *    * Average velocity of particles (mean and standard deviation)
    *
    * Publishes: grid_map_msgs::msg::GridMap topic containing particle filter statistics as
@@ -134,38 +135,36 @@ private:
   void publishPointCloud();
 
   /**
-   * @brief Store particle positions and headings in a pose array and publish. Function can be
-   * visualized in rviz2 as a PoseArray showing particle headings.
+   * @brief Store particle positions and course angle in a pose array and publish. Function can be
+   * visualized in rviz2 as a PoseArray showing particle course angles as a vector.
    *
-   * Note: The PoseArray message displays a unit vector with the given position and bearing.
-   * It does not scale the vector according to the particle speed, so this has been
-   * termed "particle bearing field" instead of "particle velocity field".
-   *
-   * Publishes: geometry_msgs::msg::PoseArray topic of all particles and headings.
+   * Publishes: geometry_msgs::msg::PoseArray topic of all particles and courses.
    */
-  void publishParticleHeadingField();
+  void publishParticleVectorField();
 
   /**
-   * @brief todo
+   * @brief Store mean cell x/y position and course angle in a pose array and publish. Function can be
+   * visualized in rviz2 as a PoseArray showing mean cell course angles as a vector.
    *
+   * Publishes: geometry_msgs::msg::PoseArray topic of mean cell x/y positions and mean course.
    */
-  void publishCellHeadingField();
+  void publishCellVectorField();
 
   /**
-   * @brief Helper function to convert bearing into "2D" quaternion, i.e. quaternion representing
-   * rotation around Z-axis.
+   * @brief Helper function to convert 2D Euler angle into "yaw" quaternion,
+   * i.e. quaternion representing rotation around Z-axis.
    *
-   * @param bearing Bearing to convert to quaternion.
-   * @return geometry_msgs::msg::Quaternion quaternion representation of given bearing.
+   * @param angle angle to convert to quaternion.
+   * @return geometry_msgs::msg::Quaternion quaternion representation of given angle.
    */
-  geometry_msgs::msg::Quaternion headingToQuaternion(float bearing);
+  geometry_msgs::msg::Quaternion angleToYawQuaternion(float angle);
 
   std::unique_ptr<MultiTargetParticleFilter> pf_;
   std::shared_ptr<grid_map::GridMap> pf_statistics_;
 
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr cloud_pub_;
-  rclcpp::Publisher<geometry_msgs::msg::PoseArray>::SharedPtr cell_heading_field_pub_;
-  rclcpp::Publisher<geometry_msgs::msg::PoseArray>::SharedPtr particle_heading_field_pub_;
+  rclcpp::Publisher<geometry_msgs::msg::PoseArray>::SharedPtr cell_vector_field_pub_;
+  rclcpp::Publisher<geometry_msgs::msg::PoseArray>::SharedPtr particle_vector_field_pub_;
   rclcpp::Publisher<grid_map_msgs::msg::GridMap>::SharedPtr pf_statistics_pub_;
 
   rclcpp::TimerBase::SharedPtr timer_;

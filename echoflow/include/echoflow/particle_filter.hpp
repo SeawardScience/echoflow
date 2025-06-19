@@ -12,27 +12,18 @@
 NS_HEAD
 
 /**
- * @brief Struct for holding the properties of a particle (position, bearing, speed, weight, obs_likelihood, age).
+ * @brief Struct for holding the properties of a particle (x/y position, course, speed, weight, obs_likelihood, age).
  *
  */
 struct Target {
   double x;
   double y;
-  double bearing;   // radians
+  double course;   // radians
   double speed;     // m/s
   double yaw_rate;  // rad/s
   double weight;    // per-particle weight
   double obs_likelihood;
   double age;       // Age of the particle in seconds
-};
-
-/**
- * @brief todo
- *
- */
-struct Detection {
-  double x;
-  double y;
 };
 
 /**
@@ -51,15 +42,15 @@ public:
   /**
    * @brief Initialize multi-target particle filter.
    *
-   * Spawns particles with random positions and headings around radar returns (i.e. anywhere in grid map
-   * where radar intensity > 0).
+   * Spawns particles with random positions and course angles around radar returns
+   * (i.e. anywhere in grid map where radar intensity > 0).
    *
    * @param map_ptr Shared pointer to GridMap with radar intensity-based targets to track.
    */
   void initialize(std::shared_ptr<grid_map::GridMap> map_ptr);
 
   /**
-   * @brief Predict the new (x,y) position and bearing of each particle.
+   * @brief Predict the new (x,y) position and course of each particle.
    *
    * @param dt Time interval (delta t) from last particle filter update step.
    */
@@ -162,8 +153,8 @@ private:
   double initial_max_speed_;  // Initial maximum speed of particles
 
   std::normal_distribution<double> noise_pos_{0.0, noise_std_pos_};        // Gaussian noise distribution for particle position.
-  std::normal_distribution<double> noise_yaw_{0.0, noise_std_yaw_};        // Gaussian noise distribution for particle bearing.
-  std::normal_distribution<double> noise_yaw_rate_{0.0, noise_std_yaw_rate_};   // Gaussian noise distribution for bearing change rate.
+  std::normal_distribution<double> noise_yaw_{0.0, noise_std_yaw_};        // Gaussian noise distribution for particle course.
+  std::normal_distribution<double> noise_yaw_rate_{0.0, noise_std_yaw_rate_};   // Gaussian noise distribution for course change rate.
   std::normal_distribution<double> noise_speed_{0.0, noise_std_speed_};      // Gaussian noise distribution for particle speed.
 };
 

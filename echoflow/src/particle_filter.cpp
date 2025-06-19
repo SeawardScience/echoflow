@@ -41,7 +41,7 @@ void MultiTargetParticleFilter::initialize(std::shared_ptr<grid_map::GridMap> ma
     particle.x = position.x();
     particle.y = position.y();
     particle.speed = initial_max_speed_ * uniform_01(rng_);
-    particle.bearing = 2.0 * M_PI * uniform_01(rng_);
+    particle.course = 2.0 * M_PI * uniform_01(rng_);
     particle.yaw_rate = 0.0 * uniform_01(rng_); // THIS IS ALWAYS ZERO
     particle.weight = 1.0;  // Will be normalized later
     particle.age = 0.0; // Initialize age to zero
@@ -58,7 +58,7 @@ void MultiTargetParticleFilter::predict(double dt)
 
   for (auto& particle : particles_) {
     double velocity = particle.speed + noise_speed_(rng_);
-    double yaw = particle.bearing + noise_yaw_(rng_);
+    double yaw = particle.course + noise_yaw_(rng_);
     double omega = particle.yaw_rate + noise_yaw_rate_(rng_);
 
     if (std::abs(omega) > 1e-3) {
@@ -70,8 +70,8 @@ void MultiTargetParticleFilter::predict(double dt)
       particle.y += velocity * std::sin(yaw) * dt + noise_pos_(rng_);
     }
 
-    particle.bearing += omega * dt;
-    particle.bearing = std::fmod(particle.bearing + 2 * M_PI, 2 * M_PI);
+    particle.course += omega * dt;
+    particle.course = std::fmod(particle.course + 2 * M_PI, 2 * M_PI);
     particle.age += dt; // Increment particle age
   }
 }
@@ -133,9 +133,6 @@ void MultiTargetParticleFilter::updateWeights(std::shared_ptr<grid_map::GridMap>
       }
     }
 
-
-
-
     total_weight += particle.weight;
   }
 
@@ -147,20 +144,20 @@ void MultiTargetParticleFilter::updateWeights(std::shared_ptr<grid_map::GridMap>
   }
 }
 
-void MultiTargetParticleFilter::addResampleNoise(Target& p)
+void MultiTargetParticleFilter::addResampleNoise(Target& particle)
 {
-  p.x += noise_pos_(rng_);
-  p.y += noise_pos_(rng_);
+  particle.x += noise_pos_(rng_);
+  particle.y += noise_pos_(rng_);
 
-  p.bearing += noise_yaw_(rng_);
-  // Wrap bearing to [0, 2π)
-  p.bearing = std::fmod(p.bearing, 2.0 * M_PI);
-  if (p.bearing < 0.0)
-    p.bearing += 2.0 * M_PI;
+  particle.course += noise_yaw_(rng_);
+  // Wrap course angle to [0, 2π)
+  particle.course = std::fmod(particle.course, 2.0 * M_PI);
+  if (particle.course < 0.0)
+    particle.course += 2.0 * M_PI;
 
-  p.speed += noise_speed_(rng_);
+  particle.speed += noise_speed_(rng_);
   // Ensure speed is non-negative
-  p.speed = std::max(0.0, p.speed);
+  particle.speed = std::max(0.0, particle.speed);
 
   //p.yaw_rate += noise_yaw_rate_(rng_);
 }
@@ -248,7 +245,7 @@ void MultiTargetParticleFilter::seedUniform(
         particle.x = position.x();
         particle.y = position.y();
         particle.speed = initial_max_speed_ * uniform_01(rng_);
-        particle.bearing = 2.0 * M_PI * uniform_01(rng_);
+        particle.course = 2.0 * M_PI * uniform_01(rng_);
         particle.yaw_rate = 0.0;
         particle.weight = 1.0 / static_cast<double>(num_particles_);
         particle.age = 0.0; // Seed age at zero
@@ -288,7 +285,7 @@ void MultiTargetParticleFilter::seedWeighted(
         particle.x = position.x();
         particle.y = position.y();
         particle.speed = initial_max_speed_ * uniform_01(rng_);
-        particle.bearing = 2.0 * M_PI * uniform_01(rng_);
+        particle.course = 2.0 * M_PI * uniform_01(rng_);
         particle.yaw_rate = 0.0;
         particle.weight = 1.0 / static_cast<double>(num_particles_);
         particle.age = 0.0; // Seed age at zero
@@ -296,7 +293,8 @@ void MultiTargetParticleFilter::seedWeighted(
     }
 }
 
-void MultiTargetParticleFilter::updateNoiseDistributions() {
+void MultiTargetParticleFilter::updateNoiseDistributions()
+{
   noise_pos_       = std::normal_distribution<double>(0.0, noise_std_pos_);
   noise_yaw_       = std::normal_distribution<double>(0.0, noise_std_yaw_);
   noise_yaw_rate_  = std::normal_distribution<double>(0.0, noise_std_yaw_rate_);
