@@ -1,3 +1,5 @@
+/** Copyright © 2015 Seaward Science. */
+
 #include "particle_filter_node.hpp"
 
 NS_HEAD
@@ -161,8 +163,8 @@ void ParticleFilterNode::update()
   double dt = (now_time - last_update_time_).seconds();
   last_update_time_ = now_time;
 
-  filterLargeBlobsFromLayer(*map_ptr_, "intensity", "targets", parameters_.particle_filter.maximum_target_size);
-  computeEDTFromIntensity(*map_ptr_, "targets", "edt");
+  echoflow::grid_map_filters::filterLargeBlobsFromLayer(*map_ptr_, "intensity", "targets", parameters_.particle_filter.maximum_target_size);
+  echoflow::grid_map_filters::computeEDTFromIntensity(*map_ptr_, "targets", "edt");
 
   if (!initialized_) {
     pf_->initialize(map_ptr_);
@@ -210,22 +212,22 @@ void ParticleFilterNode::computeParticleFilterStatistics()
       prior_speed_mean = pf_statistics_->atPosition("speed_mean", position);
 
       // Update sequential arithmetic means for x position, y position, particle speed
-      pf_statistics_->atPosition("x_position_mean", position) = computeSequentialMean(
+      pf_statistics_->atPosition("x_position_mean", position) = echoflow::statistics::computeSequentialMean(
                                  particle.x,
                                  pf_statistics_->atPosition("particles_per_cell", position),
                                  prior_x_position_mean);
-      pf_statistics_->atPosition("y_position_mean", position) = computeSequentialMean(
+      pf_statistics_->atPosition("y_position_mean", position) = echoflow::statistics::computeSequentialMean(
                                  particle.y,
                                  pf_statistics_->atPosition("particles_per_cell", position),
                                  prior_y_position_mean);
-      pf_statistics_->atPosition("speed_mean", position) = computeSequentialMean(
+      pf_statistics_->atPosition("speed_mean", position) = echoflow::statistics::computeSequentialMean(
                                  particle.speed,
                                  pf_statistics_->atPosition("particles_per_cell", position),
                                  prior_speed_mean);
 
       // Update sum of squared deviations from mean and standard deviations
       // for x position, y position, particle speed
-      auto [x_std_dev, x_ssdm] = computeSequentialStdDev(particle.x,
+      auto [x_std_dev, x_ssdm] = echoflow::statistics::computeSequentialStdDev(particle.x,
                                                          pf_statistics_->atPosition("particles_per_cell", position),
                                                          prior_x_position_mean,
                                                          pf_statistics_->atPosition("x_position_mean", position),
@@ -233,7 +235,7 @@ void ParticleFilterNode::computeParticleFilterStatistics()
       pf_statistics_->atPosition("x_position_ssdm", position) = x_ssdm;
       pf_statistics_->atPosition("x_position_std_dev", position) = x_std_dev;
 
-      auto [y_std_dev, y_ssdm] = computeSequentialStdDev(particle.y,
+      auto [y_std_dev, y_ssdm] = echoflow::statistics::computeSequentialStdDev(particle.y,
                                                          pf_statistics_->atPosition("particles_per_cell", position),
                                                          prior_y_position_mean,
                                                          pf_statistics_->atPosition("y_position_mean", position),
@@ -241,7 +243,7 @@ void ParticleFilterNode::computeParticleFilterStatistics()
       pf_statistics_->atPosition("y_position_ssdm", position) = y_ssdm;
       pf_statistics_->atPosition("y_position_std_dev", position) = y_std_dev;
 
-      auto [speed_std_dev, speed_ssdm] = computeSequentialStdDev(particle.speed,
+      auto [speed_std_dev, speed_ssdm] = echoflow::statistics::computeSequentialStdDev(particle.speed,
                                                          pf_statistics_->atPosition("particles_per_cell", position),
                                                          prior_speed_mean,
                                                          pf_statistics_->atPosition("speed_mean", position),
@@ -263,12 +265,14 @@ void ParticleFilterNode::computeParticleFilterStatistics()
     // Only calculate statistics for cells where there are particles
     if (pf_statistics_->at("particles_per_cell", *iterator) > 0) {
 
-      pf_statistics_->at("course_mean", *iterator) = computeCircularMean(pf_statistics_->at("course_sines", *iterator),
-                                                                          pf_statistics_->at("course_cosines", *iterator));
+      pf_statistics_->at("course_mean", *iterator) = echoflow::statistics::computeCircularMean(
+                                                            pf_statistics_->at("course_sines", *iterator),
+                                                            pf_statistics_->at("course_cosines", *iterator));
 
-      pf_statistics_->at("course_std_dev", *iterator) = computeCircularStdDev(pf_statistics_->at("course_sines", *iterator),
-                                                                               pf_statistics_->at("course_cosines", *iterator),
-                                                                               pf_statistics_->at("particles_per_cell", *iterator));
+      pf_statistics_->at("course_std_dev", *iterator) = echoflow::statistics::computeCircularStdDev(
+                                                            pf_statistics_->at("course_sines", *iterator),
+                                                            pf_statistics_->at("course_cosines", *iterator),
+                                                            pf_statistics_->at("particles_per_cell", *iterator));
 
     // Otherwise leave cell with NaN value and move on to the next cell
     } else {

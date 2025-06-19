@@ -1,3 +1,5 @@
+/** Copyright © 2015 Seaward Science. */
+
 #pragma once
 
 #include <cmath>
@@ -16,6 +18,7 @@
 #include <visualization_msgs/msg/marker.hpp>
 #include "grid_map_filters.hpp"
 #include "particle_filter.hpp"
+#include "statistics.hpp"
 
 NS_HEAD
 

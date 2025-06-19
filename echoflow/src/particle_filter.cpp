@@ -1,3 +1,5 @@
+/** Copyright © 2015 Seaward Science. */
+
 #include "particle_filter.hpp"
 
 NS_HEAD
