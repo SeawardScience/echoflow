@@ -113,20 +113,24 @@ ParticleFilterNode::ParticleFilterNode()
 
   // Initialize GridMap for keeping track of particle filter statistics
   pf_statistics_pub_ = this->create_publisher<grid_map_msgs::msg::GridMap>("particle_filter_statistics", 10);
-  pf_statistics_.reset( new grid_map::GridMap({"particles_per_cell",
-                                          "x_position_mean",        // Arithmetic mean of x-position of particles
-                                          "x_position_ssdm",        // Sum of squared deviations from mean used for computing variance/stdev
-                                          "x_position_std_dev",     // Standard deviation of x-position of particles
-                                          "y_position_mean",
-                                          "y_position_ssdm",
-                                          "y_position_std_dev",
-                                          "speed_mean",
-                                          "speed_ssdm",
-                                          "speed_std_dev",
-                                          "heading_mean",
-                                          "heading_std_dev",
-                                          "heading_sines",          // These layers store the bearing converted to Cartesian coordinates
-                                          "heading_cosines"         // for calculating the circular mean and standard deviation
+  pf_statistics_.reset( new grid_map::GridMap({
+                              "particles_per_cell",
+                              "particle_age_mean",      // Average age of particles in the cell
+                              "particle_age_ssdm",      // Sum of squared deviations from mean for particle age
+                              "particle_age_std_dev",   // Standard deviation of particles in the cell
+                              "x_position_mean",        // Arithmetic mean of x-position of particles
+                              "x_position_ssdm",        // Sum of squared deviations from mean used for computing variance/stdev
+                              "x_position_std_dev",     // Standard deviation of x-position of particles
+                              "y_position_mean",
+                              "y_position_ssdm",
+                              "y_position_std_dev",
+                              "speed_mean",
+                              "speed_ssdm",
+                              "speed_std_dev",
+                              "heading_mean",
+                              "heading_std_dev",
+                              "heading_sines",          // These layers store the bearing converted to Cartesian coordinates
+                              "heading_cosines"         // for calculating the circular mean and standard deviation
   }));
 
   // Timer for computing and publishing particle filter statistics on user-settable time interval
@@ -194,6 +198,7 @@ void ParticleFilterNode::computeParticleFilterStatistics()
   }
 
   // Prior means for computing mean and standard deviation
+  float prior_particle_age_mean = 0.0;
   float prior_x_position_mean = 0.0;
   float prior_y_position_mean = 0.0;
   float prior_speed_mean = 0.0;
@@ -205,11 +210,16 @@ void ParticleFilterNode::computeParticleFilterStatistics()
     if (pf_statistics_->isInside(position)) {
       // Update the particle count and prior means for this cell
       pf_statistics_->atPosition("particles_per_cell", position)++;
+      prior_particle_age_mean = pf_statistics_->atPosition("particle_age_mean", position);
       prior_x_position_mean = pf_statistics_->atPosition("x_position_mean", position);
       prior_y_position_mean = pf_statistics_->atPosition("y_position_mean", position);
       prior_speed_mean = pf_statistics_->atPosition("speed_mean", position);
 
-      // Update sequential arithmetic means for x position, y position, particle speed
+      // Update sequential arithmetic means for particle age, x position, y position, particle speed
+      pf_statistics_->atPosition("particle_age_mean", position) = computeSequentialMean(
+                                 particle.age,
+                                 pf_statistics_->atPosition("particles_per_cell", position),
+                                 prior_particle_age_mean);
       pf_statistics_->atPosition("x_position_mean", position) = computeSequentialMean(
                                  particle.x,
                                  pf_statistics_->atPosition("particles_per_cell", position),
@@ -224,7 +234,15 @@ void ParticleFilterNode::computeParticleFilterStatistics()
                                  prior_speed_mean);
 
       // Update sum of squared deviations from mean and standard deviations
-      // for x position, y position, particle speed
+      // for particle age, x position, y position, particle speed
+      auto [age_std_dev, age_ssdm] = computeSequentialStdDev(particle.age,
+                                                         pf_statistics_->atPosition("particles_per_cell", position),
+                                                         prior_particle_age_mean,
+                                                         pf_statistics_->atPosition("particle_age_mean", position),
+                                                         pf_statistics_->atPosition("particle_age_ssdm", position));
+      pf_statistics_->atPosition("particle_age_ssdm", position) = age_ssdm;
+      pf_statistics_->atPosition("particle_age_std_dev", position) = age_std_dev;
+
       auto [x_std_dev, x_ssdm] = computeSequentialStdDev(particle.x,
                                                          pf_statistics_->atPosition("particles_per_cell", position),
                                                          prior_x_position_mean,
