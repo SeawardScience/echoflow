@@ -48,9 +48,10 @@ RadarGridMapNode::RadarGridMapNode()
   map_ptr_->setFrameId(parameters_.map.frame_id);
   map_ptr_->setGeometry(grid_map::Length(parameters_.map.length, parameters_.map.width), parameters_.map.resolution);
   RCLCPP_INFO(this->get_logger(),
-              "Created map with size %f x %f m (%i x %i cells).",
+              "Created map with size %f x %f m (%i x %i cells) and resolution %f m/cell.",
               map_ptr_->getLength().x(), map_ptr_->getLength().y(),
-              map_ptr_->getSize()(0), map_ptr_->getSize()(1));
+              map_ptr_->getSize()(0), map_ptr_->getSize()(1),
+              map_ptr_->getResolution());
 
   costmap_timer_ = this->create_wall_timer(std::chrono::milliseconds(
                           static_cast<int>(parameters_.map.pub_interval * 1000)),

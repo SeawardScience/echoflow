@@ -28,7 +28,7 @@
 
     <!-- Launch flow tracker node -->
     <node pkg="echoflow" exec="flow_tracker">
-      <!--<param from="$(find-pkg-share echoflow)/config/flow_tracker.yaml" />-->
+      <param from="$(find-pkg-share echoflow)/config/flow_tracker.yaml" />
     </node>
 
   </group>

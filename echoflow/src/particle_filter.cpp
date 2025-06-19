@@ -15,11 +15,12 @@ MultiTargetParticleFilter::MultiTargetParticleFilter(size_t num_particles,
 void MultiTargetParticleFilter::initialize(std::shared_ptr<grid_map::GridMap> map_ptr)
 {
   RCLCPP_DEBUG(rclcpp::get_logger("MultiTargetParticleFilter"),
-               "ParticleFilter Config: num_particles=%zu, observation_sigma=%.2f, decay=%.2f, seed_fraction=%.2f, "
-               "min_speed=%.2f, noise_std_position=%.2f, noise_std_yaw=%.2f, noise_std_yaw_rate=%.2f, "
-               "noise_std_speed=%.2f",
+               "ParticleFilter Config: num_particles=%zu, observation_sigma=%.2f, decay=%.2f, seed_fraction=%.3f, "
+               "noise_std_position=%.2f, noise_std_yaw=%.2f, noise_std_yaw_rate=%.2f, noise_std_speed=%.2f, "
+               "density_feedback_factor=%.2f",
                num_particles_, observation_sigma_, weight_decay_half_life_, seed_fraction_,
-               noise_std_position_, noise_std_yaw_, noise_std_yaw_rate_, noise_std_speed_);
+               noise_std_position_, noise_std_yaw_, noise_std_yaw_rate_, noise_std_speed_,
+               density_feedback_factor_);
 
   if (!map_ptr || !map_ptr->exists("intensity")) {
     RCLCPP_WARN(rclcpp::get_logger("MultiTargetParticleFilter"), "GridMap missing or lacks 'intensity' layer.");
@@ -300,7 +301,7 @@ void MultiTargetParticleFilter::updateNoiseDistributions()
   noise_speed_     = std::normal_distribution<double>(0.0, noise_std_speed_);
 
   RCLCPP_INFO(rclcpp::get_logger("MultiTargetParticleFilter"),
-              "Updated noise distributions: pos=%.3f, yaw=%.3f, yaw_rate=%.3f, speed=%.3f",
+              "Updated noise distributions: position=%.3f, yaw=%.3f, yaw_rate=%.3f, speed=%.3f",
               noise_std_position_, noise_std_yaw_, noise_std_yaw_rate_, noise_std_speed_);
 }
 
