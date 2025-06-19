@@ -10,8 +10,6 @@
 #include <opencv2/core/core.hpp>
 #include "package_defs.hpp"
 
-using namespace std::complex_literals;
-
 NS_HEAD
 
 namespace grid_map_filters {

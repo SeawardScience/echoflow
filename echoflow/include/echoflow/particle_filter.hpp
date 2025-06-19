@@ -136,14 +136,14 @@ public:
    */
   const std::vector<Target> & getParticles();
 
-  double observation_sigma_;  // Standard deviation for Gaussian weight function
+  double observation_sigma_;        // Standard deviation for Gaussian weight function
   double weight_decay_half_life_;
-  double seed_fraction_;      // Fraction of particles to be seeded with random positions
-  double noise_std_pos_;      // Standard deviation for position noise
-  double noise_std_yaw_;      // Standard deviation for yaw noise
-  double noise_std_yaw_rate_; // Standard deviation for yaw rate noise
-  double noise_std_speed_;    // Standard deviation for speed noise
-  double density_feedback_factor_;   // the density (particles/m^2) at which the weight of a particle will be reduced by half
+  double seed_fraction_;            // Fraction of particles to be seeded with random positions
+  double noise_std_position_;       // Standard deviation for position noise
+  double noise_std_yaw_;            // Standard deviation for yaw noise
+  double noise_std_yaw_rate_;       // Standard deviation for yaw rate noise
+  double noise_std_speed_;          // Standard deviation for speed noise
+  double density_feedback_factor_;  // Density (particles/m^2) at which the weight of a particle will be reduced by half
 
   void addResampleNoise(Target &p);
 
@@ -154,10 +154,11 @@ private:
   size_t num_particles_;      // Number of particles in the filter
   double initial_max_speed_;  // Initial maximum speed of particles
 
-  std::normal_distribution<double> noise_pos_{0.0, noise_std_pos_};        // Gaussian noise distribution for particle position.
-  std::normal_distribution<double> noise_yaw_{0.0, noise_std_yaw_};        // Gaussian noise distribution for particle course.
-  std::normal_distribution<double> noise_yaw_rate_{0.0, noise_std_yaw_rate_};   // Gaussian noise distribution for course change rate.
-  std::normal_distribution<double> noise_speed_{0.0, noise_std_speed_};      // Gaussian noise distribution for particle speed.
+  // Gaussian noise distributions for particle position, yaw/course angle, yaw change rate, and speed
+  std::normal_distribution<double> noise_position_{0.0, noise_std_position_};
+  std::normal_distribution<double> noise_yaw_{0.0, noise_std_yaw_};
+  std::normal_distribution<double> noise_yaw_rate_{0.0, noise_std_yaw_rate_};
+  std::normal_distribution<double> noise_speed_{0.0, noise_std_speed_};
 };
 
 NS_FOOT

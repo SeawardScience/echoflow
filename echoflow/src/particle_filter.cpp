@@ -16,9 +16,10 @@ void MultiTargetParticleFilter::initialize(std::shared_ptr<grid_map::GridMap> ma
 {
   RCLCPP_DEBUG(rclcpp::get_logger("MultiTargetParticleFilter"),
                "ParticleFilter Config: num_particles=%zu, observation_sigma=%.2f, decay=%.2f, seed_fraction=%.2f, "
-               "min_speed=%.2f, noise_std_pos=%.2f, noise_std_yaw=%.2f, noise_std_yaw_rate=%.2f, noise_std_speed=%.2f",
+               "min_speed=%.2f, noise_std_position=%.2f, noise_std_yaw=%.2f, noise_std_yaw_rate=%.2f, "
+               "noise_std_speed=%.2f",
                num_particles_, observation_sigma_, weight_decay_half_life_, seed_fraction_,
-                noise_std_pos_, noise_std_yaw_, noise_std_yaw_rate_, noise_std_speed_);
+               noise_std_position_, noise_std_yaw_, noise_std_yaw_rate_, noise_std_speed_);
 
   if (!map_ptr || !map_ptr->exists("intensity")) {
     RCLCPP_WARN(rclcpp::get_logger("MultiTargetParticleFilter"), "GridMap missing or lacks 'intensity' layer.");
@@ -36,7 +37,6 @@ void MultiTargetParticleFilter::initialize(std::shared_ptr<grid_map::GridMap> ma
   std::uniform_real_distribution<double> uniform_01(0.0, 1.0);
 
   // Add new particles at randomly selected valid positions
-  // TODO: revisit this section for tracking different sizes of blobs or "ignoring" static blobs
   for (size_t i = 0; i < num_particles_; ++i) {
     const auto& position = valid_positions[rng_() % valid_positions.size()];
     Target particle;
@@ -44,9 +44,9 @@ void MultiTargetParticleFilter::initialize(std::shared_ptr<grid_map::GridMap> ma
     particle.y = position.y();
     particle.speed = initial_max_speed_ * uniform_01(rng_);
     particle.course = 2.0 * M_PI * uniform_01(rng_);
-    particle.yaw_rate = 0.0 * uniform_01(rng_); // THIS IS ALWAYS ZERO
-    particle.weight = 1.0;  // Will be normalized later
-    particle.age = 0.0; // Initialize age to zero
+    particle.yaw_rate = 0.0 * uniform_01(rng_);  // THIS IS ALWAYS ZERO
+    particle.weight = 1.0;   // Will be normalized later
+    particle.age = 0.0;  // Initialize age to zero
     particles_.push_back(particle);
   }
 
@@ -56,7 +56,8 @@ void MultiTargetParticleFilter::initialize(std::shared_ptr<grid_map::GridMap> ma
 
 void MultiTargetParticleFilter::predict(double dt)
 {
-  RCLCPP_DEBUG(rclcpp::get_logger("MultiTargetParticleFilter"), "Predicting next state for %zu particles with dt = %.3f", particles_.size(), dt);
+  RCLCPP_DEBUG(rclcpp::get_logger("MultiTargetParticleFilter"),
+               "Predicting next state for %zu particles with dt = %.3f", particles_.size(), dt);
 
   for (auto& particle : particles_) {
     double velocity = particle.speed + noise_speed_(rng_);
@@ -65,16 +66,16 @@ void MultiTargetParticleFilter::predict(double dt)
 
     if (std::abs(omega) > 1e-3) {
       double radius = velocity / omega;
-      particle.x += radius * (std::sin(yaw + omega * dt) - std::sin(yaw)) + noise_pos_(rng_);
-      particle.y += radius * (-std::cos(yaw + omega * dt) + std::cos(yaw)) + noise_pos_(rng_);
+      particle.x += radius * (std::sin(yaw + omega * dt) - std::sin(yaw)) + noise_position_(rng_);
+      particle.y += radius * (-std::cos(yaw + omega * dt) + std::cos(yaw)) + noise_position_(rng_);
     } else {
-      particle.x += velocity * std::cos(yaw) * dt + noise_pos_(rng_);
-      particle.y += velocity * std::sin(yaw) * dt + noise_pos_(rng_);
+      particle.x += velocity * std::cos(yaw) * dt + noise_position_(rng_);
+      particle.y += velocity * std::sin(yaw) * dt + noise_position_(rng_);
     }
 
     particle.course += omega * dt;
     particle.course = std::fmod(particle.course + 2 * M_PI, 2 * M_PI);
-    particle.age += dt; // Increment particle age
+    particle.age += dt;  // Increment particle age
   }
 }
 
@@ -103,7 +104,7 @@ void MultiTargetParticleFilter::updateWeights(std::shared_ptr<grid_map::GridMap>
 
   for (auto& particle : particles_) {
     grid_map::Position position(particle.x, particle.y);
-    double obs_likelihood = 1e-6; // small baseline to prevent zero weights
+    double obs_likelihood = 1e-6;  // small baseline to prevent zero weights
 
     if (map_ptr->isInside(position)) {
       double distance = map_ptr->atPosition("edt", position);
@@ -119,7 +120,8 @@ void MultiTargetParticleFilter::updateWeights(std::shared_ptr<grid_map::GridMap>
 
     // Penalize overcrowded areas using a logistic decay
     if (stats_ptr && stats_ptr->isInside(position)) {
-      double density = stats_ptr->atPosition("particles_per_cell", position,grid_map::InterpolationMethods::INTER_NEAREST)/cell_area;
+      double density = stats_ptr->atPosition("particles_per_cell", position,
+                                             grid_map::InterpolationMethods::INTER_NEAREST) / cell_area;
       if (density > 0.0) {
         // Logistic penalty: penalty ≈ 1.0 when density << threshold, ≈ 0.0 when density >> threshold
         double x = density - density_feedback_factor_;
@@ -141,8 +143,8 @@ void MultiTargetParticleFilter::updateWeights(std::shared_ptr<grid_map::GridMap>
 
 void MultiTargetParticleFilter::addResampleNoise(Target& particle)
 {
-  particle.x += noise_pos_(rng_);
-  particle.y += noise_pos_(rng_);
+  particle.x += noise_position_(rng_);
+  particle.y += noise_position_(rng_);
 
   particle.course += noise_yaw_(rng_);
   // Wrap course angle to [0, 2π)
@@ -154,7 +156,7 @@ void MultiTargetParticleFilter::addResampleNoise(Target& particle)
   // Ensure speed is non-negative
   particle.speed = std::max(0.0, particle.speed);
 
-  //p.yaw_rate += noise_yaw_rate_(rng_);
+  // p.yaw_rate += noise_yaw_rate_(rng_);
 }
 
 void MultiTargetParticleFilter::resample(std::shared_ptr<grid_map::GridMap> map_ptr,
@@ -175,6 +177,7 @@ void MultiTargetParticleFilter::resample(std::shared_ptr<grid_map::GridMap> map_
   double c = particles_[0].weight;
   size_t i = 0;
 
+  // TODO VARIABLE NAMES
   for (size_t m = 0; m < n_resample; ++m) {
     double U = r + m * step;
     while (U > c && i < particles_.size() - 1) {
@@ -184,7 +187,7 @@ void MultiTargetParticleFilter::resample(std::shared_ptr<grid_map::GridMap> map_
     Target p = particles_[i];
     addResampleNoise(p);
     p.weight = 1.0 / n_total;
-    p.age = particles_[i].age; // Preserve age from original particle
+    p.age = particles_[i].age;  // Preserve age from original particle
     new_particles.push_back(p);
   }
 
@@ -208,7 +211,8 @@ void MultiTargetParticleFilter::resample(std::shared_ptr<grid_map::GridMap> map_
                particles_.size(), n_resample, n_seed);
 }
 
-std::vector<grid_map::Position> MultiTargetParticleFilter::getValidPositionsFromMap(const std::shared_ptr<grid_map::GridMap>& map_ptr)
+std::vector<grid_map::Position> MultiTargetParticleFilter::getValidPositionsFromMap(
+                                const std::shared_ptr<grid_map::GridMap>& map_ptr)
 {
   std::vector<grid_map::Position> valid_positions;
 
@@ -243,7 +247,7 @@ void MultiTargetParticleFilter::seedUniform(
         particle.course = 2.0 * M_PI * uniform_01(rng_);
         particle.yaw_rate = 0.0;
         particle.weight = 1.0 / static_cast<double>(num_particles_);
-        particle.age = 0.0; // Seed age at zero
+        particle.age = 0.0;  // Seed age at zero
         output_particles.push_back(particle);
     }
 }
@@ -258,19 +262,20 @@ void MultiTargetParticleFilter::seedWeighted(
     std::vector<double> weights;
     weights.reserve(valid_positions.size());
     constexpr double eps = 1e-3;
-    for (auto& pos : valid_positions) {
+    for (auto& position : valid_positions) {
         double density = 0.0;
-        if (stats_ptr->isInside(pos)) {
-          density = stats_ptr->atPosition("particles_per_cell", pos); // lookup local density at valid pos
+        if (stats_ptr->isInside(position)) {
+          density = stats_ptr->atPosition("particles_per_cell", position);  // lookup local density at valid position
           if (std::isnan(density)) {
             density = 0.0;
           }
         }
-        weights.push_back(1.0 / (density + eps)); // inverse density as weight, avoid divide by zero w/ eps
+        weights.push_back(1.0 / (density + eps));  // inverse density as weight, avoid divide by zero w/ eps
     }
 
-    // discrete distributoin based on weihgts
-    std::discrete_distribution<size_t> sampler(weights.begin(), weights.end()); // cumulative distribution so higher weights more likely to be chosen
+    // discrete distribution based on weights
+    // cumulative distribution so higher weights more likely to be chosen
+    std::discrete_distribution<size_t> sampler(weights.begin(), weights.end());
     std::uniform_real_distribution<double> uniform_01(0.0, 1.0);
 
     for (size_t m = 0; m < n_seed && !valid_positions.empty(); ++m) {
@@ -283,21 +288,21 @@ void MultiTargetParticleFilter::seedWeighted(
         particle.course = 2.0 * M_PI * uniform_01(rng_);
         particle.yaw_rate = 0.0;
         particle.weight = 1.0 / static_cast<double>(num_particles_);
-        particle.age = 0.0; // Seed age at zero
+        particle.age = 0.0;  // Seed age at zero
         output_particles.push_back(particle);
     }
 }
 
 void MultiTargetParticleFilter::updateNoiseDistributions()
 {
-  noise_pos_       = std::normal_distribution<double>(0.0, noise_std_pos_);
+  noise_position_  = std::normal_distribution<double>(0.0, noise_std_position_);
   noise_yaw_       = std::normal_distribution<double>(0.0, noise_std_yaw_);
   noise_yaw_rate_  = std::normal_distribution<double>(0.0, noise_std_yaw_rate_);
   noise_speed_     = std::normal_distribution<double>(0.0, noise_std_speed_);
 
   RCLCPP_INFO(rclcpp::get_logger("MultiTargetParticleFilter"),
               "Updated noise distributions: pos=%.3f, yaw=%.3f, yaw_rate=%.3f, speed=%.3f",
-              noise_std_pos_, noise_std_yaw_, noise_std_yaw_rate_, noise_std_speed_);
+              noise_std_position_, noise_std_yaw_, noise_std_yaw_rate_, noise_std_speed_);
 }
 
 const std::vector<Target>& MultiTargetParticleFilter::getParticles()

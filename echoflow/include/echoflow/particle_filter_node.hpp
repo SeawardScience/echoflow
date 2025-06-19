@@ -40,38 +40,65 @@ public:
    */
   ParticleFilterNode();
 
-  /*!
- * \brief All configurable parameters for the particle filter node.
- */
+  /**
+   * @brief All configurable parameters for the particle filter node.
+   */
   struct Parameters
   {
-    /*!
-   * \brief Parameters controlling the behavior of the particle filter.
+  /**
+   * @brief Parameters controlling the behavior of the particle filter.
    */
     struct {
-      int num_particles = 100000;  //!< Total number of particles used in the filter.
-      double update_interval = 0.2;  //!< Time (in seconds) between particle weight updates.
-      double initial_max_speed = 20.0;  //!< Maximum speed (m/s) assigned to particles during initialization.
-      double observation_sigma = 50.0;  //!< Standard deviation (m) of the observation likelihood model.
-      double weight_decay_half_life = 3.0;  //!< Half-life (in seconds) for exponential decay of particle weights. Lower values cause weights to fade more quickly over time.  Generally, this should be on the order of the radar sweep time.
-      double seed_fraction = 0.001;  //!< Fraction of particles (per second) that are reseeded with random poses on each resample step.  Inrease this value to more quickly lock on to newly detected targets.
-      double noise_std_pos = 0.1;  //!< Standard deviation (m) of positional noise added during resampling.
-      double noise_std_yaw = 0.05;  //!< Standard deviation (radians) of yaw angle noise added during resampling.
-      double noise_std_yaw_rate = 0.0;  //!< Standard deviation (radians/sec) of yaw rate noise added during resampling.
-      double noise_std_speed = 0.2;  //!< Standard deviation (m/s) of speed noise added during resampling.
-      double maximum_target_size = 200.0;  //!< Maximum physical size (in meters) for a trackable target blob. Used to reduce computational load on large targets like shorelines.
-      double density_feedback_factor = 0.8;  //!< the density (particles/m^2) at which the weight of a particle will be reduced by half.  Lower this value if you have issues with particles too aggressively clustering on single targets.
+      // Total number of particles used in the filter.
+      int num_particles = 100000;
+
+      // Time (in seconds) between particle weight updates.
+      double update_interval = 0.2;
+
+      // Maximum speed (m/s) assigned to particles during initialization.
+      double initial_max_speed = 20.0;
+
+      // Standard deviation (m) of the observation likelihood model.
+      double observation_sigma = 50.0;
+
+      // Half-life (in seconds) for exponential decay of particle weights. Lower values cause weights to fade more
+      // quickly over time.  Generally, this should be on the order of the radar sweep time.
+      double weight_decay_half_life = 3.0;
+
+      // Fraction of particles (per second) that are reseeded with random poses on each resample step.
+      // Increase this value to more quickly lock on to newly detected targets.
+      double seed_fraction = 0.001;
+
+      // Standard deviation (m) of positional noise added during resampling.
+      double noise_std_position = 0.1;
+
+      // Standard deviation (radians) of yaw angle noise added during resampling.
+      double noise_std_yaw = 0.05;
+
+      // Standard deviation (radians/sec) of yaw rate noise added during resampling.
+      double noise_std_yaw_rate = 0.0;
+
+      // Standard deviation (m/s) of speed noise added during resampling.
+      double noise_std_speed = 0.2;
+
+      // Maximum physical size (in meters) for a trackable target blob.
+      // Used to reduce computational load on large targets like shorelines.
+      double maximum_target_size = 200.0;
+
+      // Density (particles/m^2) at which the weight of a particle will be reduced by half.
+      // Lower this value if you have issues with particles too aggressively clustering on single targets.
+      double density_feedback_factor = 0.8;
     } particle_filter;
 
-    /*!
-   * \brief Parameters defining the statistical grid map used for monitoring particle behavior.
-   */
+    /**
+     * @brief Parameters defining the statistical grid map used for monitoring particle behavior.
+     */
     struct {
-      std::string frame_id = "map";  //!< Coordinate frame in which the particle statistics map is published.
-      double length = 2500.0;  //!< Length (in meters) of the grid map.
-      double width = 2500.0;  //!< Width (in meters) of the grid map.
-      double resolution = 25.0;  //!< Resolution of each grid cell (in meters).
-      double pub_interval = 0.5;  //!< Time interval (in seconds) between publishing the statistics map.
+      std::string frame_id = "map";   // Coordinate frame in which the particle statistics map is published.
+      double length = 2500.0;         // Length (in meters) of the grid map.
+      double width = 2500.0;          // Width (in meters) of the grid map.
+      double resolution = 25.0;       // Resolution of each grid cell (in meters).
+      double pub_interval = 0.5;      // Time interval (in seconds) between publishing the statistics map.
     } particle_filter_statistics;
 
     /**
@@ -173,11 +200,15 @@ private:
   rclcpp::TimerBase::SharedPtr timer_;
   rclcpp::TimerBase::SharedPtr pf_statistics_timer_;
 
-  rclcpp::Node::OnSetParametersCallbackHandle::SharedPtr parameters_on_set_callback_; //!< Handle for the on-set parameters callback. This callback is triggered *before* parameters are applied to the node.
-  std::shared_ptr<rclcpp::ParameterEventHandler> parameter_event_handler_;            //!< Parameter event handler for listening to parameter changes.
-  rclcpp::ParameterEventCallbackHandle::SharedPtr parameter_event_callback_handle_;   //!< Handle for the parameter event callback. This callback is triggered *after* parameter changes have been successfully applied to the node.
+  // Handle for the on-set parameters callback. This callback is triggered *before* parameters are applied to the node.
+  rclcpp::Node::OnSetParametersCallbackHandle::SharedPtr parameters_on_set_callback_;
 
-  //std::vector<Detection> pending_detections_;
+  // Parameter event handler for listening to parameter changes.
+  std::shared_ptr<rclcpp::ParameterEventHandler> parameter_event_handler_;
+
+  // Handle for the parameter event callback. This callback is triggered *after* parameter changes
+  // have been successfully applied to the node
+  rclcpp::ParameterEventCallbackHandle::SharedPtr parameter_event_callback_handle_;
 
   bool initialized_ = false;
   rclcpp::Time last_update_time_;

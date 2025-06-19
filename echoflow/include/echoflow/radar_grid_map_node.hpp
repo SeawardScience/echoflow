@@ -50,10 +50,11 @@ public:
     } map;
 
     struct {
-      float near_clutter_range = 30.0; ///< Maximum range in meters for near-field clutter filtering.
+      // Maximum range in meters for near-field clutter filtering.
+      float near_clutter_range = 30.0;
     } filter;
 
-    int max_queue_size = 1000; ///< Maximum number of radar messages to buffer.
+    int max_queue_size = 1000;  ///< Maximum number of radar messages to buffer.
 
     /**
      * @brief Declares all node parameters.
@@ -73,7 +74,7 @@ public:
   std::shared_ptr<grid_map::GridMap> getMapPtr(){return map_ptr_;}
 
 protected:
-  Parameters parameters_; ///< Runtime parameters.
+  Parameters parameters_;   ///< Runtime parameters.
 
   /**
    * @brief Publishes the current grid map as an occupancy grid.
@@ -119,43 +120,43 @@ private:
   //------------------------------------------------------------------------------
 
   // Publishers
-  rclcpp::Publisher<grid_map_msgs::msg::GridMap>::SharedPtr grid_map_publisher_; ///< Publishes the full radar grid map.
-  rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr costmap_publisher_; ///< Publishes a simplified occupancy grid.
+  rclcpp::Publisher<grid_map_msgs::msg::GridMap>::SharedPtr grid_map_publisher_;  ///< Publishes the full radar grid map.
+  rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr costmap_publisher_;  ///< Publishes a simplified occupancy grid
 
   // Subscriber
-  rclcpp::Subscription<marine_sensor_msgs::msg::RadarSector>::SharedPtr radar_sector_subscriber_; ///< Subscribes to incoming radar sector messages.
+
+  rclcpp::Subscription<marine_sensor_msgs::msg::RadarSector>::SharedPtr radar_sector_subscriber_;  ///< Subscribes to incoming radar sector messages.
 
   // Timers
-  rclcpp::TimerBase::SharedPtr costmap_timer_; ///< Timer to periodically publish the occupancy grid.
-  rclcpp::TimerBase::SharedPtr queue_timer_;   ///< Timer to regularly process buffered radar sector messages.
+  rclcpp::TimerBase::SharedPtr costmap_timer_;  ///< Timer to periodically publish the occupancy grid.
+  rclcpp::TimerBase::SharedPtr queue_timer_;    ///< Timer to regularly process buffered radar sector messages.
 
   //------------------------------------------------------------------------------
   // Core Data
   //------------------------------------------------------------------------------
 
-  std::shared_ptr<grid_map::GridMap> map_ptr_; ///< Main grid map data structure.
-  std::deque<marine_sensor_msgs::msg::RadarSector::SharedPtr> radar_sector_queue_; ///< Queue for buffering radar sector messages.
+  std::shared_ptr<grid_map::GridMap> map_ptr_;                                      ///< Main grid map data structure.
+  std::deque<marine_sensor_msgs::msg::RadarSector::SharedPtr> radar_sector_queue_;  // Queue for buffering radar sector messages
 
   //------------------------------------------------------------------------------
   // TF and Timing
   //------------------------------------------------------------------------------
 
-  std::shared_ptr<tf2_ros::Buffer> m_tf_buffer; ///< TF2 buffer for transform lookups.
-  std::shared_ptr<tf2_ros::TransformListener> m_tf_listener; ///< TF2 listener attached to the buffer.
+  std::shared_ptr<tf2_ros::Buffer> m_tf_buffer;               ///< TF2 buffer for transform lookups.
+  std::shared_ptr<tf2_ros::TransformListener> m_tf_listener;  ///< TF2 listener attached to the buffer.
 
-  rclcpp::Clock clock_; ///< Node-local clock used for throttling and timing.
+  rclcpp::Clock clock_;  ///< Node-local clock used for throttling and timing.
 
   //------------------------------------------------------------------------------
   // Status Flags and Counters
   //------------------------------------------------------------------------------
 
-  bool tf_ready_ = false; ///< True once at least one valid TF has been received.
-  bool pose_initialized_ = false; ///< True once initial map centering has been done.
-  bool timer_interval_initialized_ = false; ///< True once timers are fully initialized.
+  bool tf_ready_ = false;  ///< True once at least one valid TF has been received.
+  bool pose_initialized_ = false;  ///< True once initial map centering has been done.
+  bool timer_interval_initialized_ = false;  ///< True once timers are fully initialized.
 
-  size_t drop_counter = 0; ///< Counter for number of dropped radar messages due to queue overflow.
-  int64_t scan_time_; ///< Optional timestamp of last radar scan processing.
-
+  size_t drop_counter = 0;  ///< Counter for number of dropped radar messages due to queue overflow.
+  int64_t scan_time_;       ///< Optional timestamp of last radar scan processing.
 };
 
 NS_FOOT

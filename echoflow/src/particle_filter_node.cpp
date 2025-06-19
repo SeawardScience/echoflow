@@ -12,7 +12,7 @@ void ParticleFilterNode::Parameters::declare(rclcpp::Node * node)
   node->declare_parameter("particle_filter.observation_sigma", particle_filter.observation_sigma);
   node->declare_parameter("particle_filter.weight_decay_half_life", particle_filter.weight_decay_half_life);
   node->declare_parameter("particle_filter.seed_fraction", particle_filter.seed_fraction);
-  node->declare_parameter("particle_filter.noise_std_pos", particle_filter.noise_std_pos);
+  node->declare_parameter("particle_filter.noise_std_position", particle_filter.noise_std_position);
   node->declare_parameter("particle_filter.noise_std_yaw", particle_filter.noise_std_yaw);
   node->declare_parameter("particle_filter.noise_std_yaw_rate", particle_filter.noise_std_yaw_rate);
   node->declare_parameter("particle_filter.noise_std_speed", particle_filter.noise_std_speed);
@@ -26,7 +26,6 @@ void ParticleFilterNode::Parameters::declare(rclcpp::Node * node)
   node->declare_parameter("map.width", particle_filter_statistics.width);
   node->declare_parameter("particle_filter_statistics.resolution", particle_filter_statistics.resolution);
   node->declare_parameter("particle_filter_statistics.pub_interval", particle_filter_statistics.pub_interval);
-
 }
 
 void ParticleFilterNode::Parameters::update(rclcpp::Node * node)
@@ -37,7 +36,7 @@ void ParticleFilterNode::Parameters::update(rclcpp::Node * node)
   node->get_parameter("particle_filter.observation_sigma", particle_filter.observation_sigma);
   node->get_parameter("particle_filter.weight_decay_half_life", particle_filter.weight_decay_half_life);
   node->get_parameter("particle_filter.seed_fraction", particle_filter.seed_fraction);
-  node->get_parameter("particle_filter.noise_std_pos", particle_filter.noise_std_pos);
+  node->get_parameter("particle_filter.noise_std_position", particle_filter.noise_std_position);
   node->get_parameter("particle_filter.noise_std_yaw", particle_filter.noise_std_yaw);
   node->get_parameter("particle_filter.noise_std_yaw_rate", particle_filter.noise_std_yaw_rate);
   node->get_parameter("particle_filter.noise_std_speed", particle_filter.noise_std_speed);
@@ -60,48 +59,48 @@ ParticleFilterNode::ParticleFilterNode()
   parameters_.update(this);
 
   pf_ = std::make_unique<MultiTargetParticleFilter>(parameters_.particle_filter.num_particles,
-                                                  parameters_.particle_filter.initial_max_speed);
+                                                    parameters_.particle_filter.initial_max_speed);
 
   applyParameters();  // set pf parameters initially
 
   // Register a "set parameter" callback (pre-commit) to check and log parameter changes
   parameters_on_set_callback_ = this->add_on_set_parameters_callback(
-      [this](const std::vector<rclcpp::Parameter> &parameters) {
-          rcl_interfaces::msg::SetParametersResult result;
-          result.successful = true;
+    [this](const std::vector<rclcpp::Parameter> &parameters) {
+        rcl_interfaces::msg::SetParametersResult result;
+        result.successful = true;
 
-          auto paramChanged = [&parameters](const std::string &name) {
-              return std::any_of(parameters.begin(), parameters.end(),
-                                 [&name](const auto &p) { return p.get_name() == name; });
-          };
+        auto paramChanged = [&parameters](const std::string &name) {
+          return std::any_of(parameters.begin(), parameters.end(),
+                              [&name](const auto &p) { return p.get_name() == name; });
+        };
 
-          // Log each parameter change
-          for (const auto &parameter : parameters) {
-              RCLCPP_INFO(this->get_logger(), "Parameter '%s' changed to '%s'",
-                          parameter.get_name().c_str(),
-                          parameter.value_to_string().c_str());
-          }
+        // Log each parameter change
+        for (const auto &parameter : parameters) {
+          RCLCPP_INFO(this->get_logger(), "Parameter '%s' changed to '%s'",
+                      parameter.get_name().c_str(),
+                      parameter.value_to_string().c_str());
+        }
 
-          // parameters that require restart
-          if (paramChanged("particle_filter.num_particles") ||
-              paramChanged("particle_filter.initial_max_speed")) {
-              RCLCPP_WARN(this->get_logger(),
-                          "Change to 'num_particles' or 'initial_max_speed' will not take effect until node is restarted.");
-          }
-          return result;
-      });
+        // parameters that require restart
+        if (paramChanged("particle_filter.num_particles") ||
+            paramChanged("particle_filter.initial_max_speed")) {
+          RCLCPP_WARN(this->get_logger(),
+                      "Change to 'num_particles' or 'initial_max_speed' will not take effect until node is restarted.");
+        }
+        return result;
+    });
 
   // Register an "on parameter event" callback (post-commit) to apply parameter change
   parameter_event_handler_ = std::make_shared<rclcpp::ParameterEventHandler>(this);
   parameter_event_callback_handle_ = parameter_event_handler_->add_parameter_event_callback(
-      [this](const rcl_interfaces::msg::ParameterEvent &event) {
-          // Only respond to local parameter changes
-          if (event.node != this->get_fully_qualified_name()) {
-              return;
-          }
-          parameters_.update(this);
-          applyParameters();
-      });
+    [this](const rcl_interfaces::msg::ParameterEvent &event) {
+        // Only respond to local parameter changes
+        if (event.node != this->get_fully_qualified_name()) {
+            return;
+        }
+        parameters_.update(this);
+        applyParameters();
+    });
 
   cloud_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("particle_cloud", 10);
   cell_vector_field_pub_ = this->create_publisher<geometry_msgs::msg::PoseArray>("cell_vector_field", 10);
@@ -115,20 +114,21 @@ ParticleFilterNode::ParticleFilterNode()
 
   // Initialize GridMap for keeping track of particle filter statistics
   pf_statistics_pub_ = this->create_publisher<grid_map_msgs::msg::GridMap>("particle_filter_statistics", 10);
-  pf_statistics_.reset( new grid_map::GridMap({"particles_per_cell",
-                                          "x_position_mean",        // Arithmetic mean of x-position of particles
-                                          "x_position_ssdm",        // Sum of squared deviations from mean used for computing variance/stdev
-                                          "x_position_std_dev",     // Standard deviation of x-position of particles
-                                          "y_position_mean",
-                                          "y_position_ssdm",
-                                          "y_position_std_dev",
-                                          "speed_mean",
-                                          "speed_ssdm",
-                                          "speed_std_dev",
-                                          "course_mean",
-                                          "course_std_dev",
-                                          "course_sines",          // These layers store the particle course converted to Cartesian coordinates
-                                          "course_cosines"         // for calculating the circular mean and standard deviation
+  pf_statistics_.reset( new grid_map::GridMap({
+                                "particles_per_cell",
+                                "x_position_mean",        // Arithmetic mean of x-position of particles
+                                "x_position_ssdm",        // Sum of squared deviations from mean, for computing variance
+                                "x_position_std_dev",     // Standard deviation of x-position of particles
+                                "y_position_mean",
+                                "y_position_ssdm",
+                                "y_position_std_dev",
+                                "speed_mean",
+                                "speed_ssdm",
+                                "speed_std_dev",
+                                "course_mean",
+                                "course_std_dev",
+                                "course_sines",          // Store the particle course converted to Cartesian coordinates
+                                "course_cosines"         // for calculating the course mean and standard deviation
   }));
 
   // Timer for computing and publishing particle filter statistics on user-settable time interval
@@ -149,7 +149,7 @@ void ParticleFilterNode::applyParameters() {
     pf_->observation_sigma_ = parameters_.particle_filter.observation_sigma;
     pf_->weight_decay_half_life_ = parameters_.particle_filter.weight_decay_half_life;
     pf_->seed_fraction_ = parameters_.particle_filter.seed_fraction;
-    pf_->noise_std_pos_ = parameters_.particle_filter.noise_std_pos;
+    pf_->noise_std_position_ = parameters_.particle_filter.noise_std_position;
     pf_->noise_std_yaw_ = parameters_.particle_filter.noise_std_yaw;
     pf_->noise_std_yaw_rate_ = parameters_.particle_filter.noise_std_yaw_rate;
     pf_->noise_std_speed_ = parameters_.particle_filter.noise_std_speed;
@@ -163,19 +163,22 @@ void ParticleFilterNode::update()
   double dt = (now_time - last_update_time_).seconds();
   last_update_time_ = now_time;
 
-  echoflow::grid_map_filters::filterLargeBlobsFromLayer(*map_ptr_, "intensity", "targets", parameters_.particle_filter.maximum_target_size);
+  echoflow::grid_map_filters::filterLargeBlobsFromLayer(*map_ptr_,
+                                                        "intensity",
+                                                        "targets",
+                                                        parameters_.particle_filter.maximum_target_size);
   echoflow::grid_map_filters::computeEDTFromIntensity(*map_ptr_, "targets", "edt");
 
   if (!initialized_) {
     pf_->initialize(map_ptr_);
     initialized_ = true;
   }
-  pf_->resample(map_ptr_, pf_statistics_,dt);
+  pf_->resample(map_ptr_, pf_statistics_, dt);
   pf_->predict(dt);
-  pf_->updateWeights(map_ptr_,pf_statistics_,dt);
+  pf_->updateWeights(map_ptr_, pf_statistics_, dt);
   publishPointCloud();
 
-  //pending_detections_.clear();
+  // pending_detections_.clear();
 }
 
 void ParticleFilterNode::computeParticleFilterStatistics()
@@ -201,7 +204,7 @@ void ParticleFilterNode::computeParticleFilterStatistics()
   float prior_speed_mean = 0.0;
 
   // Iterate through all particles and update the particle filter statistics grid map
-  // Accumulate total particle count per cell, then update the means and standard deviations for all particle parameters.
+  // Accumulate total particle count per cell, then update means and standard deviations for all particle parameters.
   for (const auto& particle : particles) {
     grid_map::Position position(particle.x, particle.y);
     if (pf_statistics_->isInside(position)) {
@@ -261,10 +264,8 @@ void ParticleFilterNode::computeParticleFilterStatistics()
 
   // Iterate through grid map and compute circular means and standard deviations for course angle
   for (grid_map::GridMapIterator iterator(*pf_statistics_); !iterator.isPastEnd(); ++iterator) {
-
     // Only calculate statistics for cells where there are particles
     if (pf_statistics_->at("particles_per_cell", *iterator) > 0) {
-
       pf_statistics_->at("course_mean", *iterator) = echoflow::statistics::computeCircularMean(
                                                             pf_statistics_->at("course_sines", *iterator),
                                                             pf_statistics_->at("course_cosines", *iterator));
