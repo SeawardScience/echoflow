@@ -97,9 +97,8 @@ public:
    *   - **Systematic resampling** of \(N - M\) particles, drawn proportional to their weights,
    *     adding Gaussian noise to position, heading and speed (via addResampleNoise), preserving
    *     each particle’s age, and resetting its weight to \(1/N\).
-   *   - **Injection** of \(M = \lfloor \text{seed_fraction\_} \times dt \times N\rfloor\) new particles
-   *     at valid positions from `map_ptr`. Positions are chosen with probability
-   *     proportional to the inverse local density (from the “particles_per_cell”
+   *   - **Injection** of new particles at valid positions from `map_ptr`. Positions are chosen
+   *     with probability proportional to the inverse local density (from the “particles_per_cell”
    *     layer of `stats_ptr`) to encourage seeding in less crowded areas i.e. new radar targets.
    *   - New particles receive:
    *     - random speed ∈ [0, initial_max_speed_]
