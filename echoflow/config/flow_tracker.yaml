@@ -15,12 +15,12 @@
       weight_decay_half_life: 3.0
     particle_filter_statistics:
       frame_id: map
-      pub_interval: 0.5
-      resolution: 25.0
+      pub_interval: 0.5                # seconds
+      resolution: 25.0                 # meters/cell
     map:
       frame_id: map
-      length: 2500.0
-      pub_interval: 0.2
-      resolution: 10.0
-      width: 2500.0
+      length: 2500.0                   # meters
+      pub_interval: 0.2                # seconds
+      resolution: 10.0                 # meters/cell
+      width: 2500.0                    # meters
     max_queue_size: 1000

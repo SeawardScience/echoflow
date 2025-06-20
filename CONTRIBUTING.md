@@ -37,7 +37,7 @@ If accepted, your contribution will be included in the next stable release from 
 - Include or update documentation (Doxygen/README/etc.) as appropriate
 - Keep commits focused and meaningful (squash if needed before PR)
 - Ensure `colcon build` passes with no errors or warnings
-- Ensure `ament_cpplint` passes with no errors using a line length of 120, e.g. `ament_cpplint src/ --linelength 120`
+- Ensure `ament_cpplint` passes with no errors using a line length of 120, e.g. `ament_cpplint <src_folder> --linelength 120`
 
 ---
 

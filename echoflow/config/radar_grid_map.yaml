@@ -1,11 +1,18 @@
+####################################################################
+## NOTE: This parameter file is intended to be used with the
+## radar_grid_map node in standalone mode. Use the flow_tracker.yaml
+## file if using the flow_tracker node to configure parameters for
+## both the radar_grid_map and the particle_filter.
+####################################################################
+
 /**:
   ros__parameters:
     filter:
       near_clutter_range: 0.0
     map:
       frame_id: map
-      length: 1500.0              # meters
-      width: 1500.0               # meters
-      resolution: 1.0
+      length: 2500.0              # meters
+      width: 2500.0               # meters
+      resolution: 10.0            # meters/cell
       pub_interval: 0.1           # seconds
     max_queue_size: 1000
