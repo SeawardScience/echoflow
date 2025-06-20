@@ -1,5 +1,5 @@
 # echoflow
-[![echoflow in action](docs/media/flow_tracker.gif)](https://youtu.be/GvkZeJmIi4c)
+[![echoflow in action](docs/media/flow_tracker_8x.gif)](https://youtu.be/GvkZeJmIi4c)
 
 [Watch on YouTube](https://youtu.be/GvkZeJmIi4c)
 
