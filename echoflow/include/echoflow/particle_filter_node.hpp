@@ -49,57 +49,88 @@ public:
    * @brief Parameters controlling the behavior of the particle filter.
    */
     struct {
-      // Total number of particles used in the filter.
+      /**
+       * @brief Total number of particles used in the filter.
+       */
       int num_particles = 100000;
 
-      // Time (in seconds) between particle weight updates.
+      /**
+       * @brief Time (in seconds) between particle weight updates.
+       */
       double update_interval = 0.2;
 
-      // Maximum speed (m/s) assigned to particles during initialization.
+      /**
+       * @brief Maximum speed (m/s) assigned to particles during initialization.
+       */
       double initial_max_speed = 20.0;
 
-      // Standard deviation (m) of the observation likelihood model.
+      /**
+       * @brief Standard deviation (m) of the observation likelihood model.
+       */
       double observation_sigma = 50.0;
 
-      // Half-life (in seconds) for exponential decay of particle weights. Lower values cause weights to fade more
-      // quickly over time.  Generally, this should be on the order of the radar sweep time.
+      /**
+       * @brief Half-life (in seconds) for exponential decay of particle weights.
+       *
+       * Lower values cause weights to fade more quickly over time.
+       * This should generally be on the order of the radar sweep time.
+       */
       double weight_decay_half_life = 3.0;
 
-      // Fraction of particles (per second) that are reseeded with random poses on each resample step.
-      // Increase this value to more quickly lock on to newly detected targets.
+      /**
+       * @brief Fraction of particles (per second) that are reseeded with random poses on each resample step.
+       *
+       * Increase this value to more quickly lock on to newly detected targets.
+       */
       double seed_fraction = 0.001;
 
-      // Standard deviation (m) of positional noise added during resampling.
+      /**
+       * @brief Standard deviation (m) of positional noise added during resampling.
+       */
       double noise_std_position = 0.1;
 
-      // Standard deviation (radians) of yaw angle noise added during resampling.
+      /**
+       * @brief Standard deviation (radians) of yaw angle noise added during resampling.
+       */
       double noise_std_yaw = 0.05;
 
-      // Standard deviation (radians/sec) of yaw rate noise added during resampling.
+      /**
+       * @brief Standard deviation (radians/sec) of yaw rate noise added during resampling.
+       */
       double noise_std_yaw_rate = 0.0;
 
-      // Standard deviation (m/s) of speed noise added during resampling.
+      /**
+       * @brief Standard deviation (m/s) of speed noise added during resampling.
+       */
       double noise_std_speed = 0.2;
 
-      // Maximum physical size (in meters) for a trackable target blob.
-      // Used to reduce computational load on large targets like shorelines.
+      /**
+       * @brief Maximum physical size (in meters) for a trackable target blob.
+       *
+       * Used to reduce computational load on large targets like shorelines.
+       */
       double maximum_target_size = 200.0;
 
-      // Density (particles/m^2) at which the weight of a particle will be reduced by half.
-      // Lower this value if you have issues with particles too aggressively clustering on single targets.
+      /**
+   * @brief Density (particles/m²) at which the weight of a particle will be reduced by half.
+   *
+   * Lower this value if particles cluster too aggressively on single targets.
+   */
       double density_feedback_factor = 0.8;
     } particle_filter;
+
 
     /**
      * @brief Parameters defining the statistical grid map used for monitoring particle behavior.
      */
     struct {
-      std::string frame_id = "map";   // Coordinate frame in which the particle statistics map is published.
-      double length = 2500.0;         // Length (in meters) of the grid map.
-      double width = 2500.0;          // Width (in meters) of the grid map.
-      double resolution = 25.0;       // Resolution of each grid cell (in meters).
-      double pub_interval = 0.5;      // Time interval (in seconds) between publishing the statistics map.
+      std::string frame_id = "map";   //!< Coordinate frame in which the particle statistics map is published.
+      double length = 2500.0;         //!< Length (in meters) of the grid map.
+      double width = 2500.0;          //!< Width (in meters) of the grid map.
+      double resolution = 25.0;       //!< Resolution of each grid cell (in meters).
+      double pub_interval = 0.5;      //!< Time interval (in seconds) between publishing the statistics map.
     } particle_filter_statistics;
+
 
     /**
      * @brief Declares all node parameters.
@@ -110,7 +141,7 @@ public:
 
     /**
      * @brief Updates all node parameters.
-     *c
+     *
      * @param node Pointer to the ROS2 node for parameter update.
      */
     void update(rclcpp::Node * node);
