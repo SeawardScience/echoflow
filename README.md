@@ -3,16 +3,18 @@
 
 [Watch on YouTube](https://youtu.be/GvkZeJmIi4c)
 
+**echoflow** is a ROS 2 package designed to transform marine radar sector data into a real-time 2D grid map for navigation and environmental awareness. It also runs a multi-target particle filter to track dynamic obstacles using that map.
 
-**echoflow** is a ROS 2 package designed to transform marine radar sector data into a real-time, 2D grid map for navigation and environmental awareness, and run a multi-target particle filter for tracking dynamic obstacles using that map.
+The package consists of two primary nodes:
+- `radar_grid_map`: Generates the grid map from incoming radar data.
+- `particle_filter`: Tracks dynamic targets using a particle filter over that map.
 
-Echoflow consists of a mapping node, `radar_grid_map`, and a particle filter node, `particle_filter`.
+The `radar_grid_map` node listens to radar sector messages, applies optional near-field clutter filtering, transforms the data into a global map frame using TF2, and publishes both a detailed `GridMap` and a simplified `OccupancyGrid` for use in path planning, SLAM, or tracking.
 
-The `radar_grid_map` node listens to radar sector messages, applies optional near-field clutter filtering, transforms the data into a global map frame using TF2, and publishes both a detailed `GridMap` and a simplified `OccupancyGrid` suitable for further path planning, SLAM, or tracking algorithms.
+The `particle_filter` node spawns particles with random position and course angle where radar returns are detected. It iteratively updates particle weights until the filter converges on a stable estimate of position and course for each target. Large blobs (e.g., shorelines) are filtered out based on a configurable `maximum_target_size`. The node continuously spawns new particles so the filter can quickly react to newly detected objects. A set of particle statistics is also published to optimize tracking performance.
 
-The `particle_filter` node spawns particles with random position and course angles on the map where a radar return is detected and iteratively updates the particle filter until the filter converges on an estimated position and course for each target. It also filters out large blobs from the radar map, which can be used to filter out large static areas, e.g. shorelines. It publishes a set of statistics on the particles which are used to optimize the particle filter performance. Random particles are also continuously spawned so that the filter reacts to newly detected obstacles.
-
-Complete API doccumentaiton can be found at: [https://seawardscience.github.io/echoflow/](https://seawardscience.github.io/echoflow/)
+Complete API documentation is available at:  
+👉 [https://seawardscience.github.io/echoflow/](https://seawardscience.github.io/echoflow/)
 
 ---
 
@@ -65,7 +67,7 @@ Make sure appropriate TF data (e.g., `map -> radar_frame`) and radar sector topi
 
 ### Example Dataset
 
-An example dataset is available [here](https://krasno.cloud/seaward_data/echoflow/fernandina_20250427_110627.zip) for testing and demonstaration puroposes.  You will be prompted for a username and a password
+An example dataset is available [here](https://krasno.cloud/seaward_data/echoflow/fernandina_20250427_110627.zip) for testing and demonstration purposes.  You will be prompted for a username and a password
 
 ```
 user: echoflow
@@ -103,7 +105,7 @@ A launchfile has been provided to run the `radar_grid_map` node standalone with 
 ros2 launch echoflow radar_grid_map.launch.xml radar_ns:=<your radar namespace>
 ```
 
-You will need to set the `radar_ns` arg match the namespace for your radar data topics.
+Set the radar_ns argument to match the namespace of your radar data topics.
 
 Make sure appropriate TF data (e.g., `map -> base_link`) and radar sector topics are available.
 
@@ -121,7 +123,7 @@ Make sure appropriate TF data (e.g., `map -> base_link`) and radar sector topics
 |------------------------|---------------------------------------|-------------------------------------|
 | `data`                 | `marine_sensor_msgs::msg::RadarSector`| Incoming radar sector scans         |
 
-The above correspond to the standards set in the UNH marine radar messages. Therefore you should run this node in the namespace of the desired radar channel. For example:
+The above correspond to the standards set in the UNH marine radar messages. Therefore you should run this node in the namespace of the desired radar channels. For example:
 
 ```bash
 ros2 run echoflow radar_grid_map --ros-args -r __ns:=/aura/perception/sensors/halo_a
