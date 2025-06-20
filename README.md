@@ -31,7 +31,7 @@ rosdep install --from-paths src --ignore-src -r -y
 To build the package and all required dependencies:
 
 ```bash
-cd ~/ros2_ws
+cd <path to your workspace>
 colcon build --packages-select echoflow
 source install/setup.bash
 ```
@@ -46,6 +46,7 @@ colcon build --packages-select echoflow --cmake-args -DCMAKE_BUILD_TYPE=Release
 
 ## Running the Package
 
+
 After sourcing your workspace, you can start the `flow_tracker` node which starts both the `particle_filter` and the `radar_grid_map` (with appropriate ros args):
 
 A launchfile has been provided to launch both nodes with the parameter configuration file and launch `rviz2` with the echoflow rviz configuration:
@@ -57,6 +58,26 @@ ros2 launch echoflow flow_tracker.launch.xml radar_ns:=aura/perception/sensors/h
 You may need to edit the launch parameter to make the `radar_ns` args match the namespace for your radar data topics.
 
 Make sure appropriate TF data (e.g., `map -> radar_frame`) and radar sector topics are available.
+
+### Example Dataset
+
+An example dataset is available [here](https://krasno.cloud/seaward_data/echoflow/fernandina_20250427_110627.zip) for testing and demonstaration puroposes.  You will be prompted for a username and a password
+
+```
+user: echoflow
+password: fernandina
+```
+
+Once downloaded, you can extract the file and replay it using 
+```
+ros2 bag play 'fernandina_20250427_110627'
+```
+
+once playing use the following to run echoflow
+
+```bash
+ros2 launch echoflow flow_tracker.launch.xml radar_ns:=aura/perception/sensors/halo_a
+```
 
 ---
 
