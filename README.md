@@ -52,10 +52,10 @@ After sourcing your workspace, you can start the `flow_tracker` node which start
 A launchfile has been provided to launch both nodes with the parameter configuration file and launch `rviz2` with the echoflow rviz configuration:
 
 ```bash
-ros2 launch echoflow flow_tracker.launch.xml radar_ns:=aura/perception/sensors/halo_b
+ros2 launch echoflow flow_tracker.launch.xml radar_ns:=<your radar namespace>
 ```
 
-You may need to edit the launch parameter to make the `radar_ns` args match the namespace for your radar data topics.
+You will need to set the `radar_ns` arg match the namespace for your radar data topics.
 
 Make sure appropriate TF data (e.g., `map -> radar_frame`) and radar sector topics are available.
 
@@ -77,6 +77,10 @@ once playing use the following to run echoflow
 
 ```bash
 ros2 launch echoflow flow_tracker.launch.xml radar_ns:=aura/perception/sensors/halo_a
+```
+or
+```bash
+ros2 launch echoflow flow_tracker.launch.xml radar_ns:=aura/perception/sensors/halo_b
 ```
 
 ---
