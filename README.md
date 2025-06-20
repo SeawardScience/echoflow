@@ -50,28 +50,15 @@ colcon build --packages-select echoflow --cmake-args -DCMAKE_BUILD_TYPE=Release
 
 After sourcing your workspace, you can start the `flow_tracker` node which starts both the `particle_filter` and the `radar_grid_map` (with appropriate ros args):
 
-```bash
-ros2 run echoflow flow_tracker
-```
-
-You can also load the parameter configuration file. You will need to load this for each node, e.g.:
+A launchfile has been provided to launch both nodes with the parameter configuration file and launch `rviz2` with the echoflow rviz configuration:
 
 ```bash
-ros2 param load /radar_grid_map echoflow/config/flow_tracker.yaml
-ros2 param load /particle_filter echoflow/config/flow_tracker.yaml
+ros2 launch echoflow flow_tracker.launch.xml radar_ns:=aura/perception/sensors/halo_b
 ```
 
-The parameters specific to each node will be loaded and the irrelevant parameters will be ignored when you load the parameters from the file into each node.
+You may need to edit the launch parameter to make the `radar_ns` args match the namespace for your radar data topics.
 
-Alternately, a launchfile has been provided to launch both nodes with the parameter configuration file and launch `rviz2` with the echoflow rviz configuration:
-
-```bash
-ros2 launch echoflow echoflow.launch.xml
-```
-
-You may need to edit the launchfile to make the `radar<X>_ns` args match the namespace for your radar data topics.
-
-Make sure appropriate TF data (e.g., `map -> base_link`) and radar sector topics are available.
+Make sure appropriate TF data (e.g., `map -> radar_frame`) and radar sector topics are available.
 
 ---
 
