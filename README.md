@@ -204,8 +204,8 @@ This node uses the 2D map from the `radar_grid_map` node to run a particle filte
 |-----------------------------|---------------------------------|-----------------------------------------------|
 | `particle_cloud`            | `sensor_msgs::msg::PointCloud2` | Particle point cloud                          |
 | `particle_filter_statistics`| `grid_map_msgs::msg::GridMap`   | Particle filter statistics                    |
-| `cell_vector_field`         | `geometry_msgs::msg::PoseArray` | Displays vector of mean course angle per cell |
-| `particle_vector_field`     | `geometry_msgs::msg::PoseArray` | Displays vector of course angle per particle  |
+| `cell_vector_field`         | `geometry_msgs::msg::PoseArray` | Displays vector showing mean course angle per cell |
+| `particle_vector_field`     | `geometry_msgs::msg::PoseArray` | Displays vector showing course angle per particle  |
 
 #### Subscribed Topics
 
@@ -290,7 +290,41 @@ Metrics are calculated for any cell of the grid containing at least one particle
 
 Currently, this node does not provide ROS2 services.
 
+---
 
+## Visualization
+
+The visualization for this package is done in `rviz2`. A config file is provided which sets up all the display plugins needed to visualize the data.
+
+### Radar GridMap
+
+This display shows the Euclidean Distance Transform (EDT) layer of the `radar_grid_map`.
+
+![Radar grid map EDT visualization](docs/media/rviz/echoflow_rviz_radar_grid_map_edt.png)
+
+### Radar Occupancy Map
+
+This display shows an occupancy map of the current grid map, showing where on the map radar returns exist.
+
+![Radar occupancy map visualization](docs/media/rviz/echoflow_rviz_radar_occupancy_map.png)
+
+### Particle Cloud
+
+This displays a PointCloud2 visualization of the particles spawned on the map.
+
+![Particle filter particle cloud visualization](docs/media/rviz/echoflow_rviz_particle_cloud.png)
+
+### Particle Filter Statistics
+
+This displays a heatmap of the selected particle filter statistics layer. Change the Color Layer selection to visualize different metrics for the particle filter. The default metric visualized is the mean speed per cell.
+
+![Particle filter statistics visualization](docs/media/rviz/echoflow_rviz_particle_filter_statistics.png)
+
+### Course Vectors
+
+This displays a vector field of the course angles. The default topic to display is the mean course angle per cell in the particle statistics map, called `cell_vector_field`. You can also display the course angle for each individual particle by selecting the `particle_vector_field` topic.
+
+![Particle filter course vectors visualization](docs/media/rviz/echoflow_rviz_course_vector_field.png)
 
 ---
 
