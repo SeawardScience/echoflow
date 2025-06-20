@@ -47,7 +47,7 @@ colcon build --packages-select echoflow --cmake-args -DCMAKE_BUILD_TYPE=Release
 ## Running the Package
 
 
-After sourcing your workspace, you can start the `flow_tracker` node which starts both the `particle_filter` and the `radar_grid_map` (with appropriate ros args):
+After sourcing your workspace, you can start the `flow_tracker` node which starts both the `particle_filter` and the `radar_grid_map` (with appropriate ros args).
 
 A launchfile has been provided to launch both nodes with the parameter configuration file and launch `rviz2` with the echoflow rviz configuration:
 
@@ -68,7 +68,7 @@ user: echoflow
 password: fernandina
 ```
 
-Once downloaded, you can extract the file and replay it using 
+Once downloaded, you can extract the file and replay it using
 ```
 ros2 bag play 'fernandina_20250427_110627'
 ```
@@ -93,25 +93,13 @@ This node processes incoming marine radar sectors and builds a continuously upda
 
 ![radar grid map visualization](docs/media/radar_grid_map_demo.gif)
 
-To run `radar_grid_map` node standalone, you can start the node (after sourcing your workspace):
+A launchfile has been provided to run the `radar_grid_map` node standalone with the parameter configuration file and launch `rviz2` with the echoflow rviz configuration:
 
 ```bash
-ros2 run echoflow radar_grid_map
+ros2 launch echoflow radar_grid_map.launch.xml radar_ns:=<your radar namespace>
 ```
 
-You can also load the parameter configuration file provided for this node, e.g.
-
-```bash
-ros2 param load /radar_grid_map echoflow/config/radar_grid_map.yaml
-```
-
-Alternately, a launchfile has been provided to launch the node with the parameter configuration file and launch `rviz2` with the echoflow rviz configuration:
-
-```bash
-ros2 launch echoflow radar_grid_map.launch.xml
-```
-
-You may need to edit the launchfile to make the `radar_ns` arg match the namespace for your radar data topics.
+You will need to set the `radar_ns` arg match the namespace for your radar data topics.
 
 Make sure appropriate TF data (e.g., `map -> base_link`) and radar sector topics are available.
 
