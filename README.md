@@ -197,6 +197,8 @@ None. The `particle_filter` node accesses the radar grid map using a shared poin
 
 #### Parameters
 
+@note  HINT:  The particle filter parameters (except for num_particles) can be tuned durring runtime using rqt_dynamic_reconfigure
+
 | Parameter Name                            | Type          | Default Value | Description                                                         |
 |-------------------------------------------|---------------|---------------|---------------------------------------------------------------------|
 | `particle_filter.density_feedback_factor` | `float`       | 0.8           | Density (particles/m^2) at which the weight of a particle will be reduced by half. Lower this value if you have issues with particles too aggressively clustering on single targets. |
