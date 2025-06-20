@@ -164,8 +164,6 @@ Or, more likely, dynamically broadcast it from your navigation or localization s
 
 > ⚠️ If TF lookups fail, the node will not process radar messages until a valid transform becomes available.
 
----
-
 #### Parameters
 
 | Parameter Name                     | Type          | Default Value  | Description                                          |
