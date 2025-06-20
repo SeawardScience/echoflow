@@ -8,6 +8,7 @@ The `radar_grid_map` node listens to radar sector messages, applies optional nea
 
 The `particle_filter` node spawns particles with random position and course angles on the map where a radar return is detected and iteratively updates the particle filter until the filter converges on an estimated position and course for each target. It also filters out large blobs from the radar map, which can be used to filter out large static areas, e.g. shorelines. It publishes a set of statistics on the particles which are used to optimize the particle filter performance. Random particles are also continuously spawned so that the filter reacts to newly detected obstacles.
 
+Complete API doccumentaiton can be found at: [https://seawardscience.github.io/echoflow/](https://seawardscience.github.io/echoflow/)
 
 ---
 
@@ -18,7 +19,7 @@ To install `echoflow` without compiling manually:
 ```bash
 # Clone the repository into your workspace src/
 cd ~/ros2_ws/src
-git clone https://github.com/YOUR_ORG/echoflow.git
+git clone https://github.com/SeawardScience/echoflow
 
 # Install dependencies
 cd ~/ros2_ws
