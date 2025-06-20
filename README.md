@@ -14,7 +14,7 @@ Complete API doccumentaiton can be found at: [https://seawardscience.github.io/e
 
 ## Installation
 
-To install `echoflow` without compiling manually:
+To install `echoflow`:
 
 ```bash
 # Clone the repository into your workspace src/
@@ -26,9 +26,7 @@ cd ~/ros2_ws
 rosdep install --from-paths src --ignore-src -r -y
 ```
 
----
-
-## Compiling
+### Compiling
 
 To build the package and all required dependencies:
 
