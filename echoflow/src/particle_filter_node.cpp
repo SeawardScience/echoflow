@@ -176,8 +176,6 @@ void ParticleFilterNode::update()
   pf_->predict(dt);
   pf_->updateWeights(map_ptr_, pf_statistics_, dt);
   publishPointCloud();
-
-  // pending_detections_.clear();
 }
 
 void ParticleFilterNode::computeParticleFilterStatistics()

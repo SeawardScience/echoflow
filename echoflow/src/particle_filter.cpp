@@ -35,7 +35,7 @@ void MultiTargetParticleFilter::initialize(std::shared_ptr<grid_map::GridMap> ma
     return;
   }
 
-  std::uniform_real_distribution<double> uniform_01(0.0, 1.0);
+  std::uniform_real_distribution<double> uniform_01(0.0, 1.0); // Uniform distribution for random sampling
 
   // Add new particles at randomly selected valid positions
   for (size_t i = 0; i < num_particles_; ++i) {
@@ -157,7 +157,7 @@ void MultiTargetParticleFilter::addResampleNoise(Target& particle)
   // Ensure speed is non-negative
   particle.speed = std::max(0.0, particle.speed);
 
-  // p.yaw_rate += noise_yaw_rate_(rng_);
+  //particle.yaw_rate += noise_yaw_rate_(rng_);
 }
 
 void MultiTargetParticleFilter::resample(std::shared_ptr<grid_map::GridMap> map_ptr,
@@ -193,7 +193,7 @@ void MultiTargetParticleFilter::resample(std::shared_ptr<grid_map::GridMap> map_
 
   // Step 2: Inject n_seed randomly initialized particles
   std::vector<grid_map::Position> valid_positions = getValidPositionsFromMap(map_ptr);
-  // seed the rest
+
   if (stats_ptr) {
       seedWeighted(valid_positions, n_seed, stats_ptr, new_particles);
       RCLCPP_DEBUG(rclcpp::get_logger("MultiTargetParticleFilter"),

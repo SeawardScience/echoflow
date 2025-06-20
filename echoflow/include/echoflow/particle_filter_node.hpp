@@ -116,7 +116,7 @@ public:
     void update(rclcpp::Node * node);
   };
 
-  std::shared_ptr<grid_map::GridMap> map_ptr_;
+  std::shared_ptr<grid_map::GridMap> map_ptr_;  // Shared pointer to the underlying grid map of radar intensity & EDT layers.
 
 protected:
   Parameters parameters_;     // Runtime parameters.
@@ -189,16 +189,16 @@ private:
    */
   geometry_msgs::msg::Quaternion angleToYawQuaternion(float angle);
 
-  std::unique_ptr<MultiTargetParticleFilter> pf_;
-  std::shared_ptr<grid_map::GridMap> pf_statistics_;
+  std::unique_ptr<MultiTargetParticleFilter> pf_; // Pointer to the multi-target particle filter instance.
+  std::shared_ptr<grid_map::GridMap> pf_statistics_; // Pointer to the grid map containing particle filter statistics.
 
-  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr cloud_pub_;
-  rclcpp::Publisher<geometry_msgs::msg::PoseArray>::SharedPtr cell_vector_field_pub_;
-  rclcpp::Publisher<geometry_msgs::msg::PoseArray>::SharedPtr particle_vector_field_pub_;
-  rclcpp::Publisher<grid_map_msgs::msg::GridMap>::SharedPtr pf_statistics_pub_;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr cloud_pub_; // Publisher for the particle point cloud.
+  rclcpp::Publisher<geometry_msgs::msg::PoseArray>::SharedPtr cell_vector_field_pub_; // Publisher for the mean cell vector field.
+  rclcpp::Publisher<geometry_msgs::msg::PoseArray>::SharedPtr particle_vector_field_pub_; // Publisher for the particle vector field.
+  rclcpp::Publisher<grid_map_msgs::msg::GridMap>::SharedPtr pf_statistics_pub_; // Publisher for the particle filter statistics grid map.
 
-  rclcpp::TimerBase::SharedPtr timer_;
-  rclcpp::TimerBase::SharedPtr pf_statistics_timer_;
+  rclcpp::TimerBase::SharedPtr timer_; // Timer for the particle filter update function.
+  rclcpp::TimerBase::SharedPtr pf_statistics_timer_; // Timer for computing and publishing particle filter statistics.
 
   // Handle for the on-set parameters callback. This callback is triggered *before* parameters are applied to the node.
   rclcpp::Node::OnSetParametersCallbackHandle::SharedPtr parameters_on_set_callback_;
@@ -210,8 +210,8 @@ private:
   // have been successfully applied to the node
   rclcpp::ParameterEventCallbackHandle::SharedPtr parameter_event_callback_handle_;
 
-  bool initialized_ = false;
-  rclcpp::Time last_update_time_;
+  bool initialized_ = false; // Flag indicating whether the particle filter has been initialized.
+  rclcpp::Time last_update_time_; // Timestamp of the last particle filter update.
 };
 
 NS_FOOT
