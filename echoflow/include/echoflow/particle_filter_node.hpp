@@ -150,8 +150,8 @@ private:
    *    * Average age of particles (mean and standard deviation)
    *    * Average x-position of particles (mean and standard deviation)
    *    * Average y-position of particles (mean and standard deviation)
+   *    * Average speed of particles (mean and standard deviation)
    *    * Average course of particles (circular mean and circular standard deviation)
-   *    * Average velocity of particles (mean and standard deviation)
    *
    * Publishes: grid_map_msgs::msg::GridMap topic containing particle filter statistics as
    * layers in a grid map.
