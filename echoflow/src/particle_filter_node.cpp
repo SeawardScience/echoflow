@@ -110,24 +110,29 @@ ParticleFilterNode::ParticleFilterNode()
 
   // Initialize GridMap for keeping track of particle filter statistics
   pf_statistics_pub_ = this->create_publisher<grid_map_msgs::msg::GridMap>("particle_filter_statistics", 10);
+
+  //! Also creates grid map to compute and publish the following particle filter statistics for each cell:
   pf_statistics_.reset( new grid_map::GridMap({
-                                "particles_per_cell",
-                                "particle_age_mean",      // Average age of particles in the cell
-                                "particle_age_ssdm",      // Sum of squared deviations from mean for particle age
-                                "particle_age_std_dev",   // Standard deviation of particles in the cell
-                                "x_position_mean",        // Arithmetic mean of x-position of particles
-                                "x_position_ssdm",        // Sum of squared deviations from mean, for computing variance
-                                "x_position_std_dev",     // Standard deviation of x-position of particles
-                                "y_position_mean",
-                                "y_position_ssdm",
-                                "y_position_std_dev",
-                                "speed_mean",
-                                "speed_ssdm",
-                                "speed_std_dev",
-                                "course_mean",
-                                "course_std_dev",
-                                "course_sines",          // Store the particle course converted to Cartesian coordinates
-                                "course_cosines"         // for calculating the course mean and standard deviation
+      "particles_per_cell",     //!* Number of particles per cell
+      "particle_age_mean",      //!* Particle age: Mean age of particles in the cell (arithmetic mean)
+      "particle_age_ssdm",      //!* Particle age: Sum of squared deviations from mean (used to compute variance)
+      "particle_age_std_dev",   //!* Particle age: Standard deviation of particle age
+      "x_position_mean",        //!* x-position: Mean of x-position of particles in cell (arithmetic mean)
+      "x_position_ssdm",        //!* x-position: Sum of squared deviations from mean (used to compute variance)
+      "x_position_std_dev",     //!* x-position: Standard deviation of x-position of particles
+      "y_position_mean",        //!* y-position: Mean of x-position of particles in cell (arithmetic mean)
+      "y_position_ssdm",        //!* y-position: Sum of squared deviations from mean (used to compute variance)
+      "y_position_std_dev",     //!* y-position: Standard deviation of y-position of particles
+      "speed_mean",             //!* Speed: Mean speed of particles in the cell (arithmetic mean)
+      "speed_ssdm",             //!* Speed: Sum of squared deviations from mean (used to compute variance)
+      "speed_std_dev",          //!* Speed: Standard deviation of speed of particles
+      "course_mean",            //!* Course: Mean course angle of particles in the cell (circular mean)
+      "course_std_dev",         //!* Course: Standard deviation of course angle of particles in cell (circular standard deviation)
+
+      // The sines and cosines of the course angles represent their conversion from polar to Cartesian coordinates for
+      // calculating the course mean, variance, and standard deviation.
+      "course_sines",           //!* Sum of sines of course angles (used for calculating circular statistics)
+      "course_cosines"          //!* Sum of cosines of course angles (used for calculating circular statistics)
   }));
 
   // Timer for computing and publishing particle filter statistics on user-settable time interval
