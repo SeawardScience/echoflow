@@ -2,14 +2,21 @@
 
 <launch>
 
-  <arg name="radar_ns" default="" />
+  <arg name="radar_ns" default="aura/perception/sensors/halo_b" />
+  <arg name="visualize" default="true" />
 
-  <node pkg="echoflow" exec="radar_grid_map" name="radar_grid_map_node" namespace="$(var radar_ns)">
-    <param from="$(find-pkg-share echoflow)/config/radar_grid_map.yaml" />
-  </node>
+  <group>
+    <push-ros-namespace namespace="$(var radar_ns)" />
 
-  <!-- Launch Rviz2 with configuration file -->
-  <node pkg="rviz2" exec="rviz2" name="rviz2" output="screen"
-        args="-d $(find-pkg-share echoflow)/config/echoflow.rviz" />
+    <!-- Launch radar grid map node -->
+    <node pkg="echoflow" exec="radar_grid_map" name="radar_grid_map_node">
+      <param from="$(find-pkg-share echoflow)/config/radar_grid_map.yaml" />
+    </node>
+
+    <!-- Conditionally launch Rviz2 with configuration file -->
+    <node pkg="rviz2" exec="rviz2" name="rviz2" output="screen"
+          args="-d $(find-pkg-share echoflow)/config/echoflow.rviz"
+          if="$(var visualize)" />
+  </group>
 
 </launch>
