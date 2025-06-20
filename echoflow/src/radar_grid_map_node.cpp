@@ -1,4 +1,4 @@
-/** Copyright © 2015 Seaward Science. */
+/** Copyright © 2025 Seaward Science. */
 
 #include "radar_grid_map_node.hpp"
 
