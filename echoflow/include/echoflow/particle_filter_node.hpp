@@ -147,10 +147,10 @@ public:
     void update(rclcpp::Node * node);
   };
 
-  std::shared_ptr<grid_map::GridMap> map_ptr_;  // Shared pointer to the underlying grid map of radar intensity & EDT layers.
+  std::shared_ptr<grid_map::GridMap> map_ptr_;  //!< Shared pointer to the underlying grid map of radar intensity & EDT layers.
 
 protected:
-  Parameters parameters_;     // Runtime parameters.
+  Parameters parameters_;     //!< Runtime parameters.
 
 private:
   /**
