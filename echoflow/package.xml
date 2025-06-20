@@ -3,15 +3,17 @@
 <package format="3">
   <name>echoflow</name>
   <version>1.0.0</version>
-  <description>A Template ROS2 Package </description>
-  <maintainer email="me@todo.com">@todo</maintainer>
-  <license>@todo</license>
+  <description>Echoflow</description>
+  <maintainer email="support@seaward.science">Kristopher Krasnosky</maintainer>
+  <license>Apache 2.0</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
   <depend>eigen</depend>
   <depend>grid_map_core</depend>
-  <depend>grid_map_ros</depend>
+  <depend>grid_map_costmap_2d</depend>
+  <depend>grid_map_cv</depend>
   <depend>grid_map_msgs</depend>
+  <depend>grid_map_ros</depend>
   <depend>marine_sensor_msgs</depend>
   <depend>rclcpp</depend>
   <depend>sensor_msgs</depend>

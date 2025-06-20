@@ -7,6 +7,7 @@ cmake_minimum_required(VERSION 3.8)
 set(ROS_DEPENDS
   ament_cmake
   grid_map_core
+  grid_map_cv
   grid_map_ros
   grid_map_msgs
   grid_map_costmap_2d
@@ -26,7 +27,6 @@ set(EXTERNAL_DEPENDS
 
 set(EXTERNAL_DEPENDS_LIB
 )
-
 
 get_filename_component(PACKAGE_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME)
 message("Creating Package: ${PACKAGE_NAME}")
@@ -90,7 +90,10 @@ foreach(NODE_FILE ${NODES})
 endforeach(NODE_FILE)
 
 
-message("  Installing: " ${EXECUTABLES})
+message("  Installing: ")
+foreach(EXEC_FILE ${EXECUTABLES})
+  message("  - " ${EXEC_FILE})
+endforeach(EXEC_FILE)
 install(TARGETS
   ${EXECUTABLES}
   DESTINATION lib/${PROJECT_NAME}/
@@ -114,16 +117,20 @@ install(DIRECTORY
 #endif()
 
 if(BUILD_TESTING)
-  find_package(ament_cmake_gtest REQUIRED)
-  ament_add_gtest(${PROJECT_NAME} test/radar_grid_map_test.cpp)
-  target_include_directories(${PROJECT_NAME} PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
-  )
-  ament_target_dependencies(${PROJECT_NAME}
-    std_msgs
-  )
-  target_link_libraries(${PROJECT_NAME})
+  #find_package(ament_cmake_gtest REQUIRED)
+  #ament_add_gtest(${PROJECT_NAME} test/radar_grid_map_test.cpp)
+  #ament_add_gtest(${PROJECT_NAME}
+  #  test/grid_map_filters_test.cpp
+  #  include/echoflow/grid_map_filters.hpp
+  #  src/grid_map_filters.cpp)
+  #target_include_directories(${PROJECT_NAME} PUBLIC
+  #  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  #  $<INSTALL_INTERFACE:include>
+  #)
+  #ament_target_dependencies(${PROJECT_NAME}
+  #  std_msgs
+  #)
+  #target_link_libraries(${PROJECT_NAME})
 endif()
 
 ament_package()

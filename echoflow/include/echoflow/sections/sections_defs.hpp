@@ -1,3 +1,5 @@
+/** Copyright © 2025 Seaward Science. */
+
 #pragma once
 
 #include "../package_defs.hpp"
@@ -10,5 +12,3 @@
 
 #define SECTIONS_NS_FOOT  \
   NS_FOOT }
-
-

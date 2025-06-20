@@ -1,3 +1,5 @@
+/** Copyright © 2025 Seaward Science. */
+
 #pragma once
 ///
 ///  Namespace stuff
