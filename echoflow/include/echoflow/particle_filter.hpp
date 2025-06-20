@@ -59,12 +59,18 @@ public:
   void predict(double dt);
 
   /**
-   * @brief Update particle weights using the Euclidean distance transform for each particle.
+   * @brief Update particle weights using the Euclidean distance transform, exponential decay, and density feedback.
    *
-   * Each particle is re-weighted from 0 to 1 according to a Gaussian function of their
-   * Euclidean distance transform. If the particle re-weight results in a weight of 0, the weight is
-   * reduced by a given decay factor. Individual particle weights are then normalized by the total
-   * weight of all particles.
+   * For each particle:
+   *   - Computes a new observation likelihood from the "edt" layer of `map_ptr`:
+   *     If outside the map or missing layer, a small baseline of 1e-6 is used.
+   *   - Updates `particle.obs_likelihood`:
+   *     - If the new likelihood exceeds the previous, it is replaced.
+   *     - Otherwise, the previous likelihood is multiplied by the decay factor
+   *   - Sets `particle.weight = std::max(particle.obs_likelihood, 1e-8)`.
+   *   - Retrieves local density from the "particles_per_cell" layer and applies
+   *     a logistic penalty multiplying `particle.weight` by this factor.
+   * After processing all particles, normalizes their weights so that their sum equals 1.
    *
    * @param map_ptr Shared pointer to GridMap with radar intensity-based targets to track.
    * @param stats_ptr Shared pointer to GridMap with particle statistics.
@@ -85,9 +91,22 @@ public:
   void addResampleNoise(Target& particle);
 
   /**
-   * @brief Resample particles by drawing from a uniform distribution around a subset of the current
-   * particles, and for remainder of particles (up to the total number of particles) injecting
-   * randomly initialized particles.
+   * @brief Perform systematic resampling of existing particles and inject new random particles.
+   *
+   * This method replaces the current particle set by:
+   *   - **Systematic resampling** of \(N - M\) particles, drawn proportional to their weights,
+   *     adding Gaussian noise to position, heading and speed (via addResampleNoise), preserving
+   *     each particle’s age, and resetting its weight to \(1/N\).
+   *   - **Injection** of \(M = \lfloor \text{seed_fraction\_} \times dt \times N\rfloor\) new particles
+   *     at valid positions from `map_ptr`. Positions are chosen with probability
+   *     proportional to the inverse local density (from the “particles_per_cell”
+   *     layer of `stats_ptr`) to encourage seeding in less crowded areas i.e. new radar targets.
+   *   - New particles receive:
+   *     - random speed ∈ [0, initial_max_speed_]
+   *     - random course ∈ [0, 2π)
+   *     - zero yaw_rate
+   *     - weight = \(1/N\)
+   *     - age = 0
    *
    * @param map_ptr Shared pointer to GridMap with radar intensity-based targets to track.
    * @param stats_ptr Shared pointer to GridMap with particle statistics.
