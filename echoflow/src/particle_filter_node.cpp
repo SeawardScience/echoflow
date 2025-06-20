@@ -307,7 +307,7 @@ void ParticleFilterNode::publishPointCloud()
 {
   const auto& particles = pf_->getParticles();
   sensor_msgs::msg::PointCloud2 cloud;
-  cloud.header.frame_id = "map";
+  cloud.header.frame_id = parameters_.particle_filter_statistics.frame_id;
   cloud.header.stamp = this->get_clock()->now();
   cloud.height = 1;
   cloud.width = particles.size();
@@ -354,7 +354,7 @@ void ParticleFilterNode::publishParticleVectorField()
 {
   const auto& particles = pf_->getParticles();
   geometry_msgs::msg::PoseArray vector_field;
-  vector_field.header.frame_id = "map";
+  vector_field.header.frame_id = parameters_.particle_filter_statistics.frame_id;
   vector_field.header.stamp = this->get_clock()->now();
 
   geometry_msgs::msg::Pose pose;
@@ -377,7 +377,7 @@ void ParticleFilterNode::publishParticleVectorField()
 void ParticleFilterNode::publishCellVectorField()
 {
   geometry_msgs::msg::PoseArray vector_field;
-  vector_field.header.frame_id = "map";
+  vector_field.header.frame_id = parameters_.particle_filter_statistics.frame_id;
   vector_field.header.stamp = this->get_clock()->now();
 
   geometry_msgs::msg::Pose pose;
