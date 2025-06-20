@@ -123,6 +123,14 @@ protected:
 
 private:
   /**
+   * @brief Applies parameters to the particle filter.
+   *
+   * Applies the current parameters to the particle filter, including noise distributions and
+   * other settings. This is called when parameters are updated and on intialization.
+   */
+  void applyParameters();
+
+  /**
    * @brief Main particle filter update function.
    *
    * Updates the particle filter by predicting the next particle position and course,
@@ -134,19 +142,12 @@ private:
   void update();
 
   /**
-   * @brief Applies parameters to the particle filter.
-   *
-   * Applies the current parameters to the particle filter, including noise distributions and
-   * other settings. This is called when parameters are updated and on intialization.
-   */
-  void applyParameters();
-
-  /**
    * @brief Computes and publishes statistics on the particles in the particle filter.
    *
    * Computes the following statistics on the particles in each cell over a user-specified
    * window of the grid map:
    *    * Number of particles
+   *    * Average age of particles (mean and standard deviation)
    *    * Average x-position of particles (mean and standard deviation)
    *    * Average y-position of particles (mean and standard deviation)
    *    * Average course of particles (circular mean and circular standard deviation)
