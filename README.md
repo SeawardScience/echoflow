@@ -298,9 +298,15 @@ The visualization for this package is done in `rviz2`. A config file is provided
 
 ### Radar GridMap
 
-This display shows the Euclidean Distance Transform (EDT) layer of the `radar_grid_map`.
+The `radar_grid_map` includes the following layers:
+
+- **edt** – Euclidean Distance Transform used to compute proximity to filtered targets.
+- **intensity** – Raw radar return intensity.
+- **targets** – The grid map filtered by the `maximum_target_size` parameter.  
+  - This is the input to the particle filter and the EDT computation.
 
 ![Radar grid map EDT visualization](docs/media/rviz/echoflow_rviz_radar_grid_map_edt.png)
+
 
 ### Radar Occupancy Map
 
@@ -310,9 +316,16 @@ This display shows an occupancy map of the current grid map, showing where on th
 
 ### Particle Cloud
 
-This displays a PointCloud2 visualization of the particles spawned on the map.
+This display shows a `PointCloud2` visualization of the particles spawned on the map.  
+You can select different channels as the color transform to visualize various particle metrics:
+
+- **speed** – Particle's estimated speed.
+- **course** – Direction of travel in global coordinates.
+- **age** – Time since the particle was spawned or last resampled.
+- *(others may be available depending on configuration)*
 
 ![Particle filter particle cloud visualization](docs/media/rviz/echoflow_rviz_particle_cloud.png)
+
 
 ### Particle Filter Statistics
 
