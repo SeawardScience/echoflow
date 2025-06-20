@@ -1,3 +1,5 @@
+/** Copyright © 2015 Seaward Science. */
+
 #include "radar_grid_map_node.hpp"
 
 int main(int argc, char *argv[])

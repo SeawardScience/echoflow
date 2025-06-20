@@ -8,4 +8,8 @@
     <param from="$(find-pkg-share echoflow)/config/radar_grid_map.yaml" />
   </node>
 
+  <!-- Launch Rviz2 with configuration file -->
+  <node pkg="rviz2" exec="rviz2" name="rviz2" output="screen"
+        args="-d $(find-pkg-share echoflow)/config/echoflow.rviz" />
+
 </launch>

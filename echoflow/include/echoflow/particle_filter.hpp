@@ -1,3 +1,5 @@
+/** Copyright © 2015 Seaward Science. */
+
 #pragma once
 
 #include <cmath>
@@ -12,27 +14,18 @@
 NS_HEAD
 
 /**
- * @brief Struct for holding the properties of a particle (position, bearing, speed, weight, obs_likelihood, age).
+ * @brief Struct for holding the properties of a particle (x/y position, course, speed, weight, obs_likelihood, age).
  *
  */
 struct Target {
-  double x;
-  double y;
-  double bearing;   // radians
-  double speed;     // m/s
-  double yaw_rate;  // rad/s
-  double weight;    // per-particle weight
-  double obs_likelihood;
-  double age;       // Age of the particle in seconds
-};
-
-/**
- * @brief todo
- *
- */
-struct Detection {
-  double x;
-  double y;
+    double x;            ///< X position of the particle (meters)
+    double y;            ///< Y position of the particle (meters)
+    double course;       ///< Course of the particle (radians, CCW from +X axis)
+    double speed;        ///< Linear speed of the particle (meters per second)
+    double yaw_rate;     ///< Yaw rate of the particle (radians per second)
+    double weight;       ///< Importance weight of the particle (normalized for resampling)
+    double obs_likelihood;///< Raw observation likelihood before weight normalization
+    double age;          ///< Age of the particle since last initialization or reseeding (seconds)
 };
 
 /**
@@ -51,44 +44,73 @@ public:
   /**
    * @brief Initialize multi-target particle filter.
    *
-   * Spawns particles with random positions and headings around radar returns (i.e. anywhere in grid map
-   * where radar intensity > 0).
+   * Spawns particles with random positions and course angles around radar returns
+   * (i.e. anywhere in grid map where radar intensity > 0).
    *
    * @param map_ptr Shared pointer to GridMap with radar intensity-based targets to track.
    */
   void initialize(std::shared_ptr<grid_map::GridMap> map_ptr);
 
   /**
-   * @brief Predict the new (x,y) position and bearing of each particle.
+   * @brief Predict the new (x,y) position and course of each particle.
    *
    * @param dt Time interval (delta t) from last particle filter update step.
    */
   void predict(double dt);
 
   /**
-   * @brief Update particle weights using the Euclidean distance transform for each particle.
+   * @brief Update particle weights using the Euclidean distance transform, exponential decay, and density feedback.
    *
-   * Each particle is re-weighted from 0 to 1 according to a Gaussian function of their
-   * Euclidean distance transform. If the particle re-weight results in a weight of 0, the weight is
-   * reduced by a given decay factor. Individual particle weights are then normalized by the total
-   * weight of all particles.
+   * For each particle:
+   *   - Computes a new observation likelihood from the "edt" layer of `map_ptr`:
+   *     If outside the map or missing layer, a small baseline of 1e-6 is used.
+   *   - Updates `particle.obs_likelihood`:
+   *     - If the new likelihood exceeds the previous, it is replaced.
+   *     - Otherwise, the previous likelihood is multiplied by the decay factor
+   *   - Sets `particle.weight = std::max(particle.obs_likelihood, 1e-8)`.
+   *   - Retrieves local density from the "particles_per_cell" layer and applies
+   *     a logistic penalty multiplying `particle.weight` by this factor.
+   * After processing all particles, normalizes their weights so that their sum equals 1.
    *
    * @param map_ptr Shared pointer to GridMap with radar intensity-based targets to track.
    * @param stats_ptr Shared pointer to GridMap with particle statistics.
+   * @param dt Time interval (delta t) from last particle filter update step.
    */
   void updateWeights(std::shared_ptr<grid_map::GridMap> map_ptr,
                      std::shared_ptr<grid_map::GridMap> stats_ptr,
                      double dt);
 
   /**
-   * @brief Resample particles using a uniform distribution around current particles.
+   * @brief Add Gaussian noise to a particle's position, yaw, yaw rate, and speed.
    *
-   * Removes particles with a speed < 3 m/s, unless this removes all existing particles in which case
-   * the filter falls back to all particles. Surviving particles are re-sampled using a uniform
-   * distribution around each particle.
+   * This function modifies the particle in place by adding Gaussian noise to its position,
+   * yaw angle, yaw rate, and speed based on the defined noise distributions.
+   *
+   * @param particle Reference to the particle to which noise will be added.
+   */
+  void addResampleNoise(Target& particle);
+
+  /**
+   * @brief Perform systematic resampling of existing particles and inject new random particles.
+   *
+   * This method replaces the current particle set by:
+   *   - **Systematic resampling** of \(N - M\) particles, drawn proportional to their weights,
+   *     adding Gaussian noise to position, heading and speed (via addResampleNoise), preserving
+   *     each particle’s age, and resetting its weight to \(1/N\).
+   *   - **Injection** of \(M = \lfloor \text{seed_fraction\_} \times dt \times N\rfloor\) new particles
+   *     at valid positions from `map_ptr`. Positions are chosen with probability
+   *     proportional to the inverse local density (from the “particles_per_cell”
+   *     layer of `stats_ptr`) to encourage seeding in less crowded areas i.e. new radar targets.
+   *   - New particles receive:
+   *     - random speed ∈ [0, initial_max_speed_]
+   *     - random course ∈ [0, 2π)
+   *     - zero yaw_rate
+   *     - weight = \(1/N\)
+   *     - age = 0
    *
    * @param map_ptr Shared pointer to GridMap with radar intensity-based targets to track.
    * @param stats_ptr Shared pointer to GridMap with particle statistics.
+   * @param dt Time interval (delta t) from last particle filter update step.
    */
   void resample(std::shared_ptr<grid_map::GridMap> map_ptr,
                 std::shared_ptr<grid_map::GridMap> stats_ptr,
@@ -143,28 +165,27 @@ public:
    */
   const std::vector<Target> & getParticles();
 
-  double observation_sigma_;  // Standard deviation for Gaussian weight function
-  double weight_decay_half_life_;
-  double seed_fraction_;      // Fraction of particles to be seeded with random positions
-  double noise_std_pos_;      // Standard deviation for position noise
-  double noise_std_yaw_;      // Standard deviation for yaw noise
-  double noise_std_yaw_rate_; // Standard deviation for yaw rate noise
-  double noise_std_speed_;    // Standard deviation for speed noise
-  double density_feedback_factor_;   // the density (particles/m^2) at which the weight of a particle will be reduced by half
-
-  void addResampleNoise(Target &p);
+  double observation_sigma_;        ///< Standard deviation for Gaussian weight function
+  double weight_decay_half_life_;   ///< Half-life for exponential decay of particle weights
+  double seed_fraction_;            ///< Fraction of particles to be seeded with random positions
+  double noise_std_position_;       ///< Standard deviation for position noise
+  double noise_std_yaw_;            ///< Standard deviation for yaw noise
+  double noise_std_yaw_rate_;       ///< Standard deviation for yaw rate noise
+  double noise_std_speed_;          ///< Standard deviation for speed noise
+  double density_feedback_factor_;  ///< Density (particles/m^2) at which the weight of a particle will be reduced by half
 
 private:
-  std::vector<Target> particles_;
-  std::default_random_engine rng_;
+  std::vector<Target> particles_; ///< Vector of particles in the filter
+  std::default_random_engine rng_; ///< Random number generator for particle noise and sampling
 
-  size_t num_particles_;      // Number of particles in the filter
-  double initial_max_speed_;  // Initial maximum speed of particles
+  size_t num_particles_;      ///< Number of particles in the filter
+  double initial_max_speed_;  ///< Initial maximum speed of particles
 
-  std::normal_distribution<double> noise_pos_{0.0, noise_std_pos_};        // Gaussian noise distribution for particle position.
-  std::normal_distribution<double> noise_yaw_{0.0, noise_std_yaw_};        // Gaussian noise distribution for particle bearing.
-  std::normal_distribution<double> noise_yaw_rate_{0.0, noise_std_yaw_rate_};   // Gaussian noise distribution for bearing change rate.
-  std::normal_distribution<double> noise_speed_{0.0, noise_std_speed_};      // Gaussian noise distribution for particle speed.
+  // Gaussian noise distributions for particle position, yaw/course angle, yaw change rate, and speed
+  std::normal_distribution<double> noise_position_{0.0, noise_std_position_};
+  std::normal_distribution<double> noise_yaw_{0.0, noise_std_yaw_};
+  std::normal_distribution<double> noise_yaw_rate_{0.0, noise_std_yaw_rate_};
+  std::normal_distribution<double> noise_speed_{0.0, noise_std_speed_};
 };
 
 NS_FOOT

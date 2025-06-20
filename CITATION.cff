@@ -7,6 +7,9 @@ authors:
 - family-names: "Wilby"
   given-names: "Antonella"
   orcid: "https://orcid.org/0000-0002-8459-9254"
+- family-names: "Bonney"
+  given-names: "Jake"
+  orcid: "https://orcid.org/0000-0002-9576-8105"
 title: "echoflow"
 version: 0.1.0
 date-released: 2025-04-29
