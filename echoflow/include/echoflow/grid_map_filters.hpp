@@ -30,12 +30,17 @@ void computeEDTFromIntensity(grid_map::GridMap& map,
                              const std::string& distance_layer);
 
 /**
- * @brief TODO
+ * @brief Filters large blobs from the input map layer and stores filtered result to output map layer.
  *
- * @param map
- * @param input_layer
- * @param output_layer
- * @param max_blob_area
+ * Uses the built-in grid_map function to convert the input layer of the grid map to an OpenCV image,
+ * then uses the OpenCV function to perform connected components analysis to find the sizes of the
+ * blobs in the image. If the blob is larger than the max blob size, clears the blob from the output
+ * layer.
+ *
+ * @param map Grid map to modify.
+ * @param input_layer Name of layer in grid map for which to filter large blobs.
+ * @param output_layer Name of layer in grid map to store the filtered output.
+ * @param max_blob_area Maximum size of blob to filter.
  */
 void filterLargeBlobsFromLayer(grid_map::GridMap& map,
                                const std::string& input_layer,
