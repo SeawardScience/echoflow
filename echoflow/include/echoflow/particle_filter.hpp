@@ -75,11 +75,19 @@ public:
                      double dt);
 
   /**
-   * @brief Resample particles using a uniform distribution around current particles.
+   * @brief Add Gaussian noise to a particle's position, yaw, yaw rate, and speed.
    *
-   * Removes particles with a speed < 3 m/s, unless this removes all existing particles in which case
-   * the filter falls back to all particles. Surviving particles are re-sampled using a uniform
-   * distribution around each particle.
+   * This function modifies the particle in place by adding Gaussian noise to its position,
+   * yaw angle, yaw rate, and speed based on the defined noise distributions.
+   *
+   * @param particle Reference to the particle to which noise will be added.
+   */
+  void addResampleNoise(Target& particle);
+
+  /**
+   * @brief Resample particles by drawing from a uniform distribution around a subset of the current
+   * particles, and for remainder of particles (up to the total number of particles) injecting
+   * randomly initialized particles.
    *
    * @param map_ptr Shared pointer to GridMap with radar intensity-based targets to track.
    * @param stats_ptr Shared pointer to GridMap with particle statistics.
@@ -146,17 +154,6 @@ public:
   double noise_std_yaw_rate_;       ///< Standard deviation for yaw rate noise
   double noise_std_speed_;          ///< Standard deviation for speed noise
   double density_feedback_factor_;  ///< Density (particles/m^2) at which the weight of a particle will be reduced by half
-
-
-  /**
-   * @brief Add Gaussian noise to a particle's position, yaw, yaw rate, and speed.
-   *
-   * This function modifies the particle in place by adding Gaussian noise to its position,
-   * yaw angle, yaw rate, and speed based on the defined noise distributions.
-   *
-   * @param p Reference to the particle to which noise will be added.
-   */
-  void addResampleNoise(Target &p);
 
 private:
   std::vector<Target> particles_; ///< Vector of particles in the filter

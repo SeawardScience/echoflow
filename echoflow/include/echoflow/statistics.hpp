@@ -88,13 +88,13 @@ std::tuple<float, float> computeSequentialStdDev(float new_observation,
  * @brief Compute the circular mean angle of a sample of angle data.
  *
  * Given \f$n\f$ angles \f$\alpha_1, ..., \alpha_n\f$ measured in radians, their circular mean is defined as
- * (@cite Mardia_1972, section 2.2.2):
+ * (from @cite Mardia_1972, section 2.2.2):
  *
  * \f$\overline{\alpha} = \textrm{arg}\biggl(\sum_\limits{j=1}^{n} e^{i\cdot\alpha_j} \biggr)\f$
  *
- * In order to store the Cartesian coordinates of each bearing as a real float without an imaginary component,
+ * In order to store the Cartesian coordinates of each angle as a real float without an imaginary component,
  * we instead use the arctan2 formulation to compute the mean resultant angle back to polar coordinates for
- * to obtain the mean bearing, as follows:
+ * to obtain the mean angle, as follows:
  *
  * \f$\overline{\alpha} = \textrm{atan2}\biggl(\sum\limits_{j=1}^{n} \sin \alpha_j,
  *                                             \sum_\limits{j=1}^{n} \cos \alpha_j \biggr)\f$
@@ -108,7 +108,7 @@ float computeCircularMean(float sines_sum, float cosines_sum);
  * @brief Compute the circular variance of a sample of angle data.
  *
  * Given \f$n\f$ angles \f$\alpha_1, ..., \alpha_n\f$ measured in radians, their circular variance \f$S_0\f$ is
- * defined as (@cite Mardia_1972, section 2.3):
+ * defined as (from @cite Mardia_1972, section 2.3):
  *
  * \f$ S_0 = 1 - \overline{R} \f$
  *
@@ -126,7 +126,7 @@ float computeCircularVariance(float sines_sum, float cosines_sum, float num_samp
  * @brief Compute the circular standard deviation of a sample of angle data.
  *
  * Given \f$n\f$ angles \f$\alpha_1, ..., \alpha_n\f$ measured in radians, their circular standard deviation
- * is defined as (@cite Mardia_1972, section 2.3.4, Eq. 2.3.14):
+ * is defined as (from @cite Mardia_1972, section 2.3.4, Eq. 2.3.14):
  *
  * \f$ s_0 = \sqrt{-2.0 * \log(\overline{R})} \f$,
  *
@@ -144,7 +144,7 @@ float computeCircularStdDev(float sines_sum, float cosines_sum, float num_sample
  * @brief Compute the mean resultant length of a sample of angle data.
  *
  * Given \f$n\f$ angles \f$\alpha_1, ..., \alpha_n\f$ measured in radians, their mean resultant length
- * is defined as (@cite Mardia_1972):
+ * is defined as (from @cite Mardia_1972):
  *
  * \f$\overline{R} = \sqrt{\overline{C}^2 + \overline{S}^2} \f$,
  *
