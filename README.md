@@ -1,4 +1,8 @@
 # echoflow
+[![echoflow in action](docs/media/flow_tracker.gif)](https://youtu.be/GvkZeJmIi4c)
+
+[Watch on YouTube](https://youtu.be/GvkZeJmIi4c)
+
 
 **echoflow** is a ROS 2 package designed to transform marine radar sector data into a real-time, 2D grid map for navigation and environmental awareness, and run a multi-target particle filter for tracking dynamic obstacles using that map.
 
