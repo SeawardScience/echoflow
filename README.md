@@ -379,7 +379,7 @@ All necessary packages can be installed by the following:
 
 ## License
 
-This project is licensed under the LICENSE provided in this repository.
+This project is licensed under the [LICENSE](https://github.com/SeawardScience/echoflow/blob/master/LICENSE) provided in this repository.
 
 ---
 
