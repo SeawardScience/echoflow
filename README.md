@@ -13,7 +13,7 @@ The `radar_grid_map` node listens to radar sector messages, applies optional nea
 
 The `particle_filter` node spawns particles with random position and course angle where radar returns are detected. It iteratively updates particle weights until the filter converges on a stable estimate of position and course for each target. Large blobs (e.g., shorelines) are filtered out based on a configurable `maximum_target_size`. The node continuously spawns new particles so the filter can quickly react to newly detected objects. A set of particle statistics is also published to optimize tracking performance.
 
-Complete API documentation is available at:  
+Complete API documentation is available at:
 👉 [https://seawardscience.github.io/echoflow/](https://seawardscience.github.io/echoflow/)
 
 ---
@@ -304,7 +304,7 @@ The `radar_grid_map` includes the following layers:
 
 - **edt** – Euclidean Distance Transform used to compute proximity to filtered targets.
 - **intensity** – Raw radar return intensity.
-- **targets** – The grid map filtered by the `maximum_target_size` parameter.  
+- **targets** – The grid map filtered by the `maximum_target_size` parameter.
   - This is the input to the particle filter and the EDT computation.
 
 ![Radar grid map EDT visualization](docs/media/rviz/echoflow_rviz_radar_grid_map_edt.png)
@@ -318,7 +318,7 @@ This display shows an occupancy map of the current grid map, showing where on th
 
 ### Particle Cloud
 
-This display shows a `PointCloud2` visualization of the particles spawned on the map.  
+This display shows a `PointCloud2` visualization of the particles spawned on the map.
 You can select different channels as the color transform to visualize various particle metrics:
 
 - **speed** – Particle's estimated speed.
@@ -379,7 +379,7 @@ All necessary packages can be installed by the following:
 
 ## License
 
-This project is licensed under the [LICENSE](LICENSE) provided in this repository.
+This project is licensed under the [LICENSE](https://github.com/SeawardScience/echoflow/blob/master/LICENSE) provided in this repository.
 
 ---
 
